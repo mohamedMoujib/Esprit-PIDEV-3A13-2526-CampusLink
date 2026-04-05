@@ -1,0 +1,307 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Gestion des avis - CampusLink Admin{% endblock %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('styles/AdminReviews.css') }}">
+{% endblock %}
+
+{% block body %}
+<div class="page-content">
+
+    <!-- FLASH MESSAGES -->
+    {% for msg in app.flashes('success') %}
+        <div class="flash flash-success">✅ {{ msg }}</div>
+    {% endfor %}
+    {% for msg in app.flashes('error') %}
+        <div class="flash flash-error">❌ {{ msg }}</div>
+    {% endfor %}
+
+    <!-- HEADER -->
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+        <h1 class="page-title">Gestion des avis</h1>
+        <div class="export-group">
+            <a href="{{ path('admin_reviews_export', {format: 'csv'}) }}" class="btn btn-secondary btn-sm">📥 Export CSV</a>
+            <a href="{{ path('admin_reviews_export', {format: 'pdf'}) }}" class="btn btn-secondary btn-sm" target="_blank">📄 Export PDF</a>
+        </div>
+    </div>
+
+    <!-- STATISTIQUES -->
+    <div class="stats-grid">
+        <div class="stats-card">
+            <div class="stats-label">Total des avis</div>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span class="stats-value">{{ stats.total }}</span>
+                <span class="stats-icon">📝</span>
+            </div>
+        </div>
+        <div class="stats-card">
+            <div class="stats-label">Avis positifs</div>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span class="stats-value-green">{{ stats.positive }}</span>
+                <span class="stats-icon">👍</span>
+            </div>
+        </div>
+        <div class="stats-card">
+            <div class="stats-label">Avis négatifs</div>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span class="stats-value-red">{{ stats.negative }}</span>
+                <span class="stats-icon">👎</span>
+            </div>
+        </div>
+        <div class="stats-card">
+            <div class="stats-label">Signalés</div>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span class="stats-value-amber">{{ stats.reported }}</span>
+                <span class="stats-icon">⚠️</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- FILTRES -->
+    <form method="get" action="{{ path('admin_reviews_index') }}" class="filter-section">
+        <div class="filter-group">
+            <label class="filter-label">Prestataire</label>
+            <select name="prestataire" class="filter-select">
+                <option value="">Tous les prestataires</option>
+                {% for p in prestataires %}
+                    <option value="{{ p }}" {{ filterPrestataire == p ? 'selected' : '' }}>{{ p }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label class="filter-label">Note</label>
+            <select name="rating" class="filter-select">
+                <option value="">Toutes les notes</option>
+                <option value="positive"      {{ filterRating == 'positive'      ? 'selected' : '' }}>Positives (+1 à +5)</option>
+                <option value="negative"      {{ filterRating == 'negative'      ? 'selected' : '' }}>Négatives (-5 à -1)</option>
+                <option value="very_positive" {{ filterRating == 'very_positive' ? 'selected' : '' }}>Très positives (+4 et +5)</option>
+                <option value="very_negative" {{ filterRating == 'very_negative' ? 'selected' : '' }}>Très négatives (-5 et -4)</option>
+                <option value="neutral"       {{ filterRating == 'neutral'       ? 'selected' : '' }}>Neutres (0)</option>
+                <option value="reported"      {{ filterRating == 'reported'      ? 'selected' : '' }}>🚩 Signalés uniquement</option>
+            </select>
+        </div>
+
+        <div class="filter-group" style="flex:1;">
+            <label class="filter-label">Recherche</label>
+            <input
+                type="text"
+                name="search"
+                class="filter-input"
+                placeholder="Commentaire, service, étudiant, prestataire..."
+                value="{{ filterSearch }}"
+            >
+        </div>
+
+        <div class="filter-group">
+            <label class="filter-label">&nbsp;</label>
+            <div style="display:flex; gap:8px;">
+                <button type="submit" class="btn btn-primary btn-sm">🔍 Filtrer</button>
+                <a href="{{ path('admin_reviews_index') }}" class="btn btn-secondary btn-sm">🔄 Reset</a>
+            </div>
+        </div>
+    </form>
+
+    <!-- RÉSULTAT FILTRE -->
+    {% if filterPrestataire or filterRating or filterSearch %}
+        <div style="margin-bottom:16px; font-size:14px; color:var(--text-muted);">
+            {{ reviews|length }} avis trouvé{{ reviews|length > 1 ? 's' : '' }}
+            {% if filterSearch %}pour "<strong>{{ filterSearch }}</strong>"{% endif %}
+        </div>
+    {% endif %}
+
+    <!-- LISTE DES AVIS -->
+    <div class="reviews-list">
+        {% if reviews is empty %}
+            <div class="empty-state">
+                📝 Aucun avis trouvé.<br>
+                {% if filterPrestataire or filterRating or filterSearch %}
+                    <small><a href="{{ path('admin_reviews_index') }}" style="color:var(--primary);">Voir tous les avis</a></small>
+                {% else %}
+                    <small>Les avis apparaîtront ici.</small>
+                {% endif %}
+            </div>
+        {% else %}
+            {% for review in reviews %}
+                {% set rating    = review.rating %}
+                {% set absRating = (rating < 0 ? -rating : rating) %}
+                {% if absRating > 5 %}
+                    {% set absRating = 5 %}
+                {% endif %}
+                {% set colorClass = rating < 0 ? 'stars-negative' : (rating > 0 ? 'stars-positive' : 'stars-neutral') %}
+
+                <div class="review-card {{ review.isReported ? 'is-reported' : '' }}">
+
+                    <!-- HEADER -->
+                    <div class="card-header">
+                        <div class="card-info-grid">
+                            <div class="info-student">👤 Étudiant : {{ review.student.name ?? 'Inconnu' }}</div>
+                            <div class="info-service">📚 Service : {{ review.reservation.service.title ?? 'Inconnu' }}</div>
+                            <div class="info-prestataire">🎓 Prestataire : {{ review.prestataire.name ?? 'Inconnu' }}</div>
+                        </div>
+                        <div class="card-date">{{ 'now'|date('d/m/Y') }}</div>
+                    </div>
+
+                    <!-- STARS -->
+                    <div class="stars-display">
+                        <span class="stars {{ colorClass }}">
+                            {% for i in 1..5 %}{% if i <= absRating %}★{% else %}☆{% endif %}{% endfor %}
+                        </span>
+                        <span class="stars-badge {{ colorClass }}">
+                            {{ rating > 0 ? '(+' ~ rating ~ ')' : '(' ~ rating ~ ')' }}
+                        </span>
+                    </div>
+
+                    <!-- BANNER SIGNALEMENT -->
+                    {% if review.isReported %}
+                        <div class="report-banner">
+                            <span class="report-banner-icon">⚠️</span>
+                            <div>
+                                <div class="report-banner-title">Signalé par le prestataire</div>
+                                <div class="report-banner-text">Raison : {{ review.reportReason ?? 'Non précisée' }}</div>
+                                {% if review.reportedAt %}
+                                    <div class="report-banner-text">
+                                        Signalé le : {{ review.reportedAt|date('d/m/Y à H:i') }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <!-- COMMENTAIRE -->
+                    <p class="review-comment">{{ review.comment }}</p>
+
+                    <!-- FOOTER -->
+                    <div class="card-footer">
+                        <span class="badge
+                            {% if rating == 5 %}badge-excellent
+                            {% elseif rating == 4 %}badge-good
+                            {% elseif rating == 3 %}badge-average
+                            {% elseif rating < 0 %}badge-negative
+                            {% else %}badge-average{% endif %}">
+                            {% if rating == 5 %}⭐ Excellent
+                            {% elseif rating == 4 %}👍 Très bien
+                            {% elseif rating == 3 %}😊 Bien
+                            {% elseif rating < 0 %}👎 Avis négatif
+                            {% else %}⚠️ À améliorer{% endif %}
+                        </span>
+
+                        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                            <button onclick="openDetailsModal({{ review.id }})" class="btn btn-secondary btn-sm">👁 Voir détails</button>
+
+                            {% if review.isReported %}
+                                <form method="post" action="{{ path('admin_reviews_unreport', {id: review.id}) }}" style="display:inline;">
+                                    <button type="submit" class="btn btn-success btn-sm">✓ Marquer traité</button>
+                                </form>
+                            {% endif %}
+
+                            <form method="post" action="{{ path('admin_reviews_delete', {id: review.id}) }}" style="display:inline;"
+                                  onsubmit="return confirm('Supprimer cet avis ?\n\nÉtudiant : {{ review.student.name ?? '' }}\nPrestataire : {{ review.prestataire.name ?? '' }}\n\n⚠️ Action irréversible !')">
+                                <button type="submit" class="btn btn-danger btn-sm">🗑 Supprimer</button>
+                            </form>
+                        </div>
+                    </div>
+
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+</div>
+
+<!-- MODAL DÉTAILS -->
+<div id="detailsModal" class="modal-overlay">
+    <div class="form-card modal-box">
+        <h2>👁 Détails de l'avis</h2>
+
+        <div class="detail-row">
+            <span class="detail-label">👤 Étudiant</span>
+            <span class="detail-value" id="d-student"></span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">🎓 Prestataire</span>
+            <span class="detail-value" id="d-prestataire"></span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">📚 Service</span>
+            <span class="detail-value" id="d-service"></span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">⭐ Note</span>
+            <span class="detail-value" id="d-rating"></span>
+        </div>
+        <div class="detail-row" style="flex-direction:column; gap:4px;">
+            <span class="detail-label">💬 Commentaire</span>
+            <span class="detail-value" id="d-comment" style="white-space:pre-wrap; background:#f9fafb; padding:10px; border-radius:8px; margin-top:4px;"></span>
+        </div>
+
+        <div id="d-report-section" style="display:none; margin-top:16px;">
+            <div style="background:#fef3c7; border:1px solid #fcd34d; border-radius:8px; padding:14px;">
+                <div style="font-weight:700; color:#92400e; margin-bottom:6px;">🚩 Signalement</div>
+                <div class="detail-row">
+                    <span class="detail-label">Raison</span>
+                    <span class="detail-value" id="d-reason"></span>
+                </div>
+                <div class="detail-row" id="d-date-row">
+                    <span class="detail-label">Date</span>
+                    <span class="detail-value" id="d-date"></span>
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top:20px;">
+            <button onclick="document.getElementById('detailsModal').classList.remove('open')" class="btn btn-secondary">Fermer</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block javascripts %}
+<script>
+// ===================== DETAILS MODAL =====================
+async function openDetailsModal(reviewId) {
+    try {
+        const response = await fetch(`{{ path('admin_reviews_api_details', {id: '__ID__'}) }}`.replace('__ID__', reviewId));
+        
+        if (!response.ok) {
+            alert('Erreur lors du chargement des détails');
+            return;
+        }
+
+        const data = await response.json();
+
+        document.getElementById('d-student').textContent     = data.student;
+        document.getElementById('d-prestataire').textContent = data.prestataire;
+        document.getElementById('d-service').textContent     = data.service;
+        document.getElementById('d-comment').textContent     = data.comment;
+
+        const sign = data.rating > 0 ? '+' : '';
+        document.getElementById('d-rating').textContent = sign + data.rating;
+
+        const reportSection = document.getElementById('d-report-section');
+        if (data.isReported) {
+            reportSection.style.display = 'block';
+            document.getElementById('d-reason').textContent = data.reportReason || 'Non précisée';
+            if (data.reportedAt) {
+                document.getElementById('d-date').textContent   = data.reportedAt;
+                document.getElementById('d-date-row').style.display = 'flex';
+            } else {
+                document.getElementById('d-date-row').style.display = 'none';
+            }
+        } else {
+            reportSection.style.display = 'none';
+        }
+
+        document.getElementById('detailsModal').classList.add('open');
+    } catch (error) {
+        console.error('Erreur:', error);
+        alert('Erreur lors du chargement des détails');
+    }
+}
+
+document.getElementById('detailsModal').addEventListener('click', function (e) {
+    if (e.target === this) this.classList.remove('open');
+});
+</script>
+{% endblock %}

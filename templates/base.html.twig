@@ -588,8 +588,8 @@
            class="{% if app.request.attributes.get('_route') == 'admin_dashboard' %}active{% endif %}">
             <span class="nav-icon">👥</span> Utilisateurs
         </a>
-        <a href="{{ path('admin_reviews') }}"
-           class="{% if app.request.attributes.get('_route') == 'admin_reviews' %}active{% endif %}">
+        <a href="{{ path('admin_reviews_index') }}"
+           class="{% if 'admin_reviews' in app.request.attributes.get('_route') %}active{% endif %}">
             <span class="nav-icon">⭐</span> Avis
         </a>
         <a href="{{ path('admin_profile') }}"
@@ -606,6 +606,10 @@
            class="{% if app.request.attributes.get('_route') == 'service_catalog' %}active{% endif %}">
             <span class="nav-icon">🔍</span> Catalogue
         </a>
+        <a href="{{ path('tutor_reviews_index') }}"
+           class="{% if 'tutor_reviews' in app.request.attributes.get('_route') %}active{% endif %}">
+            <span class="nav-icon">⭐</span> Avis reçus
+        </a>
         <a href="{{ path('prestataire_profile') }}"
            class="{% if app.request.attributes.get('_route') == 'prestataire_profile' %}active{% endif %}">
             <span class="nav-icon">👤</span> Mon profil
@@ -619,6 +623,10 @@
         <a href="{{ path('publication_index') }}"
            class="{% if (app.request.attributes.get('_route')|default('')) starts with 'publication_' %}active{% endif %}">
             <span class="nav-icon">📢</span> Publications
+        </a>
+        <a href="{{ path('student_reviews_index') }}"
+           class="{% if 'student_reviews' in app.request.attributes.get('_route') %}active{% endif %}">
+            <span class="nav-icon">⭐</span> Mes avis
         </a>
         <a href="{{ path('etudiant_profile') }}"
         class="{% if app.request.attributes.get('_route') == 'etudiant_profile' %}active{% endif %}">

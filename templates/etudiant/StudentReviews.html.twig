@@ -1,0 +1,272 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mes avis - CampusLink{% endblock %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('styles/StudentReviews.css') }}">
+{% endblock %}
+
+{% block body %}
+
+<div class="page-content">
+
+    <!-- FLASH MESSAGES -->
+    {% for msg in app.flashes('success') %}
+        <div class="flash flash-success">✅ {{ msg }}</div>
+    {% endfor %}
+    {% for msg in app.flashes('error') %}
+        <div class="flash flash-error">❌ {{ msg }}</div>
+    {% endfor %}
+
+    <!-- HEADER -->
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
+        <h1 class="page-title">Mes avis</h1>
+        {% if confirmedReservations is not empty %}
+            <button onclick="document.getElementById('addForm').style.display='block'" class="btn btn-primary">
+                ✍️ Laisser un avis
+            </button>
+        {% else %}
+            <span class="no-reservation-hint">💡 Aucune réservation confirmée sans avis pour le moment</span>
+        {% endif %}
+    </div>
+
+    <!-- FORMULAIRE AJOUT -->
+    <div class="form-card" id="addForm" style="display:none;">
+        <h2>Laisser un avis</h2>
+        <form method="post" action="{{ path('student_reviews_add') }}" id="addReviewForm">
+
+            <div class="form-group">
+                <label>Réservation concernée <span class="required">*</span></label>
+                <select name="reservation_id" id="reservationSelect" class="comment-area" style="min-height:auto; padding:10px;" required>
+                    <option value="">-- Choisir une réservation --</option>
+                    {% for res in confirmedReservations %}
+                        <option value="{{ res.reservation_id }}" data-prestataire="{{ res.prestataire_id }}">
+                            {{ res.service_title }} — {{ res.prestataire_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <input type="hidden" name="prestataire_id" id="prestataireInput" value="">
+            <input type="hidden" name="rating" id="ratingInput" value="0">
+
+            <div class="form-group">
+                <label>Votre note <span class="required">*</span></label>
+                <div class="star-rating" id="starRating">
+                    {% for i in 1..5 %}
+                        <button type="button" class="star-btn" data-value="{{ -(6-i) }}">★</button>
+                    {% endfor %}
+                    <span class="separator">|</span>
+                    {% for i in 1..5 %}
+                        <button type="button" class="star-btn" data-value="{{ i }}">★</button>
+                    {% endfor %}
+                </div>
+                <small class="hint">⬅️ Étoiles négatives &nbsp;|&nbsp; Étoiles positives ➡️</small>
+            </div>
+
+            <div class="form-group">
+                <label>
+                    Votre commentaire <span class="required">*</span>
+                    <span class="char-counter" id="addCounter">0 / {{ maxCommentLength }}</span>
+                </label>
+                <textarea
+                    name="comment"
+                    id="addComment"
+                    class="comment-area"
+                    placeholder="Partagez votre expérience en détail (minimum {{ minCommentLength }} caractères)..."
+                    maxlength="{{ maxCommentLength }}"
+                    required
+                ></textarea>
+                <small class="hint">Entre {{ minCommentLength }} et {{ maxCommentLength }} caractères.</small>
+            </div>
+
+            <div style="display:flex; gap:10px;">
+                <button type="submit" class="btn btn-primary" id="addSubmitBtn">Publier</button>
+                <button type="button" onclick="document.getElementById('addForm').style.display='none'" class="btn btn-secondary">Annuler</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- LISTE DES AVIS -->
+    <div class="reviews-list">
+        {% if reviews is empty %}
+            <div class="empty-state">
+                ⭐ Aucun avis pour le moment.<br>
+                <small>Vos avis apparaîtront ici après vos réservations confirmées.</small>
+            </div>
+        {% else %}
+            {% for review in reviews %}
+                {% set rating = review.rating %}
+                {% set absRating = (rating < 0 ? -rating : rating) %}
+                {% if absRating > 5 %}
+                    {% set absRating = 5 %}
+                {% endif %}
+                {% set colorClass = rating < 0 ? 'stars-negative' : (rating > 0 ? 'stars-positive' : 'stars-neutral') %}
+
+                <div class="review-card">
+                    <div class="card-header">
+                        <div class="card-info">
+                            <div class="service-title">
+                                📚 {{ review.reservation.service.title ?? 'Service inconnu' }}
+                            </div>
+                            <div class="student-name">
+                                avec {{ review.prestataire.name ?? 'Prestataire inconnu' }}
+                            </div>
+                        </div>
+                        <div class="card-date">{{ 'now'|date('d/m/Y') }}</div>
+                    </div>
+
+                    <div class="stars-display">
+                        <span class="stars {{ colorClass }}">
+                            {% for i in 1..5 %}{% if i <= absRating %}★{% else %}☆{% endif %}{% endfor %}
+                        </span>
+                        <span class="stars-badge {{ colorClass }}">
+                            {{ rating > 0 ? '(+' ~ rating ~ ')' : '(' ~ rating ~ ')' }}
+                        </span>
+                    </div>
+
+                    <p class="review-comment">{{ review.comment }}</p>
+
+                    {% if review.isReported %}
+                        <div class="reported-badge">⚠️ Cet avis a été signalé</div>
+                    {% endif %}
+
+                    <div class="card-footer">
+                        <button onclick="openEditForm({{ review.id }}, {{ review.rating }}, '{{ review.comment|e('js') }}')" class="btn btn-secondary">✏️ Modifier</button>
+                        <form method="post" action="{{ path('student_reviews_delete', {id: review.id}) }}" style="display:inline;" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cet avis ? Cette action est irréversible.')">
+                            <button type="submit" class="btn btn-danger">🗑 Supprimer</button>
+                        </form>
+                    </div>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
+</div>
+
+<!-- MODAL ÉDITION -->
+<div id="editModal" class="modal-overlay">
+    <div class="form-card modal-box">
+        <h2>Modifier l'avis</h2>
+        <form method="post" id="editForm">
+            <input type="hidden" name="rating" id="editRatingInput" value="0">
+
+            <div class="form-group">
+                <label>Votre note <span class="required">*</span></label>
+                <div class="star-rating" id="editStarRating">
+                    {% for i in 1..5 %}
+                        <button type="button" class="star-btn" data-value="{{ -(6-i) }}">★</button>
+                    {% endfor %}
+                    <span class="separator">|</span>
+                    {% for i in 1..5 %}
+                        <button type="button" class="star-btn" data-value="{{ i }}">★</button>
+                    {% endfor %}
+                </div>
+                <small class="hint">⬅️ Étoiles négatives &nbsp;|&nbsp; Étoiles positives ➡️</small>
+            </div>
+
+            <div class="form-group">
+                <label>
+                    Commentaire <span class="required">*</span>
+                    <span class="char-counter" id="editCounter">0 / {{ maxCommentLength }}</span>
+                </label>
+                <textarea
+                    name="comment"
+                    id="editComment"
+                    class="comment-area"
+                    maxlength="{{ maxCommentLength }}"
+                    required
+                ></textarea>
+                <small class="hint">Entre {{ minCommentLength }} et {{ maxCommentLength }} caractères.</small>
+            </div>
+
+            <div style="display:flex; gap:10px;">
+                <button type="submit" class="btn btn-primary">Mettre à jour</button>
+                <button type="button" onclick="document.getElementById('editModal').classList.remove('open')" class="btn btn-secondary">Annuler</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block javascripts %}
+<script>
+const MAX_LENGTH = {{ maxCommentLength }};
+const MIN_LENGTH = {{ minCommentLength }};
+
+// ===================== SELECT RÉSERVATION =====================
+document.getElementById('reservationSelect')?.addEventListener('change', function () {
+    const selected = this.options[this.selectedIndex];
+    const prestataireId = selected.dataset.prestataire || '';
+    document.getElementById('prestataireInput').value = prestataireId;
+    console.log('Prestataire ID sélectionné:', prestataireId);
+});
+
+// ===================== COMPTEUR CARACTÈRES =====================
+function initCounter(textareaId, counterId) {
+    const textarea = document.getElementById(textareaId);
+    const counter  = document.getElementById(counterId);
+    if (!textarea || !counter) return;
+
+    textarea.addEventListener('input', () => {
+        const len = textarea.value.length;
+        counter.textContent = len + ' / ' + MAX_LENGTH;
+        counter.style.color = len > MAX_LENGTH * 0.9 ? '#e74c3c' : (len < MIN_LENGTH ? '#f0a500' : '#27ae60');
+    });
+}
+
+initCounter('addComment',  'addCounter');
+initCounter('editComment', 'editCounter');
+
+// ===================== STAR RATING =====================
+function initStars(containerId, inputId) {
+    const container = document.getElementById(containerId);
+    const input     = document.getElementById(inputId);
+    if (!container || !input) return;
+
+    const stars = container.querySelectorAll('.star-btn');
+    stars.forEach(star => {
+        star.addEventListener('mouseenter', () => highlight(stars, parseInt(star.dataset.value)));
+        star.addEventListener('mouseleave', () => highlight(stars, parseInt(input.value)));
+        star.addEventListener('click', () => {
+            input.value = star.dataset.value;
+            highlight(stars, parseInt(star.dataset.value));
+        });
+    });
+}
+
+function highlight(stars, val) {
+    stars.forEach(s => {
+        const v = parseInt(s.dataset.value);
+        s.classList.remove('active-positive', 'active-negative');
+        if (val < 0 && v >= val && v < 0) s.classList.add('active-negative');
+        if (val > 0 && v <= val && v > 0) s.classList.add('active-positive');
+    });
+}
+
+initStars('starRating',     'ratingInput');
+initStars('editStarRating', 'editRatingInput');
+
+// ===================== EDIT MODAL =====================
+function openEditForm(id, rating, comment) {
+    document.getElementById('editForm').action = '/student/reviews/edit/' + id;
+    document.getElementById('editComment').value = comment;
+    document.getElementById('editRatingInput').value = rating;
+
+    const counter = document.getElementById('editCounter');
+    if (counter) {
+        counter.textContent = comment.length + ' / ' + MAX_LENGTH;
+        counter.style.color = comment.length < MIN_LENGTH ? '#f0a500' : '#27ae60';
+    }
+
+    const stars = document.querySelectorAll('#editStarRating .star-btn');
+    highlight(stars, rating);
+    document.getElementById('editModal').classList.add('open');
+}
+
+document.getElementById('editModal').addEventListener('click', function (e) {
+    if (e.target === this) this.classList.remove('open');
+});
+</script>
+{% endblock %}
