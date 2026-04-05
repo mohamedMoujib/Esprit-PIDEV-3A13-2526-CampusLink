@@ -1,0 +1,242 @@
+{% extends 'base.html.twig' %}
+{% block title %}{{ service is defined ? 'Modifier le service' : 'Créer un nouveau service' }} — CampusLink{% endblock %}
+{% block body %}
+
+<div class="two-col-form">
+
+    <form method="post" enctype="multipart/form-data"
+          action="{{ service is defined ? path('service_edit', {id: service.id}) : path('service_create') }}"
+          id="serviceForm">
+        <input type="hidden" name="_token"
+               value="{{ csrf_token(service is defined ? 'service_edit_' ~ service.id : 'service_create') }}">
+
+        <div class="form-panel">
+            <div class="form-panel-header">
+                <span class="form-panel-icon">📋</span>
+                <div>
+                    <div class="form-panel-title">
+                        {% if service is defined %}Modifier le service{% else %}Créer un nouveau service{% endif %}
+                    </div>
+                    <div class="form-panel-sub">Remplissez le formulaire ou utilisez l'IA à droite</div>
+                </div>
+            </div>
+            <hr class="panel-divider">
+
+            <div class="form-group">
+                <label class="form-label" for="title">Titre du service <span class="required-star">*</span></label>
+                <input type="text" id="title" name="title" class="form-control"
+                       placeholder="Ex: Cours de mathématiques niveau lycée"
+                       value="{{ service is defined ? service.title : '' }}"
+                       required maxlength="200">
+                <span class="form-hint">Donnez un titre clair et descriptif (max 100 caractères)</span>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="description">Description</label>
+                <textarea id="description" name="description" class="form-control"
+                          rows="6"
+                          placeholder="Décrivez votre service en détail: contenu, méthode, objectifs..."
+                          maxlength="1000">{{ service is defined ? service.description : '' }}</textarea>
+                <span class="form-hint" id="descCount">
+                    {{ service is defined ? service.description|length : 0 }}/1000 caractères
+                </span>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="category_id">Catégorie</label>
+                <select id="category_id" name="category_id" class="form-control">
+                    <option value="">Non catégorisé</option>
+                    {% if categories is defined %}
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}"
+                        {% if service is defined and service.category and service.category.id == cat.id %}selected{% endif %}>
+                        {{ cat.nom ?? cat.name ?? '' }}
+                    </option>
+                    {% endfor %}
+                    {% endif %}
+                </select>
+                <span class="form-hint">Sélectionnez la catégorie de votre service</span>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="price">Prix (€) <span class="required-star">*</span></label>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <input type="number" id="price" name="price" class="form-control"
+                           placeholder="25.00"
+                           step="0.01" min="0.01" max="10000"
+                           value="{{ service is defined ? service.price : '' }}"
+                           required style="max-width:180px;">
+                    <span style="font-size:15px;color:#6b7280;font-weight:600;">€</span>
+                </div>
+                <span class="form-hint">Prix par session</span>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Image (optionnel)</label>
+                <div style="font-size:13px;color:#6b7280;margin-bottom:8px;">
+                    Ajoutez une photo pour rendre votre service plus attractif
+                </div>
+
+                <div class="upload-zone" id="uploadZone" onclick="document.getElementById('imageFile').click()">
+                    {% if service is defined and service.image %}
+                        <img id="imgPreview" src="{{ asset(service.image) }}" alt="">
+                        <div style="display:flex;gap:8px;margin-top:4px;" onclick="event.stopPropagation()">
+                            <label for="imageFile" class="btn btn-primary btn-sm" style="cursor:pointer;">📷 Changer</label>
+                            <button type="button" id="removeImg" class="btn btn-danger-outline btn-sm">🗑️ Supprimer</button>
+                        </div>
+                    {% else %}
+                        <div id="uploadPlaceholder" style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+                            <span class="upload-zone-icon">📷</span>
+                            <span class="upload-zone-text">Ajouter une image (optionnel)</span>
+                        </div>
+                        <img id="imgPreview" style="display:none;max-width:100%;max-height:220px;border-radius:8px;" alt="">
+                        <div onclick="event.stopPropagation()">
+                            <label for="imageFile" class="btn btn-primary btn-sm" style="cursor:pointer;margin-top:4px;">
+                                📷 Ajouter une image (optionnel)
+                            </label>
+                            <button type="button" id="removeImg" class="btn btn-danger-outline btn-sm" style="display:none;margin-left:8px;">🗑️ Supprimer</button>
+                        </div>
+                    {% endif %}
+                    <span style="font-size:12px;color:#9ca3af;">Formats acceptés: JPG, PNG, GIF • Taille max: 5 MB</span>
+                    <input type="file" id="imageFile" name="image" accept="image/jpeg,image/png,image/gif,image/webp" style="display:none;">
+                </div>
+            </div>
+
+            <div class="info-box">
+                <span class="info-box-icon">ℹ️</span>
+                <div>
+                    <div class="info-box-title">Informations importantes</div>
+                    <div class="info-box-text">
+                        {% if service is defined %}
+                            Les modifications seront enregistrées immédiatement.
+                        {% else %}
+                            Votre service sera créé avec le statut <strong>En attente</strong> et sera visible après validation.
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div style="font-size:12px;color:#9ca3af;">* Champs obligatoires</div>
+
+            <div class="form-actions">
+                <a href="{{ path('service_mine') }}" class="btn btn-ghost">← Retour</a>
+                <button type="submit" class="btn btn-primary">
+                    📋 {% if service is defined %}Enregistrer les modifications{% else %}Créer le service{% endif %}
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <div class="form-panel">
+        <div class="ai-banner">
+            <span class="ai-banner-icon">✨</span>
+            <div>
+                <div class="ai-banner-title">Assistant IA</div>
+                <div class="ai-banner-sub">Décrivez votre service, l'IA le créera automatiquement</div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Décrivez votre service en quelques mots</label>
+            <div class="form-hint" style="margin-bottom:6px;">L'IA génèrera le titre, la description et créera le service.</div>
+            <textarea id="aiIdea" class="form-control" rows="5"
+                      placeholder="Ex: Cours de mathématiques pour lycéens, préparation au bac..."></textarea>
+        </div>
+
+        <button type="button" onclick="generateServiceAI()" class="btn btn-primary" style="width:100%;justify-content:center;padding:13px 20px;font-size:15px;">
+            ✨ Créer le service avec l'IA
+        </button>
+
+        <div id="aiLoading" style="display:none;color:#5D5FEF;font-size:13px;font-weight:600;">⏳ Création en cours...</div>
+
+        <div id="aiResult" style="display:none;background:#f5f3ff;border:1px solid #c4b5fd;border-radius:10px;padding:16px;">
+            <div style="font-weight:800;color:#4338ca;margin-bottom:8px;font-size:14px;">✅ Service généré</div>
+            <div id="aiGenTitle" style="font-weight:700;color:#5D5FEF;font-size:13px;margin-bottom:6px;"></div>
+            <div id="aiGenDesc"  style="font-size:13px;color:#374151;line-height:1.5;"></div>
+            <div style="display:flex;gap:8px;margin-top:14px;">
+                <button type="button" onclick="applyServiceAI()" class="btn btn-primary btn-sm">✅ Appliquer</button>
+                <button type="button" onclick="document.getElementById('aiResult').style.display='none'" class="btn btn-ghost btn-sm">Ignorer</button>
+            </div>
+        </div>
+
+        <div id="aiError" style="display:none;background:#fef2f2;border:1px solid #fca5a5;border-radius:10px;padding:14px;">
+            <div id="aiErrorMsg" style="font-weight:700;color:#dc2626;font-size:13px;"></div>
+        </div>
+
+        <hr class="panel-divider">
+        <div style="font-size:13px;color:#9ca3af;">💡 Ou remplissez le formulaire manuellement à gauche.</div>
+    </div>
+
+</div>
+
+<script>
+const desc  = document.getElementById('description');
+const count = document.getElementById('descCount');
+function updateCount() { if(count) count.textContent = desc.value.length + '/1000 caractères'; }
+if(desc) { desc.addEventListener('input', updateCount); }
+
+const fileInput   = document.getElementById('imageFile');
+const imgPreview  = document.getElementById('imgPreview');
+const placeholder = document.getElementById('uploadPlaceholder');
+const removeBtn   = document.getElementById('removeImg');
+
+if(fileInput) {
+    fileInput.addEventListener('change', function() {
+        const file = this.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = e => {
+            if(imgPreview)  { imgPreview.src = e.target.result; imgPreview.style.display = 'block'; }
+            if(placeholder) placeholder.style.display = 'none';
+            if(removeBtn)   removeBtn.style.display = 'inline-flex';
+        };
+        reader.readAsDataURL(file);
+    });
+}
+if(removeBtn) {
+    removeBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if(fileInput)   fileInput.value = '';
+        if(imgPreview)  { imgPreview.src = ''; imgPreview.style.display = 'none'; }
+        if(placeholder) placeholder.style.display = 'flex';
+        removeBtn.style.display = 'none';
+    });
+}
+
+let aiData = {};
+async function generateServiceAI() {
+    const idea = document.getElementById('aiIdea').value.trim();
+    if(!idea) { alert('Décrivez votre service d\'abord.'); return; }
+
+    document.getElementById('aiLoading').style.display = 'block';
+    document.getElementById('aiResult').style.display  = 'none';
+    document.getElementById('aiError').style.display   = 'none';
+
+    try {
+        const resp = await fetch('/api/ai/generate-service', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ idea })
+        });
+        document.getElementById('aiLoading').style.display = 'none';
+        if(resp.ok) {
+            aiData = await resp.json();
+            document.getElementById('aiGenTitle').textContent = aiData.title || '';
+            document.getElementById('aiGenDesc').textContent  = aiData.description || '';
+            document.getElementById('aiResult').style.display = 'block';
+        } else { throw new Error(); }
+    } catch {
+        document.getElementById('aiLoading').style.display = 'none';
+        document.getElementById('aiErrorMsg').textContent  = '❌ Impossible de contacter l\'IA. Réessayez plus tard.';
+        document.getElementById('aiError').style.display   = 'block';
+    }
+}
+
+function applyServiceAI() {
+    if(aiData.title)       { document.getElementById('title').value = aiData.title; }
+    if(aiData.description) { desc.value = aiData.description; updateCount(); }
+    document.getElementById('aiResult').style.display = 'none';
+}
+</script>
+
+{% endblock %}

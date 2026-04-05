@@ -1,0 +1,30 @@
+{% extends 'base.html.twig' %}
+{% block title %}Vérification logique — Admin CampusLink{% endblock %}
+{% block stylesheets %}{{ include('admin/partials/bo_admin_styles.html.twig') }}{% endblock %}
+{% block body %}
+<div class="page-header"><div><div class="page-title">🧠 Vérification logique des services</div><div class="page-sub">Détection automatique des incohérences de catégorie, contenu et prix</div></div></div>
+
+<div class="table-card">
+    <div class="table-header"><div><div class="table-title">Services signalés</div><div class="table-count">{{ flaggedServices|length }} service(s) à contrôler</div></div></div>
+    {% if flaggedServices|length == 0 %}
+        <div class="empty-state"><div class="empty-state-icon">✅</div><div class="empty-state-title">Aucune incohérence détectée</div><div class="empty-state-text">Tous les services semblent cohérents selon les règles automatiques actuelles.</div></div>
+    {% else %}
+    <div style="overflow-x:auto;">
+        <table>
+            <thead><tr><th>Service</th><th>Prestataire</th><th>Catégorie</th><th>Prix</th><th>Alertes</th></tr></thead>
+            <tbody>
+            {% for row in flaggedServices %}
+                <tr>
+                    <td><strong>{{ row.service.title }}</strong><div style="font-size:12px;color:var(--text-muted);">{{ row.service.description ? (row.service.description|length > 90 ? row.service.description|slice(0,90) ~ '…' : row.service.description) : 'Sans description' }}</div></td>
+                    <td>{{ row.service.user ? row.service.user.name : '—' }}</td>
+                    <td>{{ row.service.category ? row.service.category.name : '—' }}</td>
+                    <td>{{ row.service.price }} €</td>
+                    <td><ul style="margin-left:18px;display:flex;flex-direction:column;gap:4px;">{% for issue in row.issues %}<li>{{ issue }}</li>{% endfor %}</ul></td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,114 @@
+{% extends 'base.html.twig' %}
+{% block title %}Gestion des Services — Admin CampusLink{% endblock %}
+{% block stylesheets %}
+{{ include('admin/partials/bo_admin_styles.html.twig') }}
+<style>
+    .svc-img,.svc-img-placeholder{width:44px;height:44px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#f1f5f9;object-fit:cover;flex-shrink:0}
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="page-header">
+    <div>
+        <div class="page-title">🛠 Gestion des Services</div>
+        <div class="page-sub">Valider, gérer et modérer les services proposés sur la plateforme</div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <a href="{{ path('admin_service_audit') }}" class="btn btn-outline">🧠 Vérification logique</a>
+        <a href="{{ path('admin_services', {create: 1}) }}" class="btn btn-primary">+ Nouveau service</a>
+    </div>
+</div>
+
+<div style="display:flex;gap:8px;margin-bottom:22px;flex-wrap:wrap;align-items:center;">
+    <a href="{{ path('admin_services') }}" class="btn btn-ghost btn-sm {% if filterStatus is null %}filter-active{% endif %}">Tous</a>
+    {% for st in statusChoices %}
+        <a href="{{ path('admin_services', {status: st}) }}" class="btn btn-ghost btn-sm {% if filterStatus == st %}filter-active{% endif %}">
+            {% if st == 'EN_ATTENTE' %}⏳ En attente{% elseif st == 'CONFIRMEE' %}✅ Confirmée{% elseif st == 'REFUSEE' %}❌ Refusée{% else %}🏁 Terminée{% endif %}
+        </a>
+    {% endfor %}
+</div>
+
+{% if app.request.query.get('create') %}
+<div class="table-card" style="margin-bottom:24px;">
+    <div class="table-header"><div><div class="table-title">➕ Créer un nouveau service</div><div class="table-count">Ajout direct par l'administrateur</div></div><a href="{{ path('admin_services') }}" class="btn btn-ghost btn-sm">✕ Annuler</a></div>
+    <div style="padding:24px;">
+        <form method="post" action="{{ path('admin_service_create') }}" enctype="multipart/form-data">
+            <input type="hidden" name="_token" value="{{ csrf_token('admin_service_create') }}">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+                <div>
+                    <div class="form-group"><label class="form-label">Titre du service *</label><input type="text" name="title" class="form-control" required></div>
+                    <div class="form-group"><label class="form-label">Prix (€) *</label><input type="number" name="price" step="0.01" min="0" class="form-control" required></div>
+                    <div class="form-group"><label class="form-label">Statut initial</label><select name="status" class="form-control"><option value="EN_ATTENTE">En attente</option><option value="CONFIRMEE">Confirmée</option></select></div>
+                    <div class="form-group"><label class="form-label">Catégorie</label><select name="category_id" class="form-control"><option value="">Non catégorisé</option>{% for cat in categories %}<option value="{{ cat.id }}">{{ cat.name }}</option>{% endfor %}</select></div>
+                </div>
+                <div>
+                    <div class="form-group"><label class="form-label">Description</label><textarea name="description" class="form-control" style="min-height:130px;"></textarea></div>
+                    <div class="form-group"><label class="form-label">Image (optionnelle)</label><input type="file" name="image" accept="image/*" class="form-control" style="padding:7px;"></div>
+                </div>
+            </div>
+            <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:8px;"><a href="{{ path('admin_services') }}" class="btn btn-ghost">Annuler</a><button type="submit" class="btn btn-primary">✅ Créer le service</button></div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<div class="table-card">
+    <div class="table-header"><div><div class="table-title">Liste des services</div><div class="table-count">{{ services|length }} service(s)</div></div></div>
+    {% if services|length == 0 %}
+        <div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-title">Aucun service trouvé</div></div>
+    {% else %}
+    <div style="overflow-x:auto;">
+        <table>
+            <thead><tr><th></th><th>Service</th><th>Prestataire</th><th>Catégorie</th><th>Prix</th><th>Réservations</th><th>Trust score</th><th>Statut</th><th>Actions</th></tr></thead>
+            <tbody>
+            {% for svc in services %}
+                {% set imageSrc = svc.image ? (svc.image starts with 'http' ? svc.image : asset(svc.image)) : null %}
+                {% set trust = serviceTrustScores[svc.id] ?? null %}
+                <tr>
+                    <td>{% if imageSrc %}<img src="{{ imageSrc }}" alt="" class="svc-img">{% else %}<div class="svc-img-placeholder">🛠</div>{% endif %}</td>
+                    <td><strong>{{ svc.title|length > 45 ? svc.title|slice(0,45) ~ '…' : svc.title }}</strong><div style="font-size:12px;color:var(--text-muted);">{{ svc.description ? (svc.description|length > 60 ? svc.description|slice(0,60) ~ '…' : svc.description) : '—' }}</div></td>
+                    <td><div style="font-size:13px;font-weight:600;">{{ svc.user ? svc.user.name : '—' }}</div><div style="font-size:12px;color:var(--text-muted);">{{ svc.user ? svc.user.email : '' }}</div></td>
+                    <td>{{ svc.category ? svc.category.name : '—' }}</td>
+                    <td style="font-weight:700;color:var(--primary);">{{ svc.price }} €</td>
+                    <td>{{ svc.reservations|length }}</td>
+                    <td>
+                        {% if trust %}
+                            <span class="trust-pill {{ trust.isBad ? 'bad' : 'good' }}" title="{{ trust.reasons is not empty ? trust.reasons|join(' • ') : 'Aucune alerte' }}">
+                                {{ trust.score }}/100 · {{ trust.label }}
+                            </span>
+                        {% else %}
+                            <span class="badge badge-inactive">N/D</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <form method="post" action="{{ path('admin_service_status', {id: svc.id}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('admin_service_' ~ svc.id) }}">
+                            <input type="hidden" name="filter_status" value="{{ filterStatus }}">
+                            <select name="status" class="status-select" onchange="this.form.submit()">
+                                <option value="EN_ATTENTE" {% if svc.status == 'EN_ATTENTE' %}selected{% endif %}>En attente</option>
+                                <option value="CONFIRMEE" {% if svc.status == 'CONFIRMEE' %}selected{% endif %}>Confirmée</option>
+                                <option value="REFUSEE" {% if svc.status == 'REFUSEE' %}selected{% endif %}>Refusée</option>
+                                <option value="TERMINEE" {% if svc.status == 'TERMINEE' %}selected{% endif %}>Terminée</option>
+                            </select>
+                        </form>
+                    </td>
+                    <td>
+                        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+                            {% if trust and trust.isBad %}
+                                <form method="post" action="{{ path('admin_service_delete', {id: svc.id}) }}" onsubmit="return confirm('Confirmer la suppression définitive de ce service au trust score mauvais ?')">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('admin_svc_delete_' ~ svc.id) }}">
+                                    <button type="submit" class="btn btn-danger-outline btn-xs">🗑️ Supprimer</button>
+                                </form>
+                            {% else %}
+                                <span style="font-size:12px;color:var(--text-muted);">Suppression si trust faible</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
