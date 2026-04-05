@@ -1,0 +1,206 @@
+{% extends 'base.html.twig' %}
+{% block title %}Inscription — CampusLink{% endblock %}
+
+{% block body %}
+<div style="display:flex; justify-content:center; align-items:flex-start; padding: 40px 16px;">
+<div style="background:white; border-radius:20px; box-shadow:0 8px 40px rgba(0,0,0,0.10); padding:40px 35px; width:100%; max-width:520px;">
+
+    {# ── Header ── #}
+    <div style="text-align:center; margin-bottom:24px;">
+        <div style="font-size:28px; font-weight:800; color:#1a1a1a;">Créer un compte</div>
+        <div style="font-size:14px; color:#6B7280; margin-top:4px;">Rejoignez CampusLink</div>
+    </div>
+
+    {# ── Flash errors ── #}
+    {% for message in app.flashes('error') %}
+        <div class="flash flash-error">❌ {{ message }}</div>
+    {% endfor %}
+
+    <form method="post" action="{{ path('app_register') }}" id="registerForm" novalidate data-turbo="false">
+        <input type="hidden" name="_token" value="{{ csrf_token('register') }}">
+
+        {# ── Role Toggle ── #}
+        <div style="display:flex; gap:10px; margin-bottom:20px;">
+            <label style="flex:1; cursor:pointer;">
+                <input type="radio" name="userType" value="ETUDIANT" checked hidden class="role-radio">
+                <div class="role-btn" data-role="ETUDIANT">🎓 Étudiant</div>
+            </label>
+            <label style="flex:1; cursor:pointer;">
+                <input type="radio" name="userType" value="PRESTATAIRE" hidden class="role-radio">
+                <div class="role-btn" data-role="PRESTATAIRE">🛠 Prestataire</div>
+            </label>
+        </div>
+
+        {# ── Prénom + Nom ── #}
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px;">
+            <div class="form-group">
+                <label class="form-label">Prénom <span class="required-star">*</span></label>
+                <input type="text" name="prenom" class="form-control" placeholder="Prénom" required minlength="2">
+                <span class="field-error" id="err-prenom"></span>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Nom <span class="required-star">*</span></label>
+                <input type="text" name="nom" class="form-control" placeholder="Nom" required minlength="2">
+                <span class="field-error" id="err-nom"></span>
+            </div>
+        </div>
+
+        {# ── Email + Téléphone ── #}
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px;">
+            <div class="form-group">
+                <label class="form-label">Email <span class="required-star">*</span></label>
+                <input type="email" name="email" class="form-control" placeholder="Email" required>
+                <span class="field-error" id="err-email"></span>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Téléphone</label>
+                <input type="tel" name="phone" class="form-control" placeholder="ex: +21612345678">
+                <span class="field-error" id="err-phone"></span>
+            </div>
+        </div>
+
+        {# ── Genre + Adresse ── #}
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px;">
+            <div class="form-group">
+                <label class="form-label">Genre</label>
+                <select name="gender" class="form-control">
+                    <option value="" disabled selected>Genre</option>
+                    <option value="male">Homme</option>
+                    <option value="female">Femme</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Adresse</label>
+                <input type="text" name="address" class="form-control" placeholder="Adresse">
+            </div>
+        </div>
+
+        {# ── Université (full width) ── #}
+        <div class="form-group" style="margin-bottom:14px;">
+            <label class="form-label">Université</label>
+            <input type="text" name="universite" class="form-control" placeholder="Université">
+        </div>
+
+        {# ── Spécialisation + Filière ── #}
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px;">
+            <div class="form-group">
+                <label class="form-label">Spécialisation</label>
+                <input type="text" name="specialization" class="form-control" placeholder="Spécialisation">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Filière</label>
+                <input type="text" name="filiere" class="form-control" placeholder="Filière">
+            </div>
+        </div>
+
+        {# ── Mot de passe + Confirmation ── #}
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:20px;">
+            <div class="form-group">
+                <label class="form-label">Mot de passe <span class="required-star">*</span></label>
+                <input type="password" name="password" id="password" class="form-control" placeholder="Mot de passe" required minlength="8">
+                <span class="field-error" id="err-password"></span>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Confirmer <span class="required-star">*</span></label>
+                <input type="password" name="confirmPassword" id="confirmPassword" class="form-control" placeholder="Confirmer mot de passe" required>
+                <span class="field-error" id="err-confirm"></span>
+            </div>
+        </div>
+
+        {# ── Terms ── #}
+        <label class="check-row" style="margin-bottom:20px;">
+            <input type="checkbox" name="terms" id="terms" required>
+            <span style="font-size:13px; color:#6B7280;">J'accepte les <a href="#" style="color:var(--primary); font-weight:700;">conditions</a> et la <a href="#" style="color:var(--primary); font-weight:700;">confidentialité</a></span>
+        </label>
+        <span class="field-error" id="err-terms" style="display:block; margin-top:-14px; margin-bottom:14px;"></span>
+
+        {# ── Submit ── #}
+        <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center; font-size:15px; padding:14px 0;">
+            Créer mon compte
+        </button>
+    </form>
+
+    {# ── Login link ── #}
+    <p style="text-align:center; font-size:13px; color:#6B7280; margin-top:20px;">
+        Déjà un compte ?
+        <a href="{{ path('app_login') }}" style="color:var(--primary); font-weight:700;">Se connecter</a>
+    </p>
+
+</div>
+</div>
+
+{# ── Styles ── #}
+<style>
+.role-btn {
+    text-align: center;
+    padding: 12px 15px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    background: #F3F4F6;
+    color: #6B7280;
+    border: 2px solid transparent;
+    transition: all 0.15s;
+    user-select: none;
+}
+.role-btn:hover { background: #E5E7EB; }
+.role-btn.active {
+    background: var(--primary-light);
+    color: var(--primary);
+    border-color: var(--primary);
+    font-weight: 800;
+}
+.field-error {
+    font-size: 11px;
+    color: #EF4444;
+    padding-left: 4px;
+    min-height: 16px;
+    display: block;
+}
+.form-control.is-invalid { border-color: #EF4444 !important; }
+</style>
+
+{# ── JS: role toggle + client-side validation ── #}
+<script>
+// Role toggle
+document.querySelectorAll('.role-radio').forEach(radio => {
+    radio.addEventListener('change', () => {
+        document.querySelectorAll('.role-btn').forEach(btn => btn.classList.remove('active'));
+        radio.closest('label').querySelector('.role-btn').classList.add('active');
+    });
+});
+// Set initial active state
+document.querySelector('.role-radio:checked')
+    ?.closest('label')?.querySelector('.role-btn')?.classList.add('active');
+
+// Client-side validation
+document.getElementById('registerForm').addEventListener('submit', function(e) {
+    let valid = true;
+
+    const setError = (id, msg) => {
+        document.getElementById(id).textContent = msg;
+        if (msg) valid = false;
+    };
+
+    const prenom = document.querySelector('[name=prenom]').value.trim();
+    const nom    = document.querySelector('[name=nom]').value.trim();
+    const email  = document.querySelector('[name=email]').value.trim();
+    const phone  = document.querySelector('[name=phone]').value.trim();
+    const pass   = document.getElementById('password').value;
+    const conf   = document.getElementById('confirmPassword').value;
+    const terms  = document.getElementById('terms').checked;
+
+    setError('err-prenom',   prenom.length < 2  ? 'Au moins 2 caractères.' : '');
+    setError('err-nom',      nom.length < 2     ? 'Au moins 2 caractères.' : '');
+    setError('err-email',    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? 'Email invalide.' : '');
+    setError('err-phone',    phone && !/^\+?[\d\s\-]{7,20}$/.test(phone) ? 'Numéro invalide.' : '');
+    setError('err-password', pass.length < 8    ? 'Au moins 8 caractères.' :
+                             !/[A-Z]/.test(pass) ? 'Une majuscule requise.' :
+                             !/[0-9]/.test(pass) ? 'Un chiffre requis.' : '');
+    setError('err-confirm',  pass !== conf       ? 'Les mots de passe ne correspondent pas.' : '');
+    setError('err-terms',    !terms              ? 'Vous devez accepter les conditions.' : '');
+
+    if (!valid) e.preventDefault();
+});
+</script>
+{% endblock %}

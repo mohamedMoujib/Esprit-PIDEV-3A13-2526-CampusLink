@@ -1,24 +1,671 @@
 <!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="UTF-8">
-        <title>{% block title %}Welcome!{% endblock %}</title>
-        <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>⚫️</text><text y=%221.3em%22 x=%220.2em%22 font-size=%2276%22 fill=%22%23fff%22>sf</text></svg>">
-        {% block stylesheets %}
-        {% endblock %}
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}CampusLink — Plateforme de Services Étudiants{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        {% block javascripts %}
-            {% block importmap %}{{ importmap('app') }}{% endblock %}
-        {% endblock %}
+        :root {
+            --primary: #5D5FEF;
+            --primary-dark: #4338CA;
+            --primary-light: #EDECFD;
+            --bg: #f5f7fa;
+            --white: #ffffff;
+            --text: #111827;
+            --text-sub: #374151;
+            --text-muted: #6b7280;
+            --border: #e5e7eb;
+            --border-input: #d1d5db;
+            --success-bg: #dcfce7; --success: #16a34a;
+            --warning-bg: #fef9c3; --warning: #b45309;
+            --danger-bg: #fee2e2; --danger: #dc2626;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+            --shadow: 0 4px 20px rgba(0,0,0,0.06);
+            --radius: 12px;
+            --radius-sm: 8px;
+        }
 
-        {% set frankenphpHotReload = app.request.server.get('FRANKENPHP_HOT_RELOAD') %}
-        {% if frankenphpHotReload %}
-        <meta name="frankenphp-hot-reload:url" content="{{ frankenphpHotReload }}">
-        <script src="https://cdn.jsdelivr.net/npm/idiomorph"></script>
-        <script src="https://cdn.jsdelivr.net/npm/frankenphp-hot-reload/+esm" type="module"></script>
+        body {
+            font-family: 'DM Sans', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            font-size: 15px;
+            line-height: 1.5;
+        }
+
+        a { text-decoration: none; color: inherit; }
+
+        /* ════════════════════════════════════
+           TOP HEADER — CampusLink brand bar
+        ════════════════════════════════════ */
+        .header {
+            background: var(--white);
+            border-bottom: 1px solid var(--border);
+            padding: 0 28px;
+            display: flex;
+            align-items: center;
+            height: 64px;
+            gap: 20px;
+            position: sticky;
+            top: 0;
+            z-index: 200;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 180px;
+        }
+        .brand-icon {
+            font-size: 22px;
+            color: var(--primary);
+        }
+        .brand-text { line-height: 1.2; }
+        .brand-name {
+            font-size: 17px;
+            font-weight: 800;
+            color: var(--primary);
+            letter-spacing: -0.3px;
+        }
+        .brand-sub {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        /* ── Top nav tabs ── */
+        .topnav {
+            flex: 1;
+            display: flex;
+            align-items: stretch;
+            height: 100%;
+            gap: 0;
+        }
+        .topnav a {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 0 18px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-muted);
+            border-bottom: 2px solid transparent;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+        .topnav a:hover { color: var(--primary); }
+        .topnav a.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+            font-weight: 700;
+        }
+        .topnav a .nav-icon { font-size: 15px; }
+
+        /* ── Header right: user info ── */
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-left: auto;
+        }
+        .header-more {
+            font-size: 20px;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+        .header-more:hover { background: var(--bg); }
+
+        .user-info { text-align: right; line-height: 1.3; }
+        .user-name { font-size: 14px; font-weight: 700; color: var(--text); }
+        .user-email { font-size: 12px; color: var(--text-muted); }
+
+        .user-avatar {
+            width: 38px; height: 38px;
+            border-radius: 50%;
+            background: #e5e7eb;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px;
+            color: var(--text-muted);
+            cursor: pointer;
+        }
+
+        .role-badge {
+            padding: 5px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 700;
+            border: 2px solid;
+            cursor: default;
+        }
+        .role-badge.prestataire {
+            color: var(--primary);
+            border-color: var(--primary);
+            background: var(--primary-light);
+        }
+        .role-badge.etudiant {
+            color: var(--primary);
+            border-color: var(--primary);
+            background: var(--primary-light);
+        }
+        .role-badge.admin {
+            color: #dc2626;
+            border-color: #dc2626;
+            background: #fee2e2;
+        }
+
+        .logout-btn {
+            width: 36px; height: 36px;
+            border-radius: 6px;
+            background: var(--danger);
+            color: white;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+        }
+        .logout-btn:hover { background: #b91c1c; }
+
+        /* ════════════════════════════════════
+           MAIN CONTENT
+        ════════════════════════════════════ */
+        .main-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 28px 28px;
+        }
+
+        /* ── Flash messages ── */
+        .flash {
+            padding: 12px 16px;
+            border-radius: var(--radius-sm);
+            margin-bottom: 16px;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .flash-success { background: var(--success-bg); color: var(--success); border: 1px solid #bbf7d0; }
+        .flash-error   { background: var(--danger-bg);  color: var(--danger);  border: 1px solid #fca5a5; }
+        .flash-warning { background: var(--warning-bg); color: var(--warning); border: 1px solid #fde68a; }
+        .flash-info    { background: #dbeafe; color: #1d4ed8; border: 1px solid #93c5fd; }
+
+        /* ════════════════════════════════════
+           BUTTONS
+        ════════════════════════════════════ */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 20px;
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-weight: 700;
+            font-family: inherit;
+            border: 1.5px solid transparent;
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+            text-decoration: none;
+        }
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        .btn-primary:hover { background: var(--primary-dark); border-color: var(--primary-dark); color: white; }
+
+        .btn-outline {
+            background: white;
+            color: var(--primary);
+            border-color: var(--primary-light);
+        }
+        .btn-outline:hover { background: var(--primary-light); color: var(--primary); }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-muted);
+            border-color: var(--border);
+        }
+        .btn-ghost:hover { background: #f3f4f6; color: var(--text); }
+
+        .btn-danger-outline {
+            background: white;
+            color: var(--danger);
+            border-color: #fca5a5;
+        }
+        .btn-danger-outline:hover { background: var(--danger-bg); }
+
+        .btn-sm { padding: 6px 12px; font-size: 13px; }
+        .btn-icon { width: 34px; height: 34px; padding: 0; justify-content: center; font-size: 16px; }
+
+        /* ════════════════════════════════════
+           FORM ELEMENTS
+        ════════════════════════════════════ */
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        .form-label { font-size: 14px; font-weight: 700; color: var(--text-sub); }
+        .form-hint  { font-size: 12px; color: var(--text-muted); font-style: italic; }
+        .required-star { color: var(--danger); }
+
+        .form-control {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1.5px solid var(--border-input);
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-family: inherit;
+            background: white;
+            color: var(--text);
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .form-control::placeholder { color: #9ca3af; }
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(93,95,239,0.12);
+        }
+        textarea.form-control { resize: vertical; min-height: 130px; }
+        select.form-control { cursor: pointer; appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 38px;
+        }
+
+        /* ── Radio buttons styled like JavaFX ── */
+        .radio-row { display: flex; gap: 12px; flex-wrap: wrap; }
+        .radio-card {
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px 16px;
+            border: 1.5px solid var(--border-input);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.15s;
+            background: white;
+            user-select: none;
+        }
+        .radio-card:has(input:checked) {
+            border-color: var(--primary);
+            background: var(--primary-light);
+            color: var(--primary);
+            font-weight: 700;
+        }
+        .radio-card input[type=radio] { accent-color: var(--primary); }
+
+        /* ── Checkbox ── */
+        .check-row { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; }
+        .check-row input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; }
+
+        /* ════════════════════════════════════
+           BADGES / STATUS PILLS
+        ════════════════════════════════════ */
+        .badge {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .badge-pending  { background: #fef3c7; color: #92400e; }
+        .badge-active   { background: #dcfce7; color: #166534; }
+        .badge-inactive { background: #f3f4f6; color: #6b7280; }
+        .badge-rejected { background: #fee2e2; color: #991b1b; }
+        .badge-vente    { background: #dbeafe; color: #1e40af; }
+        .badge-demande  { background: #ede9fe; color: #5b21b6; }
+        .badge-offre    { background: #dcfce7; color: #166534; }
+
+        /* ════════════════════════════════════
+           CARDS
+        ════════════════════════════════════ */
+        .card {
+            background: white;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* ════════════════════════════════════
+           PAGE-LEVEL PATTERNS
+        ════════════════════════════════════ */
+        .page-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 22px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .page-title { font-size: 26px; font-weight: 800; color: var(--text); }
+        .page-sub   { font-size: 14px; color: var(--text-muted); margin-top: 2px; }
+
+        /* ── Grid ── */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+            gap: 20px;
+        }
+
+        /* ── Empty state ── */
+        .empty-state { padding: 60px 20px; color: var(--text-muted); font-size: 14px; }
+
+        /* ════════════════════════════════════
+           TWO-COLUMN FORM (Create pages)
+        ════════════════════════════════════ */
+        .two-col-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            align-items: start;
+        }
+        @media (max-width: 900px) { .two-col-form { grid-template-columns: 1fr; } }
+
+        .form-panel {
+            background: white;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            padding: 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 22px;
+        }
+        .form-panel-header { display: flex; align-items: center; gap: 12px; }
+        .form-panel-icon { font-size: 22px; }
+        .form-panel-title { font-size: 18px; font-weight: 800; color: var(--text); }
+        .form-panel-sub   { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+        .panel-divider { border: none; border-top: 1px solid var(--border); margin: 0; }
+
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
+
+        /* ── AI Panel banner ── */
+        .ai-banner {
+            background: linear-gradient(to right, #EDECFD, #e0e7ff);
+            border-radius: 10px;
+            padding: 16px 18px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .ai-banner-icon { font-size: 22px; color: var(--primary); }
+        .ai-banner-title { font-size: 16px; font-weight: 800; color: var(--primary-dark); }
+        .ai-banner-sub   { font-size: 12px; color: #6366f1; margin-top: 1px; }
+
+        /* ── Upload zone ── */
+        .upload-zone {
+            border: 2px dashed var(--border-input);
+            border-radius: var(--radius-sm);
+            background: #f9fafb;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 28px 20px;
+            text-align: center;
+            transition: border-color 0.15s;
+            cursor: pointer;
+        }
+        .upload-zone:hover { border-color: var(--primary); }
+        .upload-zone img { max-width: 100%; max-height: 220px; border-radius: 8px; object-fit: cover; }
+        .upload-zone-icon { font-size: 36px; color: var(--primary); }
+        .upload-zone-text { font-size: 14px; font-weight: 600; color: var(--text-sub); }
+        .upload-zone-hint { font-size: 12px; color: var(--text-muted); }
+
+        /* ── Info box ── */
+        .info-box {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: var(--radius-sm);
+            padding: 14px 16px;
+            display: flex;
+            gap: 10px;
+        }
+        .info-box-icon { font-size: 17px; flex-shrink: 0; margin-top: 1px; }
+        .info-box-title { font-size: 13px; font-weight: 700; color: #1e40af; margin-bottom: 3px; }
+        .info-box-text  { font-size: 13px; color: #2563eb; }
+
+        /* ── Action bar (bottom of form) ── */
+        .form-actions {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding-top: 4px;
+        }
+
+        /* ── Filters bar ── */
+        .filters-bar {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .filter-input {
+            padding: 9px 14px;
+            border: 1.5px solid var(--border-input);
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-family: inherit;
+            background: white;
+            color: var(--text);
+            transition: border-color 0.15s;
+        }
+        .filter-input:focus { outline: none; border-color: var(--primary); }
+        .filter-input::placeholder { color: #9ca3af; }
+        .filter-select {
+            padding: 9px 36px 9px 14px;
+            border: 1.5px solid var(--border-input);
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-family: inherit;
+            background: white;
+            color: var(--text);
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            cursor: pointer;
+            transition: border-color 0.15s;
+        }
+        .filter-select:focus { outline: none; border-color: var(--primary); }
+
+        /* ── Tabs (publication page buttons) ── */
+        .pub-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 22px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .pub-tab {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 9px 18px;
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            border: 1.5px solid var(--border);
+            background: white;
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: all 0.15s;
+        }
+        .pub-tab:hover { color: var(--primary); border-color: var(--primary-light); }
+        .pub-tab.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        .pub-tab-add {
+            background: #f9fafb;
+            color: var(--text-muted);
+            border: 1.5px solid var(--border);
+        }
+        .pub-tab-add:hover { background: #f3f4f6; color: var(--text); }
+
+        /* ── Translate button ── */
+        .btn-translate {
+            background: var(--primary-light);
+            color: var(--primary);
+            border: 1.5px solid #c4b5fd;
+            font-weight: 700;
+        }
+        .btn-translate:hover { background: #ddd6fe; }
+
+        /* ── Search bar (student search page) ── */
+        .search-bar-wrap {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        .search-bar-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 16px;
+        }
+        .search-bar {
+            width: 100%;
+            padding: 13px 16px 13px 42px;
+            border: 1.5px solid var(--border-input);
+            border-radius: var(--radius-sm);
+            font-size: 15px;
+            font-family: inherit;
+            background: white;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .search-bar:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(93,95,239,0.1);
+        }
+    </style>
+    {% block stylesheets %}{% endblock %}
+</head>
+<body>
+
+{# ════ HEADER ════ #}
+<header class="header">
+    <a href="{{ path('app_home') }}" class="brand" style="text-decoration:none;color:inherit;">
+        <span class="brand-icon">📚</span>
+        <div class="brand-text">
+            <div class="brand-name">CampusLink</div>
+            <div class="brand-sub">
+                {% if app.user %}
+                    Espace {% if app.user.userType == 'PRESTATAIRE' %}Prestataire{% elseif app.user.userType == 'ADMIN' %}Admin{% else %}Étudiant{% endif %}
+                {% else %}
+                    Plateforme de Services Étudiants
+                {% endif %}
+            </div>
+        </div>
+    </a>
+
+    {% if app.user %}
+<nav class="topnav">
+
+    {% if app.user.userType == 'ADMIN' %}
+        <a href="{{ path('admin_dashboard') }}"
+           class="{% if 'admin' in app.request.attributes.get('_route') =='admin_dashboard' %}active{% endif %}">
+            <span class="nav-icon">👥</span> Gestion Utilisateurs
+        </a>
+        <a href="{{ path('admin_reviews') }}"
+           class="{% if 'admin_reviews' in app.request.attributes.get('_route') == 'admin_reviews' %}active{% endif %}">
+            <span class="nav-icon">⭐</span> Gestion des avis
+        </a>
+        <a href="{{ path('admin_profile') }}"
+           class="{% if 'admin_profile' in app.request.attributes.get('_route') == 'admin_profile' %}active{% endif %}">
+            <span class="nav-icon">👤</span> Mon Profil
+        </a>
+
+    {% elseif app.user.userType == 'PRESTATAIRE' %}
+        {#<a href="{{ path('prestataire_dashboard') }}"#}
+        {#   class="{% if 'prestataire_dashboard' in app.request.attributes.get('_route') %}active{% endif %}">#}
+        {#    <span class="nav-icon">🛠</span> Mes services#}
+        {#</a>#}
+        {#<a href="#"#}
+          {# class="{% if 'reservations' in app.request.attributes.get('_route') %}active{% endif %}">#}
+            {#<span class="nav-icon">📅</span> Réservations#}
+        {#</a>#}
+        {#<a href="#"#}
+          {# class="{% if 'messagerie' in app.request.attributes.get('_route') %}active{% endif %}">#}
+            {#<span class="nav-icon">💬</span> Messagerie#}
+        {#</a>#}
+        {#<a href="#"#}
+          {# class="{% if 'avis' in app.request.attributes.get('_route') %}active{% endif %}">#}
+            {#<span class="nav-icon">⭐</span> Avis#}
+        {#</a>#}
+        <a href="{{ path('prestataire_profile') }}"
+           class="{% if 'profile' in app.request.attributes.get('_route') %}active{% endif %}">
+            <span class="nav-icon">👤</span> Mon profil
+        </a>
+
+        {% else %} {# ETUDIANT #}
+        {# <a href="#"><span class="nav-icon">🔍</span> Rechercher des services</a> #}
+        {# <a href="#"><span class="nav-icon">📢</span> Publications</a> #}
+        {# <a href="#"><span class="nav-icon">📅</span> Réservations</a> #}
+        {# <a href="#"><span class="nav-icon">💬</span> Messagerie</a> #}
+        {# <a href="#"><span class="nav-icon">💳</span> Factures</a> #}
+        {# <a href="#"><span class="nav-icon">⭐</span> Avis</a> #}
+        <a href="{{ path('etudiant_profile') }}"
+        class="{% if app.request.attributes.get('_route') == 'etudiant_profile' %}active{% endif %}">
+            <span class="nav-icon">👤</span> Mon profil
+        </a>
+    {% endif %}
+</nav>
+{% endif %}
+
+    <div class="header-right">
+        {% if app.user %}
+            <span class="header-more">···</span>
+            <div class="user-info">
+                <div class="user-name">{{ app.user.name }}</div>
+                <div class="user-email">{{ app.user.email }}</div>
+            </div>
+            <div class="user-avatar">👤</div>
+            <span class="role-badge {{ app.user.userType|lower }}">
+                {% if app.user.userType == 'PRESTATAIRE' %}Prestataire{% elseif app.user.userType == 'ADMIN' %}Admin{% else %}Étudiant{% endif %}
+            </span>
+            <form method="post" action="{{ path('app_logout') }}" style="display:inline;">
+                <button type="submit" class="logout-btn" title="Se déconnecter">🚪</button>
+            </form>
+        {% else %}
+            <a href="{{ path('app_login') }}" class="btn btn-outline btn-sm">Se connecter</a>
+            <a href="{{ path('app_register') }}" class="btn btn-primary btn-sm">S'inscrire</a>
         {% endif %}
-    </head>
-    <body>
-        {% block body %}{% endblock %}
-    </body>
+    </div>
+</header>
+
+{# ════ MAIN ════ #}
+<div class="main-content">
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="flash flash-{{ label }}">
+                {% if label == 'success' %}✅{% elseif label == 'error' %}❌{% elseif label == 'warning' %}⚠️{% else %}ℹ️{% endif %}
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endfor %}
+
+    {% block body %}{% endblock %}
+</div>
+
+{% block javascripts %}
+{% endblock %}
+</body>
 </html>

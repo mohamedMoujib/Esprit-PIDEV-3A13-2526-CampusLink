@@ -6,10 +6,12 @@ use Doctrine\ORM\Mapping as ORM;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use App\Repository\UserRepository;
+use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: 'users')]
-class User
+class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -72,6 +74,24 @@ class User
 
     public function getAddress(): ?string { return $this->address; }
     public function setAddress(?string $address): self { $this->address = $address; return $this; }
+    public function getRoles(): array
+{
+    return match($this->userType) {
+        'ADMIN'       => ['ROLE_ADMIN',      'ROLE_USER'],
+        'PRESTATAIRE' => ['ROLE_PRESTATAIRE', 'ROLE_USER'],
+        'ETUDIANT'    => ['ROLE_ETUDIANT',    'ROLE_USER'],
+        default       => ['ROLE_USER'],
+    };
+}
+    public function getUserIdentifier(): string
+    {
+        return $this->email; // tells Symfony "login with email"
+    }
+
+    public function eraseCredentials(): void
+    {
+        // nothing to clear — you have no plaintext password stored
+    }
 
     #[ORM\Column(name: 'created_at', type: 'datetime', nullable: true)]
     private ?\DateTimeInterface $createdAt = null;
