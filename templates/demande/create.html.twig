@@ -1,0 +1,38 @@
+{% extends 'base.html.twig' %}
+{% block title %}Demander : {{ service.title }} — CampusLink{% endblock %}
+{% block body %}
+
+<div class="form-panel" style="max-width:560px;margin:0 auto;">
+    <div class="form-panel-header">
+        <span class="form-panel-icon">📋</span>
+        <div>
+            <div class="form-panel-title">Demander ce service</div>
+            <div class="form-panel-sub">{{ service.title }}</div>
+        </div>
+    </div>
+    <hr class="panel-divider">
+
+    <form method="post" action="{{ path('demande_create', { serviceId: service.id }) }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('demande_create_' ~ service.id) }}">
+
+        <div class="form-group">
+            <label class="form-label" for="message">Message (optionnel)</label>
+            <textarea id="message" name="message" class="form-control" rows="4" placeholder="Précisez vos besoins, disponibilités…"></textarea>
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="proposed_price">Prix proposé (€)</label>
+            <input type="number" id="proposed_price" name="proposed_price" class="form-control" step="0.01" min="0" placeholder="{{ service.price }}">
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="requested_date">Date souhaitée</label>
+            <input type="datetime-local" id="requested_date" name="requested_date" class="form-control">
+        </div>
+
+        <div class="form-actions">
+            <a href="{{ path('student_index') }}" class="btn btn-ghost">← Retour</a>
+            <button type="submit" class="btn btn-primary">Envoyer la demande</button>
+        </div>
+    </form>
+</div>
+
+{% endblock %}

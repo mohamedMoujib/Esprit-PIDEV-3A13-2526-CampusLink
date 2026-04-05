@@ -1,0 +1,53 @@
+{% extends 'base.html.twig' %}
+{% block title %}Catégories — Admin CampusLink{% endblock %}
+{% block stylesheets %}{{ include('admin/partials/bo_admin_styles.html.twig') }}{% endblock %}
+{% block body %}
+<div class="page-header"><div><div class="page-title">🏷️ Gestion des catégories</div><div class="page-sub">Créer, modifier et supprimer les catégories de la plateforme</div></div></div>
+
+<div class="table-card" style="margin-bottom:24px;">
+    <div class="table-header"><div><div class="table-title">➕ Nouvelle catégorie</div><div class="table-count">Ajout rapide</div></div></div>
+    <div style="padding:22px;">
+        <form method="post" action="{{ path('admin_categories') }}" style="display:grid;grid-template-columns:1fr 1fr auto;gap:14px;align-items:end;">
+            <input type="hidden" name="_token" value="{{ csrf_token('admin_category_create') }}">
+            <div class="form-group"><label class="form-label">Nom</label><input type="text" name="name" class="form-control" placeholder="Ex: Informatique" required></div>
+            <div class="form-group"><label class="form-label">Description</label><input type="text" name="description" class="form-control" placeholder="Optionnelle"></div>
+            <button type="submit" class="btn btn-primary">Créer</button>
+        </form>
+    </div>
+</div>
+
+<div class="table-card">
+    <div class="table-header"><div><div class="table-title">Liste des catégories</div><div class="table-count">{{ categories|length }} catégorie(s)</div></div></div>
+    {% if categories|length == 0 %}
+        <div class="empty-state"><div class="empty-state-icon">🏷️</div><div class="empty-state-title">Aucune catégorie</div></div>
+    {% else %}
+    <div style="overflow-x:auto;">
+        <table>
+            <thead><tr><th>Nom</th><th>Description</th><th>Services</th><th>Publications</th><th>Actions</th></tr></thead>
+            <tbody>
+            {% for category in categories %}
+                <tr>
+                    <td><strong>{{ category.name }}</strong></td>
+                    <td>{{ category.description ?: '—' }}</td>
+                    <td>{{ category.services|length }}</td>
+                    <td>{{ category.publications|length }}</td>
+                    <td>
+                        <form method="post" action="{{ path('admin_category_edit', {id: category.id}) }}" style="display:grid;grid-template-columns:160px 220px auto auto;gap:8px;align-items:center;">
+                            <input type="hidden" name="_token" value="{{ csrf_token('admin_category_edit_' ~ category.id) }}">
+                            <input type="text" name="name" class="form-control" value="{{ category.name }}" required>
+                            <input type="text" name="description" class="form-control" value="{{ category.description }}">
+                            <button type="submit" class="btn btn-ghost btn-xs">💾 Modifier</button>
+                        </form>
+                        <form method="post" action="{{ path('admin_category_delete', {id: category.id}) }}" onsubmit="return confirm('Supprimer cette catégorie ?')" style="margin-top:8px;">
+                            <input type="hidden" name="_token" value="{{ csrf_token('admin_category_delete_' ~ category.id) }}">
+                            <button type="submit" class="btn btn-danger-outline btn-xs">🗑️ Supprimer</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

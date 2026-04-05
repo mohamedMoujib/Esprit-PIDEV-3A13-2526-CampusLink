@@ -1,0 +1,51 @@
+{% extends 'base.html.twig' %}
+{% block title %}Inscription — CampusLink{% endblock %}
+{% block body %}
+<div class="form-panel" style="max-width:480px;margin:48px auto;">
+    <div class="form-panel-header">
+        <span class="form-panel-icon">✨</span>
+        <div>
+            <div class="form-panel-title">Créer un compte</div>
+            <div class="form-panel-sub">Étudiant ou prestataire</div>
+        </div>
+    </div>
+    <hr class="panel-divider">
+
+    <form method="post" action="{{ path('app_register') }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('register') }}">
+
+        <div class="form-group">
+            <label class="form-label" for="name">Nom complet</label>
+            <input type="text" id="name" name="name" class="form-control" required minlength="2" maxlength="100">
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="email">Email</label>
+            <input type="email" id="email" name="email" class="form-control" required autocomplete="email">
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="password">Mot de passe</label>
+            <input type="password" id="password" name="password" class="form-control" required minlength="8" autocomplete="new-password">
+            <span class="form-hint">Au moins 8 caractères</span>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Je suis</label>
+            <div class="radio-row">
+                <label class="radio-card">
+                    <input type="radio" name="userType" value="ETUDIANT" checked>
+                    Étudiant
+                </label>
+                <label class="radio-card">
+                    <input type="radio" name="userType" value="PRESTATAIRE">
+                    Prestataire
+                </label>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;margin-top:8px;">S'inscrire</button>
+    </form>
+
+    <p style="text-align:center;font-size:14px;color:#6b7280;margin-top:16px;">
+        Déjà inscrit ? <a href="{{ path('app_login') }}" style="color:var(--primary);font-weight:700;">Se connecter</a>
+    </p>
+</div>
+{% endblock %}

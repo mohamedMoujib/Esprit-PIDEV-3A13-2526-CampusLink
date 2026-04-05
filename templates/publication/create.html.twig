@@ -1,0 +1,234 @@
+{% extends 'base.html.twig' %}
+{% block title %}{{ publication is defined ? 'Modifier la publication' : 'Nouvelle Publication' }} — CampusLink{% endblock %}
+{% block body %}
+
+<div class="two-col-form">
+
+    <form method="post" enctype="multipart/form-data"
+          action="{{ publication is defined ? path('publication_edit', {id: publication.id}) : path('publication_create') }}"
+          id="pubForm">
+        <input type="hidden" name="_token"
+               value="{{ csrf_token(publication is defined ? 'publication_edit_' ~ publication.id : 'publication_create') }}">
+
+        <div class="form-panel">
+            <div class="form-panel-header">
+                <span class="form-panel-icon">📢</span>
+                <div>
+                    <div class="form-panel-title">
+                        {% if publication is defined %}Modifier la publication{% else %}Nouvelle Publication{% endif %}
+                    </div>
+                    <div class="form-panel-sub">Seule la demande de service est autorisée pour un étudiant</div>
+                </div>
+            </div>
+            <hr class="panel-divider">
+
+            <input type="hidden" name="type_publication" value="DEMANDE_SERVICE">
+            <div class="info-box">
+                <span class="info-box-icon">📋</span>
+                <div>
+                    <div class="info-box-title">Type de publication</div>
+                    <div class="info-box-text">Demande de service</div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="titre">Titre <span class="required-star">*</span></label>
+                <input type="text" id="titre" name="titre" class="form-control"
+                       placeholder="Ex: Cherche tuteur maths niveau L1..."
+                       value="{{ publication is defined ? publication.titre : '' }}"
+                       required maxlength="200">
+            </div>
+
+            <div class="form-group">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <label class="form-label" for="message">Description <span class="required-star">*</span></label>
+                    <span id="msgCount" style="font-size:12px;color:#9ca3af;">0/1000</span>
+                </div>
+                <textarea id="message" name="message" class="form-control" rows="5"
+                          placeholder="Décrivez votre besoin en détail..."
+                          required maxlength="1000">{{ publication is defined ? publication.message : '' }}</textarea>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="prix">Budget proposé (€)</label>
+                    <input type="number" id="prix" name="prix" class="form-control"
+                           placeholder="Ex: 25.00"
+                           step="0.01" min="0"
+                           value="{{ publication is defined ? (publication.prixVente ?? publication.proposedPrice) : '' }}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="localisation">Localisation</label>
+                    <input type="text" id="localisation" name="localisation" class="form-control"
+                           placeholder="Ex: Paris 5ème"
+                           value="{{ publication is defined ? publication.localisation : '' }}">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Image (optionnel)</label>
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                    <label for="imageFile" class="btn btn-ghost btn-sm" style="cursor:pointer;">
+                        📷 Ajouter une image
+                    </label>
+                    <button type="button" id="removeImg" class="btn btn-danger-outline btn-sm" style="display:none;">✕ Retirer</button>
+                    <span id="imgLabel" style="font-size:12px;color:#9ca3af;"></span>
+                </div>
+                <input type="file" id="imageFile" name="image" accept="image/jpeg,image/png,image/gif,image/webp" style="display:none;">
+                {% if publication is defined and publication.imageUrl %}
+                <div style="margin-top:8px;">
+                    <img src="{{ publication.imageUrl starts with 'http' ? publication.imageUrl : asset(publication.imageUrl) }}" id="imgPreview"
+                         style="max-width:100%;max-height:180px;border-radius:8px;object-fit:cover;" alt="">
+                </div>
+                {% else %}
+                <img id="imgPreview" style="display:none;max-width:100%;max-height:180px;border-radius:8px;margin-top:8px;" alt="">
+                {% endif %}
+            </div>
+
+            <hr class="panel-divider">
+
+            <label class="check-row">
+                <input type="checkbox" id="termsCheck" {% if publication is not defined %}required{% endif %} {% if publication is defined %}checked{% endif %}>
+                J'accepte les conditions générales d'utilisation
+            </label>
+
+            <div class="form-actions">
+                <a href="{{ path('publication_index') }}" class="btn btn-ghost">← Retour</a>
+                <button type="submit" id="submitBtn" class="btn btn-primary" {% if publication is not defined %}disabled style="opacity:0.5;"{% endif %}>
+                    📢 {% if publication is defined %}Enregistrer{% else %}Publier{% endif %}
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <div class="form-panel">
+        <div class="ai-banner">
+            <span class="ai-banner-icon">✨</span>
+            <div>
+                <div class="ai-banner-title">Assistant IA</div>
+                <div class="ai-banner-sub">Génère automatiquement une demande de service claire</div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Décrivez votre besoin en quelques mots</label>
+            <div class="form-hint" style="margin-bottom:6px;">L'IA va rédiger un titre et une description prêts à publier.</div>
+            <textarea id="aiIdea" class="form-control" rows="4"
+                      placeholder="Ex: J'ai besoin d'un tuteur pour m'aider en algèbre linéaire avant mon examen..."></textarea>
+        </div>
+
+        <button type="button" onclick="generatePubAI()"
+                class="btn btn-primary"
+                style="width:100%;justify-content:center;padding:13px 20px;font-size:15px;">
+            ✨ Créer et publier avec l'IA
+        </button>
+
+        <div id="aiLoading" style="display:none;color:#6366f1;font-size:13px;font-weight:600;">⏳ Création en cours...</div>
+
+        <div id="aiResult" style="display:none;background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:16px;">
+            <div id="aiStatus" style="font-weight:800;color:#15803d;font-size:14px;margin-bottom:8px;"></div>
+            <div id="aiGenTitle" style="font-weight:700;color:#166534;font-size:13px;margin-bottom:6px;"></div>
+            <div id="aiGenMsg" style="font-size:13px;color:#374151;line-height:1.5;"></div>
+            <div style="display:flex;gap:8px;margin-top:14px;">
+                <button type="button" onclick="applyPubAI()" class="btn btn-primary btn-sm">✅ Appliquer</button>
+                <button type="button" onclick="document.getElementById('aiResult').style.display='none'" class="btn btn-ghost btn-sm">Ignorer</button>
+            </div>
+        </div>
+
+        <div id="aiError" style="display:none;background:#fef2f2;border:1px solid #fca5a5;border-radius:10px;padding:14px;">
+            <div id="aiErrorMsg" style="font-weight:700;color:#dc2626;font-size:13px;"></div>
+        </div>
+
+        <hr class="panel-divider">
+        <div style="font-size:13px;color:#9ca3af;">💡 Ou remplissez le formulaire manuellement à gauche.</div>
+    </div>
+
+</div>
+
+<script>
+const msgArea = document.getElementById('message');
+const msgCount = document.getElementById('msgCount');
+function updateCount() { if(msgCount) msgCount.textContent = msgArea.value.length + '/1000'; }
+if(msgArea) { msgArea.addEventListener('input', updateCount); updateCount(); }
+
+const termsCheck = document.getElementById('termsCheck');
+const submitBtn  = document.getElementById('submitBtn');
+if(termsCheck && submitBtn) {
+    function syncTerms() {
+        if (!termsCheck.required) {
+            submitBtn.disabled = false;
+            submitBtn.style.opacity = '1';
+            return;
+        }
+        submitBtn.disabled = !termsCheck.checked;
+        submitBtn.style.opacity = termsCheck.checked ? '1' : '0.5';
+    }
+    termsCheck.addEventListener('change', syncTerms);
+    syncTerms();
+}
+
+const fileInput  = document.getElementById('imageFile');
+const imgPreview = document.getElementById('imgPreview');
+const imgLabel   = document.getElementById('imgLabel');
+const removeBtn  = document.getElementById('removeImg');
+
+if(fileInput) {
+    fileInput.addEventListener('change', function() {
+        const file = this.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = e => {
+            if(imgPreview) { imgPreview.src = e.target.result; imgPreview.style.display = 'block'; }
+            if(imgLabel)   imgLabel.textContent = file.name;
+            if(removeBtn)  removeBtn.style.display = 'inline-flex';
+        };
+        reader.readAsDataURL(file);
+    });
+}
+if(removeBtn) {
+    removeBtn.addEventListener('click', () => {
+        if(fileInput)  fileInput.value = '';
+        if(imgPreview) { imgPreview.src = ''; imgPreview.style.display = 'none'; }
+        if(imgLabel)   imgLabel.textContent = '';
+        removeBtn.style.display = 'none';
+    });
+}
+
+let aiPubData = {};
+async function generatePubAI() {
+    const idea = document.getElementById('aiIdea').value.trim();
+    if(!idea) { alert('Décrivez votre idée d\'abord.'); return; }
+
+    document.getElementById('aiLoading').style.display = 'block';
+    document.getElementById('aiResult').style.display  = 'none';
+    document.getElementById('aiError').style.display   = 'none';
+
+    try {
+        const resp = await fetch('/api/ai/generate-publication', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ idea })
+        });
+        document.getElementById('aiLoading').style.display = 'none';
+        if(resp.ok) {
+            aiPubData = await resp.json();
+            document.getElementById('aiStatus').textContent   = '✅ Publication générée avec succès';
+            document.getElementById('aiGenTitle').textContent = '📌 ' + (aiPubData.titre || '');
+            document.getElementById('aiGenMsg').textContent   = aiPubData.message || '';
+            document.getElementById('aiResult').style.display = 'block';
+        } else { throw new Error(); }
+    } catch {
+        document.getElementById('aiLoading').style.display = 'none';
+        document.getElementById('aiErrorMsg').textContent  = '❌ Impossible de contacter l\'IA. Réessayez plus tard.';
+        document.getElementById('aiError').style.display   = 'block';
+    }
+}
+
+function applyPubAI() {
+    if(aiPubData.titre)   { document.getElementById('titre').value = aiPubData.titre; }
+    if(aiPubData.message) { msgArea.value = aiPubData.message; updateCount(); }
+    document.getElementById('aiResult').style.display = 'none';
+}
+</script>
+
+{% endblock %}

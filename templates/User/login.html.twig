@@ -1,0 +1,176 @@
+{% extends 'base.html.twig' %}
+{% block title %}Connexion — CampusLink{% endblock %}
+
+{% block body %}
+<div style="display:flex; justify-content:center; align-items:flex-start; padding:40px 16px;">
+<div style="background:white; border-radius:20px; box-shadow:0 8px 40px rgba(0,0,0,0.10); padding:40px; width:100%; max-width:400px;">
+
+    {# ── Logo circle ── #}
+    <div style="display:flex; justify-content:center; margin-bottom:20px;">
+        <div style="width:80px; height:80px; border-radius:50%; background:#5D5FEF; display:flex; align-items:center; justify-content:center; font-size:38px;">
+            🎓
+        </div>
+    </div>
+
+    {# ── Title ── #}
+    <div style="text-align:center; margin-bottom:24px;">
+        <div style="font-size:28px; font-weight:800; color:#1a1a1a;">CampusLink</div>
+        <div style="font-size:14px; color:#6B7280; margin-top:4px;">Plateforme de Services Étudiants</div>
+    </div>
+
+    {# ── Flash errors ── #}
+    {% if error %}
+        <div class="flash flash-error">❌ {{ error.messageKey|trans(error.messageData, 'security') }}</div>
+    {% endif %}
+    {% for message in app.flashes('error') %}
+        <div class="flash flash-error">❌ {{ message }}</div>
+    {% endfor %}
+
+    <form method="post" action="{{ path('app_login') }}" novalidate data-turbo="false">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+
+        {# ── Role toggle ── #}
+        <div style="margin-bottom:20px;">
+            <div style="font-size:13px; font-weight:600; color:#374151; margin-bottom:8px;">Type de compte</div>
+            <div style="display:flex; gap:8px;">
+                <label style="flex:1; cursor:pointer;">
+                    <input type="radio" name="userType" value="ETUDIANT" checked hidden class="role-radio">
+                    <div class="login-role-btn active">Étudiant</div>
+                </label>
+                <label style="flex:1; cursor:pointer;">
+                    <input type="radio" name="userType" value="PRESTATAIRE" hidden class="role-radio">
+                    <div class="login-role-btn">Prestataire</div>
+                </label>
+                <label style="flex:1; cursor:pointer;">
+                    <input type="radio" name="userType" value="ADMIN" hidden class="role-radio">
+                    <div class="login-role-btn">Admin</div>
+                </label>
+            </div>
+        </div>
+
+        {# ── Email ── #}
+        <div class="form-group" style="margin-bottom:14px;">
+            <label class="form-label" for="username">Email</label>
+            <input type="email"
+                   id="username"
+                   name="_username"
+                   value="{{ last_username ?? '' }}"
+                   class="form-control"
+                   placeholder="votre@email.com"
+                   required
+                   autocomplete="username">
+            <span class="field-error" id="err-email"></span>
+        </div>
+
+        {# ── Password ── #}
+        <div class="form-group" style="margin-bottom:8px;">
+            <label class="form-label" for="password">Mot de passe</label>
+            <input type="password"
+                   id="password"
+                   name="_password"
+                   class="form-control"
+                   placeholder="••••••••"
+                   required
+                   autocomplete="current-password">
+            <span class="field-error" id="err-password"></span>
+        </div>
+
+        {# ── Forgot password ── #}
+        <div style="text-align:right; margin-bottom:20px;">
+            <a href="#" style="font-size:13px; color:#5D5FEF; font-weight:500;">Mot de passe oublié ?</a>
+        </div>
+
+        {# ── Submit ── #}
+        <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center; font-size:15px; padding:14px 0;">
+            Se connecter
+        </button>
+    </form>
+
+    {# ── Register link ── #}
+    <p style="text-align:center; font-size:13px; color:#6B7280; margin-top:20px;">
+        Vous n'avez pas de compte ?
+        <a href="{{ path('app_register') }}" style="color:#5D5FEF; font-weight:700;">S'inscrire</a>
+    </p>
+
+    {# ── Divider ── #}
+    <div style="display:flex; align-items:center; gap:10px; margin:20px 0;">
+        <div style="flex:1; height:1px; background:#E5E7EB;"></div>
+        <span style="font-size:12px; color:#9CA3AF;">ou</span>
+        <div style="flex:1; height:1px; background:#E5E7EB;"></div>
+    </div>
+
+    {# ── Google button ── #}
+    <button type="button"
+            style="width:100%; display:flex; align-items:center; justify-content:center; gap:10px;
+                   background:white; border:1.5px solid #dadce0; border-radius:8px;
+                   padding:11px 0; cursor:pointer; font-size:14px; color:#3c4043; font-family:inherit;
+                   font-weight:500; transition:background 0.15s;"
+            onmouseover="this.style.background='#f8f9fa'"
+            onmouseout="this.style.background='white'">
+        <span style="font-size:18px; font-weight:bold; color:#4285F4; font-family:Georgia,serif;">G</span>
+        Se connecter avec Google
+    </button>
+
+</div>
+</div>
+
+{# ── Styles ── #}
+<style>
+.login-role-btn {
+    text-align: center;
+    padding: 10px 8px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    background: #F3F4F6;
+    color: #6B7280;
+    border: 2px solid transparent;
+    transition: all 0.15s;
+    user-select: none;
+}
+.login-role-btn:hover { background: #E5E7EB; }
+.login-role-btn.active {
+    background: #EDECFD;
+    color: #5D5FEF;
+    border-color: #5D5FEF;
+    font-weight: 800;
+}
+.field-error {
+    font-size: 11px;
+    color: #EF4444;
+    padding-left: 4px;
+    min-height: 16px;
+    display: block;
+}
+</style>
+
+{# ── JS: role toggle + validation ── #}
+<script>
+// Role toggle
+document.querySelectorAll('.role-radio').forEach(radio => {
+    radio.addEventListener('change', () => {
+        document.querySelectorAll('.login-role-btn').forEach(btn => btn.classList.remove('active'));
+        radio.closest('label').querySelector('.login-role-btn').classList.add('active');
+    });
+});
+
+// Client-side validation
+document.querySelector('form').addEventListener('submit', function(e) {
+    let valid = true;
+
+    const setError = (id, msg) => {
+        const el = document.getElementById(id);
+        el.textContent = msg;
+        if (msg) valid = false;
+    };
+
+    const email    = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+
+    setError('err-email',    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? 'Email invalide.' : '');
+    setError('err-password', password.length < 1 ? 'Mot de passe requis.' : '');
+
+    if (!valid) e.preventDefault();
+});
+</script>
+{% endblock %}

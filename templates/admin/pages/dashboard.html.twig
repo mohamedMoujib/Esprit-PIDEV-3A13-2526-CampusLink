@@ -1,0 +1,263 @@
+{% extends 'base.html.twig' %}
+{% block title %}Tableau de bord — Admin CampusLink{% endblock %}
+{% block stylesheets %}{{ include('admin/partials/bo_admin_styles.html.twig') }}{% endblock %}
+{% block body %}
+
+<div class="page-header">
+    <div>
+        <div class="page-title">🏠 Vue d'ensemble</div>
+        <div class="page-sub">Statistiques plateforme · Modération · Gestion des catégories</div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <a href="{{ path('admin_dashboard') }}" class="btn btn-outline">👥 Utilisateurs</a>
+        <a href="{{ path('admin_services') }}" class="btn btn-outline">🛠 Services</a>
+        <a href="{{ path('admin_publications') }}" class="btn btn-outline">📣 Publications</a>
+    </div>
+</div>
+
+{# STATS GRID #}
+<div class="stats-grid" style="margin-bottom:28px;">
+    <div class="stat-card"><div class="stat-icon purple">👥</div><div><div class="stat-label">Utilisateurs</div><div class="stat-value">{{ stats.total_users }}</div></div></div>
+    <div class="stat-card"><div class="stat-icon blue">🎓</div><div><div class="stat-label">Étudiants</div><div class="stat-value">{{ stats.etudiants }}</div></div></div>
+    <div class="stat-card"><div class="stat-icon green">🧑‍🏫</div><div><div class="stat-label">Prestataires</div><div class="stat-value">{{ stats.prestataires }}</div></div></div>
+    <div class="stat-card"><div class="stat-icon orange">✅</div><div><div class="stat-label">Actifs</div><div class="stat-value">{{ stats.active_users }}</div></div></div>
+    <div class="stat-card"><div class="stat-icon purple">🛠</div><div><div class="stat-label">Services</div><div class="stat-value">{{ stats.services_total }}</div></div></div>
+    <div class="stat-card"><div class="stat-icon orange">⏳</div><div><div class="stat-label">En attente</div><div class="stat-value">{{ stats.services_pending }}</div></div></div>
+    <div class="stat-card"><div class="stat-icon blue">📣</div><div><div class="stat-label">Publications</div><div class="stat-value">{{ stats.publications_total }}</div></div></div>
+    <div class="stat-card"><div class="stat-icon green">✨</div><div><div class="stat-label">Pub. actives</div><div class="stat-value">{{ stats.publications_active }}</div></div></div>
+    <div class="stat-card"><div class="stat-icon purple">🏷️</div><div><div class="stat-label">Catégories</div><div class="stat-value">{{ stats.categories_total }}</div></div></div>
+    <div class="stat-card"><div class="stat-icon orange">⭐</div><div><div class="stat-label">Avis</div><div class="stat-value">{{ stats.reviews_total }}</div></div></div>
+    <div class="stat-card" style="border-color:{% if stats.flagged_count > 0 %}#fca5a5{% else %}var(--border){% endif %};">
+        <div class="stat-icon" style="background:{% if stats.flagged_count > 0 %}#fee2e2{% else %}#f3f4f6{% endif %};">🚩</div>
+        <div>
+            <div class="stat-label" style="{% if stats.flagged_count > 0 %}color:#dc2626;{% endif %}">Signalés</div>
+            <div class="stat-value" style="{% if stats.flagged_count > 0 %}color:#dc2626;{% endif %}">{{ stats.flagged_count }}</div>
+        </div>
+    </div>
+</div>
+
+{# SERVICES + PUBLICATIONS : 2 colonnes #}
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px;">
+
+    <div class="table-card">
+        <div class="table-header">
+            <div><div class="table-title">🛠 Services récents</div><div class="table-count">6 derniers</div></div>
+            <a href="{{ path('admin_services') }}" class="btn btn-ghost btn-sm">Voir tout →</a>
+        </div>
+        {% if recentServices|length == 0 %}
+            <div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-title">Aucun service</div></div>
+        {% else %}
+        <div style="overflow-x:auto;">
+        <table>
+            <thead><tr><th>Service</th><th>Prestataire</th><th>Prix</th><th>Statut</th><th></th></tr></thead>
+            <tbody>
+            {% for s in recentServices %}
+                <tr>
+                    <td><strong>{{ s.title|length > 26 ? s.title|slice(0,26) ~ '…' : s.title }}</strong></td>
+                    <td style="color:var(--text-muted);font-size:13px;">{{ s.user ? s.user.name : '—' }}</td>
+                    <td style="font-weight:700;color:var(--primary);white-space:nowrap;">{{ s.price }} €</td>
+                    <td>
+                        {% if s.status == 'EN_ATTENTE' %}<span class="badge badge-pending">En attente</span>
+                        {% elseif s.status == 'CONFIRMEE' %}<span class="badge badge-active">Confirmé</span>
+                        {% elseif s.status == 'REFUSEE' %}<span class="badge badge-rejected">Refusé</span>
+                        {% else %}<span class="badge badge-done">Terminé</span>{% endif %}
+                    </td>
+                    <td>
+                        <form method="post" action="{{ path('admin_home_service_delete', {id: s.id}) }}"
+                              style="display:inline;"
+                              onsubmit="return confirm('Supprimer ce service ?');">
+                            <input type="hidden" name="_token" value="{{ csrf_token('admin_home_svc_delete_' ~ s.id) }}">
+                            <button type="submit" class="btn btn-danger-outline btn-sm btn-icon" title="Supprimer">🗑️</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="table-card">
+        <div class="table-header">
+            <div><div class="table-title">📣 Publications récentes</div><div class="table-count">6 dernières</div></div>
+            <a href="{{ path('admin_publications') }}" class="btn btn-ghost btn-sm">Voir tout →</a>
+        </div>
+        {% if recentPublications|length == 0 %}
+            <div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-title">Aucune publication</div></div>
+        {% else %}
+        <div style="overflow-x:auto;">
+        <table>
+            <thead><tr><th>Titre</th><th>Auteur</th><th>Type</th><th>Statut</th><th></th></tr></thead>
+            <tbody>
+            {% for p in recentPublications %}
+                <tr>
+                    <td><strong>{{ p.titre|length > 24 ? p.titre|slice(0,24) ~ '…' : p.titre }}</strong></td>
+                    <td style="color:var(--text-muted);font-size:13px;">{{ p.user ? p.user.name : '—' }}</td>
+                    <td>
+                        {% if p.typePublication == 'VENTE_OBJET' %}<span class="type-pill badge-vente">Vente</span>
+                        {% elseif p.typePublication == 'DEMANDE_SERVICE' %}<span class="type-pill badge-demande">Demande</span>
+                        {% else %}<span class="type-pill badge-offre">Offre</span>{% endif %}
+                    </td>
+                    <td>
+                        {% if p.status == 'ACTIVE' %}<span class="badge badge-active">Active</span>
+                        {% elseif p.status == 'EN_COURS' %}<span class="badge badge-pending">En cours</span>
+                        {% elseif p.status == 'TERMINEE' %}<span class="badge badge-done">Terminée</span>
+                        {% else %}<span class="badge badge-rejected">Annulée</span>{% endif %}
+                    </td>
+                    <td>
+                        <form method="post" action="{{ path('admin_home_publication_delete', {id: p.id}) }}"
+                              style="display:inline;"
+                              onsubmit="return confirm('Supprimer cette publication ?');">
+                            <input type="hidden" name="_token" value="{{ csrf_token('admin_home_pub_delete_' ~ p.id) }}">
+                            <button type="submit" class="btn btn-danger-outline btn-sm btn-icon" title="Supprimer">🗑️</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+{# SERVICES SIGNALÉS #}
+<div class="table-card" style="margin-bottom:24px;">
+    <div class="table-header">
+        <div>
+            <div class="table-title">🚩 Services signalés</div>
+            <div class="table-count">
+                {% if flaggedPreview|length > 0 %}
+                    {{ flaggedPreview|length }} entrée{{ flaggedPreview|length > 1 ? 's' : '' }} — suppression directe possible
+                {% else %}
+                    Aucune anomalie
+                {% endif %}
+            </div>
+        </div>
+        <a href="{{ path('admin_service_audit') }}" class="btn btn-ghost btn-sm">Audit complet →</a>
+    </div>
+    {% if flaggedPreview|length == 0 %}
+        <div class="empty-state">
+            <div class="empty-state-icon">✅</div>
+            <div class="empty-state-title">Tous les services sont conformes</div>
+        </div>
+    {% else %}
+    <div style="overflow-x:auto;">
+    <table>
+        <thead>
+            <tr>
+                <th>Service</th>
+                <th>Prestataire</th>
+                <th>Prix</th>
+                <th>Alertes détectées</th>
+                <th style="text-align:right;">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for row in flaggedPreview %}
+            <tr style="background:#fff8f8;">
+                <td>
+                    <strong>{{ row.service.title }}</strong>
+                    <div style="font-size:12px;color:var(--text-muted);">
+                        {{ row.service.category ? (row.service.category.name ?? row.service.category.nom) : '⚠️ Sans catégorie' }}
+                    </div>
+                </td>
+                <td style="font-size:13px;">{{ row.service.user ? row.service.user.name : '—' }}</td>
+                <td style="font-weight:700;color:var(--primary);white-space:nowrap;">{{ row.service.price }} €</td>
+                <td>
+                    <ul style="margin:0;padding-left:16px;">
+                        {% for issue in row.issues %}
+                            <li style="font-size:12px;color:#dc2626;line-height:1.7;">{{ issue }}</li>
+                        {% endfor %}
+                    </ul>
+                </td>
+                <td style="text-align:right;">
+                    <form method="post" action="{{ path('admin_home_service_delete', {id: row.service.id}) }}"
+                          style="display:inline;"
+                          onsubmit="return confirm('Supprimer définitivement ce service signalé ?');">
+                        <input type="hidden" name="_token" value="{{ csrf_token('admin_home_svc_delete_' ~ row.service.id) }}">
+                        <button type="submit" class="btn btn-danger-outline btn-sm" style="white-space:nowrap;">
+                            🗑️ Supprimer
+                        </button>
+                    </form>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+    {% endif %}
+</div>
+
+{# CRÉATION CATÉGORIE + LISTE #}
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px;">
+
+    <div class="table-card">
+        <div class="table-header">
+            <div><div class="table-title">🏷️ Nouvelle catégorie</div><div class="table-count">Ajout rapide</div></div>
+            <a href="{{ path('admin_categories') }}" class="btn btn-ghost btn-sm">Gérer tout →</a>
+        </div>
+        <div style="padding:20px;">
+            <form method="post" action="{{ path('admin_categories') }}" style="display:flex;flex-direction:column;gap:14px;">
+                <input type="hidden" name="_token" value="{{ csrf_token('admin_category_create') }}">
+                <div class="form-group">
+                    <label class="form-label">Nom <span class="required-star">*</span></label>
+                    <input type="text" name="name" class="form-control"
+                           placeholder="Ex : Cours de mathématiques" required maxlength="100">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description <span style="font-weight:400;color:var(--text-muted);">(optionnel)</span></label>
+                    <textarea name="description" class="form-control" rows="3"
+                              placeholder="Description courte..." style="min-height:76px;resize:none;"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary" style="align-self:flex-start;">
+                    + Créer la catégorie
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="table-card">
+        <div class="table-header">
+            <div>
+                <div class="table-title">📂 Catégories existantes</div>
+                <div class="table-count">{{ allCategories|length }} catégorie{{ allCategories|length != 1 ? 's' : '' }}</div>
+            </div>
+        </div>
+        {% if allCategories|length == 0 %}
+            <div class="empty-state">
+                <div class="empty-state-icon">🏷️</div>
+                <div class="empty-state-title">Aucune catégorie</div>
+            </div>
+        {% else %}
+        <div style="max-height:290px;overflow-y:auto;">
+        <table>
+            <thead><tr><th>Nom</th><th>Description</th><th style="text-align:right;"></th></tr></thead>
+            <tbody>
+            {% for cat in allCategories %}
+                <tr>
+                    <td><strong style="font-size:14px;">{{ cat.name ?? cat.nom }}</strong></td>
+                    <td style="font-size:12px;color:var(--text-muted);">
+                        {{ cat.description ? (cat.description|length > 38 ? cat.description|slice(0,38) ~ '…' : cat.description) : '—' }}
+                    </td>
+                    <td style="text-align:right;">
+                        <form method="post" action="{{ path('admin_category_delete', {id: cat.id}) }}"
+                              style="display:inline;"
+                              onsubmit="return confirm('Supprimer cette catégorie ?');">
+                            <input type="hidden" name="_token" value="{{ csrf_token('admin_category_delete_' ~ cat.id) }}">
+                            <button type="submit" class="btn btn-danger-outline btn-sm btn-icon" title="Supprimer">🗑️</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+{% endblock %}

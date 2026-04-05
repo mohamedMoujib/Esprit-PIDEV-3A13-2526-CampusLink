@@ -1,0 +1,77 @@
+{% extends 'base.html.twig' %}
+{% block title %}{{ service.title }} — CampusLink{% endblock %}
+{% block body %}
+
+{% set imageSrc = service.image ? (service.image starts with 'http' ? service.image : asset(service.image)) : null %}
+{% set showStatusOnlyForOwner = app.user and service.user == app.user and app.user.userType == 'PRESTATAIRE' %}
+
+<div class="page-header">
+    <div>
+        <div class="page-title">{{ service.title }}</div>
+        <div class="page-sub">Détail du service</div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        {% if app.user.userType == 'ETUDIANT' %}
+            <a href="{{ path('student_index') }}" class="btn btn-ghost">← Retour</a>
+        {% elseif app.user.userType == 'ADMIN' %}
+            <a href="{{ path('admin_services') }}" class="btn btn-ghost">← Retour</a>
+        {% elseif app.request.query.get('from') == 'mine' %}
+            <a href="{{ path('service_mine') }}" class="btn btn-ghost">← Retour</a>
+        {% else %}
+            <a href="{{ path('service_catalog') }}" class="btn btn-ghost">← Retour</a>
+        {% endif %}
+        {% if app.user.userType == 'ETUDIANT' %}
+            <button type="button" class="btn btn-primary">📅 Réserver</button>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card" style="overflow:hidden;">
+    <div style="display:grid;grid-template-columns:minmax(280px, 420px) 1fr;gap:0;">
+        <div style="background:#f3f4f6;min-height:320px;display:flex;align-items:center;justify-content:center;overflow:hidden;">
+            {% if imageSrc %}
+                <img src="{{ imageSrc }}" alt="{{ service.title }}" style="width:100%;height:100%;object-fit:cover;">
+            {% else %}
+                <div style="display:flex;flex-direction:column;align-items:center;gap:10px;color:#9ca3af;">
+                    <div style="font-size:42px;">🖼️</div>
+                    <div>Aucune image</div>
+                </div>
+            {% endif %}
+        </div>
+        <div style="padding:28px;display:flex;flex-direction:column;gap:18px;">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                {% if showStatusOnlyForOwner %}
+                    {% set st = service.status %}
+                    {% if st == 'CONFIRMEE' %}
+                        <span class="badge badge-active">Confirmé</span>
+                    {% elseif st == 'EN_ATTENTE' %}
+                        <span class="badge badge-pending">En attente</span>
+                    {% elseif st == 'REFUSEE' %}
+                        <span class="badge badge-rejected">Refusé</span>
+                    {% else %}
+                        <span class="badge badge-inactive">Terminé</span>
+                    {% endif %}
+                {% endif %}
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;">
+                {% if service.user %}
+                <div class="info-box"><span class="info-box-icon">👤</span><div><div class="info-box-title">Prestataire</div><div class="info-box-text">{{ service.user.name }}</div></div></div>
+                {% endif %}
+                <div class="info-box"><span class="info-box-icon">📂</span><div><div class="info-box-title">Catégorie</div><div class="info-box-text">{{ service.category ? (service.category.nom ?? service.category.name) : 'Non catégorisé' }}</div></div></div>
+                <div class="info-box"><span class="info-box-icon">📅</span><div><div class="info-box-title">Réservations</div><div class="info-box-text">{{ service.reservations is defined ? service.reservations|length : 0 }}</div></div></div>
+            </div>
+
+            <div style="font-size:28px;font-weight:800;color:var(--primary);">{{ service.price|number_format(2, ',', ' ') }} €</div>
+
+            {% if service.description %}
+            <div>
+                <div style="font-size:15px;font-weight:800;margin-bottom:8px;color:#111827;">Description</div>
+                <div style="font-size:14px;color:#374151;line-height:1.75;white-space:pre-line;">{{ service.description }}</div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% endblock %}
