@@ -1,0 +1,127 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Paiement{% endblock %}
+
+{% block body %}
+
+<!-- CONTENT -->
+<div class="container mt-5">
+    <div class="form-card p-4">
+
+        <h2 class="form-title mb-4">Coordination de Transaction</h2>
+
+        <!-- FLASH MESSAGE -->
+        {% for msg in app.flashes('success') %}
+            <div class="alert alert-success">{{ msg }}</div>
+        {% endfor %}
+
+        {% if message is defined %}
+            <div class="alert alert-danger">{{ message }}</div>
+        {% endif %}
+
+        <form method="post">
+
+            <!-- CSRF -->
+            <input type="hidden" name="_token" value="{{ csrf_token('payment_form') }}">
+
+            <!-- Hidden location fields -->
+            <input type="hidden" name="lat" id="lat">
+            <input type="hidden" name="lng" id="lng">
+            <input type="hidden" name="address" id="address">
+
+            <!-- Provider -->
+            <div class="mb-3">
+                <label class="form-label fw-bold">Nom Prestataire</label>
+                <input type="text" class="form-control"
+                       value="{{ providerName }}"
+                       readonly>
+            </div>
+
+            <!-- Amount -->
+            <div class="mb-3">
+                <label class="form-label fw-bold">Montant convenu (€)</label>
+                <input type="text" class="form-control"
+                       name="amount"
+                       value="{{ amount }}"
+                       readonly>
+                <small class="text-muted">
+                    Prix convenu entre les deux parties. Le paiement est effectué hors plateforme.
+                </small>
+            </div>
+
+            <!-- Payment Method -->
+            <div class="mb-3">
+                <label class="form-label fw-bold">Méthode de paiement externe</label>
+
+                <div class="p-3 border rounded bg-light d-flex gap-4">
+                    <label>
+                        <input type="radio" name="payment_method" value="cash" checked>
+                        💵 Cash
+                    </label>
+                    <label>
+                        <input type="radio" name="payment_method" value="d17">
+                        📱 D17
+                    </label>
+                </div>
+
+                <small class="text-warning">
+                    ⚠️ Le paiement est effectué en dehors de la plateforme.
+                </small>
+            </div>
+
+            <!-- MAP -->
+            <div class="mb-4">
+                <label class="form-label fw-bold">Lieu de rencontre</label>
+
+                <div id="map"
+                     style="height:450px; background:#e8e0d8; border:1px solid #ccc; border-radius:6px;">
+                </div>
+
+                <!-- Selected address -->
+                <p id="selectedAddress" class="mt-2 text-primary"></p>
+            </div>
+
+            <!-- BUTTON -->
+            <button class="btn btn-primary">
+                Valider l'engagement de transaction
+            </button>
+
+        </form>
+
+    </div>
+</div>
+
+<!-- LEAFLET CSS/JS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script>
+    let map = L.map('map').setView([36.8065, 10.1815], 13); // Tunis default
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    let marker;
+
+    map.on('click', async function(e) {
+        let { lat, lng } = e.latlng;
+
+        if (marker) map.removeLayer(marker);
+        marker = L.marker([lat, lng]).addTo(map);
+
+        document.getElementById('lat').value = lat;
+        document.getElementById('lng').value = lng;
+
+        // 🔥 OpenCage API (replace with your key)
+        let response = await fetch(`https://api.opencagedata.com/geocode/v1/json?q=${lat}+${lng}&key=294699815f1b4034839f3e125ca32ca9&language=fr`);
+        let data = await response.json();
+
+        let address = data.results[0]?.formatted || `${lat}, ${lng}`;
+
+        document.getElementById('address').value = address;
+        document.getElementById('selectedAddress').innerText = "📍 " + address;
+    });
+</script>
+
+{% endblock %}

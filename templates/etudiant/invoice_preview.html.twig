@@ -1,0 +1,51 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Aperçu de la facture{% endblock %}
+
+{% block body %}
+<div class="container my-5" style="max-width: 800px;">
+
+    <div class="card shadow-sm rounded-4 border-0 p-4" style="background: #fdfdfd;">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h3 class="fw-bold" style="color:#5b54e8;">CampusLink</h3>
+                <small class="text-muted">Espace Étudiant</small>
+            </div>
+            <div class="text-end">
+                <h5 class="fw-bold">Facture #{{ invoice.id }}</h5>
+                <small class="text-muted">{{ invoice.issueDate ? invoice.issueDate|date('d/m/Y H:i') : 'N/A' }}</small>
+            </div>
+        </div>
+
+        <hr>
+
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <h6 class="fw-bold">Paiement</h6>
+                <p>
+                    ID Paiement: {{ invoice.payment.id }}<br>
+                    Méthode: {{ invoice.payment.method }}<br>
+                    Montant: {{ invoice.payment.amount }} €
+                </p>
+            </div>
+            <div class="col-md-6">
+                <h6 class="fw-bold">Lieu de rencontre</h6>
+                <p>
+                    {{ invoice.payment.meetingAddress }}<br>
+                    Latitude: {{ invoice.payment.meetingLat }}<br>
+                    Longitude: {{ invoice.payment.meetingLng }}
+                </p>
+            </div>
+        </div>
+
+        <h6 class="fw-bold mb-2">Détails de la facture</h6>
+        <p style="line-height: 1.6; white-space: pre-line;">{{ invoice.details ?: 'Aucun détail fourni' }}</p>
+
+        <div class="text-end mt-4">
+            <a href="{{ path('invoice_index') }}" class="btn btn-outline-secondary px-4">Fermer</a>
+            <button onclick="window.print()" class="btn btn-primary px-4" style="background-color: #5b54e8; border-color: #5b54e8;">Imprimer</button>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

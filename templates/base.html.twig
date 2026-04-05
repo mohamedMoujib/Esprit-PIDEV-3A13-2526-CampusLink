@@ -620,7 +620,10 @@
         {# <a href="#"><span class="nav-icon">📢</span> Publications</a> #}
         {# <a href="#"><span class="nav-icon">📅</span> Réservations</a> #}
         {# <a href="#"><span class="nav-icon">💬</span> Messagerie</a> #}
-        {# <a href="#"><span class="nav-icon">💳</span> Factures</a> #}
+        <a href="{{ path('payment_index') }}"
+         class="nav-tab {{ app.request.get('_route') == 'payment_index' ? 'nav-tab-active' : '' }}">
+        💳 Paiement
+        </a>
         {# <a href="#"><span class="nav-icon">⭐</span> Avis</a> #}
         <a href="{{ path('etudiant_profile') }}"
         class="{% if app.request.attributes.get('_route') == 'etudiant_profile' %}active{% endif %}">
