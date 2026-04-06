@@ -1,0 +1,82 @@
+{% extends 'base.html.twig' %}
+{% block title %}{{ publication.titre }} — CampusLink{% endblock %}
+{% block body %}
+
+{% set imageSrc = publication.imageUrl ? (publication.imageUrl starts with 'http' ? publication.imageUrl : asset(publication.imageUrl)) : null %}
+{% set price = publication.typePublication == 'VENTE_OBJET' ? publication.prixVente : publication.proposedPrice %}
+
+<div class="page-header">
+    <div>
+        <div class="page-title">{{ publication.titre }}</div>
+        <div class="page-sub">Détail complet de la publication</div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <a href="{{ path('publication_index') }}" class="btn btn-ghost">← Retour</a>
+        {% if app.user and app.user.userType == 'ETUDIANT' and publication.user != app.user %}
+            <button type="button" class="btn btn-primary">💬 Contacter</button>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card" style="overflow:hidden;">
+    <div style="display:grid;grid-template-columns:minmax(280px, 420px) 1fr;gap:0;">
+        <div style="background:#f3f4f6;min-height:320px;display:flex;align-items:center;justify-content:center;overflow:hidden;">
+            {% if imageSrc %}
+                <img src="{{ imageSrc }}" alt="{{ publication.titre }}" style="width:100%;height:100%;object-fit:cover;">
+            {% else %}
+                <div style="display:flex;flex-direction:column;align-items:center;gap:10px;color:#9ca3af;">
+                    <div style="font-size:42px;">
+                        {% if publication.typePublication == 'VENTE_OBJET' %}🛒{% elseif publication.typePublication == 'DEMANDE_SERVICE' %}📋{% else %}🤝{% endif %}
+                    </div>
+                    <div>Aucune image disponible</div>
+                </div>
+            {% endif %}
+        </div>
+        <div style="padding:28px;display:flex;flex-direction:column;gap:18px;">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                {% if publication.typePublication == 'VENTE_OBJET' %}
+                    <span class="badge badge-vente">🛒 Vente d'objet</span>
+                {% elseif publication.typePublication == 'DEMANDE_SERVICE' %}
+                    <span class="badge badge-demande">📋 Demande de service</span>
+                {% else %}
+                    <span class="badge badge-offre">🤝 Offre de service</span>
+                {% endif %}
+
+                {% if publication.user == app.user and app.user.userType == 'ETUDIANT' %}
+                {% if publication.status == 'ACTIVE' %}
+                    <span class="badge badge-active">Active</span>
+                {% elseif publication.status == 'EN_COURS' %}
+                    <span class="badge badge-pending">En cours</span>
+                {% elseif publication.status == 'TERMINEE' %}
+                    <span class="badge badge-inactive">Terminée</span>
+                {% else %}
+                    <span class="badge badge-rejected">Annulée</span>
+                {% endif %}
+                {% endif %}
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;">
+                <div class="info-box"><span class="info-box-icon">👤</span><div><div class="info-box-title">Auteur</div><div class="info-box-text">{{ publication.user ? publication.user.name : '—' }}</div></div></div>
+                <div class="info-box"><span class="info-box-icon">📍</span><div><div class="info-box-title">Localisation</div><div class="info-box-text">{{ publication.localisation ?: 'Non renseignée' }}</div></div></div>
+                <div class="info-box"><span class="info-box-icon">📂</span><div><div class="info-box-title">Catégorie</div><div class="info-box-text">{{ publication.category ? (publication.category.nom ?? publication.category.name) : 'Non catégorisé' }}</div></div></div>
+                <div class="info-box"><span class="info-box-icon">👁</span><div><div class="info-box-title">Vues</div><div class="info-box-text">{{ publication.vues ?? 0 }}</div></div></div>
+            </div>
+
+            {% if price %}
+            <div style="font-size:28px;font-weight:800;color:var(--primary);">{{ price|number_format(2, ',', ' ') }} €</div>
+            {% endif %}
+
+            <div>
+                <div style="font-size:15px;font-weight:800;margin-bottom:8px;color:#111827;">Description complète</div>
+                <div style="font-size:14px;color:#374151;line-height:1.75;white-space:pre-line;">{{ publication.message }}</div>
+            </div>
+
+            <div style="font-size:12px;color:#9ca3af;">
+                Créée le {{ publication.createdAt ? publication.createdAt|date('d/m/Y à H:i') : '—' }}
+                {% if publication.updatedAt %} · Mise à jour le {{ publication.updatedAt|date('d/m/Y à H:i') }}{% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

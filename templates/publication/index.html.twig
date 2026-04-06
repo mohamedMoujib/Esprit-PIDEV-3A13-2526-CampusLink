@@ -1,0 +1,168 @@
+{% extends 'base.html.twig' %}
+{% block title %}Publications — CampusLink{% endblock %}
+{% block body %}
+
+<div class="pub-tabs">
+    <a href="{{ path('publication_index') }}"
+       class="pub-tab {% if activeTab == 'all' %}active{% endif %}">
+        📋 Toutes les publications
+    </a>
+    <a href="{{ path('publication_index', {tab: 'mine'}) }}"
+       class="pub-tab {% if activeTab == 'mine' %}active{% endif %}">
+        👤 Mes publications
+    </a>
+    {% if canCreatePublication %}
+    <a href="{{ path('publication_create') }}" class="pub-tab pub-tab-add">
+        + Ajouter une publication
+    </a>
+    {% endif %}
+</div>
+
+<form method="get" action="{{ path('publication_index') }}"
+      style="display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;margin-bottom:24px;">
+    <input type="hidden" name="tab" value="{{ activeTab }}">
+
+    <input type="text" name="q" value="{{ app.request.query.get('q') }}"
+           class="filter-input" placeholder="Rechercher une publication..."
+           style="min-width:240px;">
+
+    <select name="type" class="filter-select" style="min-width:180px;">
+        <option value="">Tous les types</option>
+        <option value="VENTE_OBJET" {% if app.request.query.get('type') == 'VENTE_OBJET' %}selected{% endif %}>Vente d'objet</option>
+        <option value="DEMANDE_SERVICE" {% if app.request.query.get('type') == 'DEMANDE_SERVICE' %}selected{% endif %}>Demande de service</option>
+        {% if isPrestataireView %}
+        <option value="OFFRE_SERVICE" {% if app.request.query.get('type') == 'OFFRE_SERVICE' %}selected{% endif %}>Offre de service</option>
+        {% endif %}
+    </select>
+
+    {% if isPrestataireView %}
+    <select name="status" class="filter-select" style="min-width:160px;">
+        <option value="">Tous les statuts</option>
+        <option value="ACTIVE"   {% if app.request.query.get('status') == 'ACTIVE'   %}selected{% endif %}>Active</option>
+        <option value="EN_COURS" {% if app.request.query.get('status') == 'EN_COURS' %}selected{% endif %}>En cours</option>
+        <option value="TERMINEE" {% if app.request.query.get('status') == 'TERMINEE' %}selected{% endif %}>Terminée</option>
+        <option value="ANNULEE"  {% if app.request.query.get('status') == 'ANNULEE'  %}selected{% endif %}>Annulée</option>
+    </select>
+    {% endif %}
+
+    <button type="submit" class="btn btn-primary btn-sm">Filtrer</button>
+    <a href="{{ path('publication_index', {tab: activeTab}) }}" class="btn btn-ghost btn-sm">Réinitialiser</a>
+</form>
+
+{% if publications|length == 0 %}
+    <div class="empty-state" style="text-align:center;">
+        {% if activeTab == 'mine' %}
+            <div style="color:#6b7280;font-size:14px;line-height:1.8;">
+                Vous n'avez pas encore de publications.<br>
+                {% if canCreatePublication %}Cliquez sur '+ Ajouter une publication' pour commencer.{% else %}Aucune publication personnelle pour le moment.{% endif %}
+            </div>
+        {% else %}
+            <div style="font-size:52px;margin-bottom:14px;">📭</div>
+            <div style="font-size:15px;font-weight:700;margin-bottom:8px;color:#374151;">Aucune publication trouvée</div>
+            {% if canCreatePublication %}
+            <a href="{{ path('publication_create') }}" class="btn btn-primary" style="margin-top:8px;">+ Créer une publication</a>
+            {% endif %}
+        {% endif %}
+    </div>
+{% else %}
+<div class="cards-grid">
+    {% for pub in publications %}
+    {% set imageSrc = null %}
+    {% if pub.imageUrl %}
+        {% set imageSrc = pub.imageUrl starts with 'http' ? pub.imageUrl : asset(pub.imageUrl) %}
+    {% endif %}
+    {% set price = pub.typePublication == 'VENTE_OBJET' ? pub.prixVente : pub.proposedPrice %}
+    <div class="card" style="display:flex;flex-direction:column;overflow:hidden;transition:box-shadow 0.15s;"
+         onmouseover="this.style.boxShadow='0 8px 28px rgba(0,0,0,0.1)'"
+         onmouseout="this.style.boxShadow=''">
+
+        <div style="height:160px;overflow:hidden;background:#f3f4f6;display:flex;align-items:center;justify-content:center;">
+            {% if imageSrc %}
+                <img src="{{ imageSrc }}" alt="{{ pub.titre }}" style="width:100%;height:100%;object-fit:cover;">
+            {% else %}
+                <div style="display:flex;flex-direction:column;align-items:center;gap:8px;color:#9ca3af;">
+                    <div style="font-size:32px;">
+                        {% if pub.typePublication == 'VENTE_OBJET' %}🛒{% elseif pub.typePublication == 'DEMANDE_SERVICE' %}📋{% else %}🤝{% endif %}
+                    </div>
+                    <div style="font-size:12px;">Aucune image</div>
+                </div>
+            {% endif %}
+        </div>
+
+        <div style="padding:18px;flex:1;display:flex;flex-direction:column;gap:10px;">
+            <div style="font-size:16px;font-weight:800;color:#111827;line-height:1.3;">{{ pub.titre }}</div>
+
+            {% if pub.user == app.user and app.user.userType == 'ETUDIANT' %}
+            <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+                {% if pub.status == 'ACTIVE' %}
+                    <span class="badge badge-active">Active</span>
+                {% elseif pub.status == 'EN_COURS' %}
+                    <span class="badge badge-pending">En cours</span>
+                {% elseif pub.status == 'TERMINEE' %}
+                    <span class="badge badge-inactive">Terminée</span>
+                {% else %}
+                    <span class="badge badge-rejected">Annulée</span>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <div style="display:flex;flex-direction:column;gap:4px;font-size:13px;color:#6b7280;">
+                {% if pub.user %}<span>👤 {{ pub.user.name }}</span>{% endif %}
+                {% if pub.category %}<span>📂 {{ pub.category.nom ?? pub.category.name }}</span>{% endif %}
+                {% if pub.localisation %}<span>📍 {{ pub.localisation }}</span>{% endif %}
+                {% if pub.createdAt %}<span>🕐 {{ pub.createdAt|date('d/m/Y') }}</span>{% endif %}
+            </div>
+
+            <div style="font-size:14px;color:#374151;line-height:1.55;flex:1;">
+                {{ pub.message|length > 150 ? pub.message|slice(0,150) ~ '...' : pub.message }}
+            </div>
+
+            {% if price %}
+            <div style="font-size:20px;font-weight:800;color:var(--primary);">
+                {{ price|number_format(2, ',', ' ') }} €
+            </div>
+            {% endif %}
+
+            <div style="font-size:12px;color:#9ca3af;">👁 {{ pub.vues ?? 0 }} vues</div>
+        </div>
+
+        <div style="padding:12px 18px;border-top:1px solid #f3f4f6;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <a href="{{ path('publication_show', {id: pub.id}) }}" class="btn btn-ghost btn-sm">Voir détails</a>
+
+            {% if app.user and app.user.userType == 'ETUDIANT' and pub.user != app.user %}
+                <button type="button" class="btn btn-primary btn-sm">Contacter</button>
+            {% endif %}
+
+            {% if app.user and app.user.userType in ['PRESTATAIRE', 'ADMIN'] %}
+                <form method="post" action="{{ path('publication_status', {id: pub.id}) }}" style="margin-left:auto;min-width:150px;">
+                    <input type="hidden" name="_token" value="{{ csrf_token('publication_status_' ~ pub.id) }}">
+                    <input type="hidden" name="active_tab" value="{{ activeTab }}">
+                    <select name="status" onchange="this.form.submit()"
+                            style="width:100%;padding:6px 10px;border:1px solid #e5e7eb;border-radius:6px;font-size:12px;font-family:inherit;background:white;cursor:pointer;">
+                        <option value="ACTIVE"   {% if pub.status == 'ACTIVE'   %}selected{% endif %}>Active</option>
+                        <option value="EN_COURS" {% if pub.status == 'EN_COURS' %}selected{% endif %}>En cours</option>
+                        <option value="TERMINEE" {% if pub.status == 'TERMINEE' %}selected{% endif %}>Terminée</option>
+                        <option value="ANNULEE"  {% if pub.status == 'ANNULEE'  %}selected{% endif %}>Annulée</option>
+                    </select>
+                </form>
+            {% endif %}
+
+            {% if app.user and (pub.user == app.user or app.user.userType == 'ADMIN') %}
+                <a href="{{ path('publication_edit', {id: pub.id}) }}" class="btn btn-ghost btn-sm">✏️</a>
+            {% endif %}
+
+            {% if app.user and (pub.user == app.user or app.user.userType == 'ADMIN') %}
+                <form method="post" action="{{ path('publication_delete', {id: pub.id}) }}"
+                      style="display:inline;"
+                      onsubmit="return confirm('Supprimer cette publication ?');">
+                    <input type="hidden" name="_token" value="{{ csrf_token('publication_delete_' ~ pub.id) }}">
+                    <button type="submit" class="btn btn-danger-outline btn-sm" title="Supprimer">🗑️</button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% endblock %}

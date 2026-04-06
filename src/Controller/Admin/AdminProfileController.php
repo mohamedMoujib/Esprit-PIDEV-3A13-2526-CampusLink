@@ -24,6 +24,73 @@ class AdminProfileController extends AbstractController
         if ($request->isMethod('POST')) {
             $action = $request->request->get('action');
 
+            // ── Upload photo ──
+            if ($action === 'upload_photo') {
+                $file = $request->files->get('profile_picture');
+
+                if (!$file) {
+                    $this->addFlash('error', 'Aucun fichier sélectionné.');
+                    return $this->redirectToRoute('admin_profile');
+                }
+
+                // Validate size (max 5MB)
+                if ($file->getSize() > 5 * 1024 * 1024) {
+                    $this->addFlash('error', 'Image trop volumineuse (max 5MB).');
+                    return $this->redirectToRoute('admin_profile');
+                }
+
+                // Validate mime type
+                $allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+                if (!in_array($file->getMimeType(), $allowedMimes)) {
+                    $this->addFlash('error', 'Format invalide. Utilisez JPG, PNG, GIF ou WEBP.');
+                    return $this->redirectToRoute('admin_profile');
+                }
+
+                // Delete old picture
+                $uploadDir = $this->getParameter('kernel.project_dir') . '/public/uploads/profiles/';
+                if ($admin->getProfilePicture()) {
+                    $oldFile = $uploadDir . $admin->getProfilePicture();
+                    if (file_exists($oldFile)) {
+                        unlink($oldFile);
+                    }
+                }
+
+                // Save new picture
+                if (!is_dir($uploadDir)) {
+                    mkdir($uploadDir, 0777, true);
+                }
+
+                $newName = 'profile_' . $admin->getId() . '_' . time() . '.' . $file->guessExtension();
+                $file->move($uploadDir, $newName);
+
+                // Update via UserController
+                $jsonData    = json_encode(['profilePicture' => $newName]);
+                $jsonRequest = Request::create('/api/users/' . $admin->getId(), 'PUT', content: $jsonData);
+                $jsonRequest->headers->set('Content-Type', 'application/json');
+                $this->userController->update($admin->getId(), $jsonRequest);
+
+                $this->addFlash('success', 'Photo de profil mise à jour !');
+                return $this->redirectToRoute('admin_profile');
+            }
+// ── Remove photo ──
+if ($action === 'remove_photo') {
+    if ($admin->getProfilePicture()) {
+        $uploadDir = $this->getParameter('kernel.project_dir') . '/public/uploads/profiles/';
+        $oldFile   = $uploadDir . $admin->getProfilePicture();
+        if (file_exists($oldFile)) {
+            unlink($oldFile);
+        }
+    }
+
+    $jsonData    = json_encode(['profilePicture' => null]);
+    $jsonRequest = Request::create('/api/users/' . $admin->getId(), 'PUT', content: $jsonData);
+    $jsonRequest->headers->set('Content-Type', 'application/json');
+    $this->userController->update($admin->getId(), $jsonRequest);
+
+    $this->addFlash('success', 'Photo supprimée.');
+    return $this->redirectToRoute('admin_profile');
+}
+            // ── Save profile info ──
             if ($action === 'save_profile') {
                 $jsonData = json_encode([
                     'name'    => trim($request->request->get('name', '')),
@@ -53,6 +120,7 @@ class AdminProfileController extends AbstractController
                 }
             }
 
+            // ── Change password ──
             if ($action === 'change_password') {
                 $current = $request->request->get('current_password', '');
                 $new     = $request->request->get('new_password', '');
@@ -63,8 +131,7 @@ class AdminProfileController extends AbstractController
                 } elseif ($new !== $confirm) {
                     $this->addFlash('error', 'Les mots de passe ne correspondent pas.');
                 } else {
-                    $jsonData = json_encode(['password' => $new]);
-
+                    $jsonData    = json_encode(['password' => $new]);
                     $jsonRequest = Request::create('/api/users/' . $admin->getId(), 'PUT', content: $jsonData);
                     $jsonRequest->headers->set('Content-Type', 'application/json');
 

@@ -1,0 +1,115 @@
+{% extends 'base.html.twig' %}
+{% block title %}Gestion des Publications — Admin CampusLink{% endblock %}
+{% block stylesheets %}
+{{ include('admin/partials/bo_admin_styles.html.twig') }}
+<style>
+    .pub-img,.pub-img-placeholder{width:44px;height:44px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#f1f5f9;object-fit:cover;flex-shrink:0}
+    .type-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700}
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="page-header">
+    <div>
+        <div class="page-title">📣 Gestion des Publications</div>
+        <div class="page-sub">Modérer et gérer les publications de la plateforme</div>
+    </div>
+    <a href="{{ path('admin_publications', {create: 1}) }}" class="btn btn-primary">+ Nouvelle publication</a>
+</div>
+
+<div style="display:flex;gap:8px;margin-bottom:22px;flex-wrap:wrap;align-items:center;">
+    <a href="{{ path('admin_publications') }}" class="btn btn-ghost btn-sm {% if filterStatus is null %}filter-active{% endif %}">Toutes</a>
+    {% for st in statusChoices %}
+        <a href="{{ path('admin_publications', {status: st}) }}" class="btn btn-ghost btn-sm {% if filterStatus == st %}filter-active{% endif %}">
+            {% if st == 'ACTIVE' %}✅ Active{% elseif st == 'EN_COURS' %}🔄 En cours{% elseif st == 'TERMINEE' %}🏁 Terminée{% else %}❌ Annulée{% endif %}
+        </a>
+    {% endfor %}
+</div>
+
+{% if app.request.query.get('create') %}
+<div class="table-card" style="margin-bottom:24px;">
+    <div class="table-header"><div><div class="table-title">➕ Créer une nouvelle publication</div><div class="table-count">Créée directement par l'administrateur</div></div><a href="{{ path('admin_publications') }}" class="btn btn-ghost btn-sm">✕ Annuler</a></div>
+    <div style="padding:24px;">
+        <form method="post" action="{{ path('admin_publication_create') }}" enctype="multipart/form-data">
+            <input type="hidden" name="_token" value="{{ csrf_token('admin_publication_create') }}">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+                <div>
+                    <div class="form-group"><label class="form-label">Titre *</label><input type="text" name="titre" class="form-control" required></div>
+                    <div class="form-group"><label class="form-label">Type de publication</label><select name="type_publication" class="form-control"><option value="VENTE_OBJET">Vente d'objet</option><option value="DEMANDE_SERVICE">Demande de service</option><option value="OFFRE_SERVICE">Offre de service</option></select></div>
+                    <div class="form-group"><label class="form-label">Prix (€)</label><input type="number" name="prix" step="0.01" min="0" class="form-control"></div>
+                    <div class="form-group"><label class="form-label">Localisation</label><input type="text" name="localisation" class="form-control"></div>
+                    <div class="form-group"><label class="form-label">Catégorie</label><select name="category_id" class="form-control"><option value="">Non catégorisé</option>{% for cat in categories %}<option value="{{ cat.id }}">{{ cat.name }}</option>{% endfor %}</select></div>
+                </div>
+                <div>
+                    <div class="form-group"><label class="form-label">Description *</label><textarea name="message" class="form-control" required style="min-height:140px;"></textarea></div>
+                    <div class="form-group"><label class="form-label">Image (optionnelle)</label><input type="file" name="image" accept="image/*" class="form-control" style="padding:7px;"></div>
+                </div>
+            </div>
+            <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:8px;"><a href="{{ path('admin_publications') }}" class="btn btn-ghost">Annuler</a><button type="submit" class="btn btn-primary">✅ Créer la publication</button></div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<div class="table-card">
+    <div class="table-header"><div><div class="table-title">Liste des publications</div><div class="table-count">{{ publications|length }} publication(s)</div></div></div>
+    {% if publications|length == 0 %}
+        <div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-title">Aucune publication trouvée</div></div>
+    {% else %}
+    <div style="overflow-x:auto;">
+        <table>
+            <thead><tr><th></th><th>Publication</th><th>Type</th><th>Auteur</th><th>Prix</th><th>Vues</th><th>Date</th><th>Trust score</th><th>Statut</th><th>Actions</th></tr></thead>
+            <tbody>
+            {% for pub in publications %}
+                {% set imageSrc = pub.imageUrl ? (pub.imageUrl starts with 'http' ? pub.imageUrl : asset(pub.imageUrl)) : null %}
+                {% set price = pub.typePublication == 'VENTE_OBJET' ? pub.prixVente : pub.proposedPrice %}
+                {% set trust = publicationTrustScores[pub.id] ?? null %}
+                <tr>
+                    <td>{% if imageSrc %}<img src="{{ imageSrc }}" alt="" class="pub-img">{% else %}<div class="pub-img-placeholder">📣</div>{% endif %}</td>
+                    <td><strong>{{ pub.titre|length > 45 ? pub.titre|slice(0,45) ~ '…' : pub.titre }}</strong><div style="font-size:12px;color:var(--text-muted);">{{ pub.message|length > 60 ? pub.message|slice(0,60) ~ '…' : pub.message }}</div></td>
+                    <td><span class="type-pill {% if pub.typePublication == 'VENTE_OBJET' %}badge-vente{% elseif pub.typePublication == 'DEMANDE_SERVICE' %}badge-demande{% else %}badge-offre{% endif %}">{{ pub.typePublication }}</span></td>
+                    <td><div style="font-size:13px;font-weight:600;">{{ pub.user ? pub.user.name : '—' }}</div><div style="font-size:12px;color:var(--text-muted);">{{ pub.user ? pub.user.email : '' }}</div></td>
+                    <td style="font-weight:700;color:var(--primary);">{{ price ? price ~ ' €' : '—' }}</td>
+                    <td>👁 {{ pub.vues ?? 0 }}</td>
+                    <td>{{ pub.createdAt ? pub.createdAt|date('d/m/Y') : '—' }}</td>
+                    <td>
+                        {% if trust %}
+                            <span class="trust-pill {{ trust.isBad ? 'bad' : 'good' }}" title="{{ trust.reasons is not empty ? trust.reasons|join(' • ') : 'Aucune alerte' }}">
+                                {{ trust.score }}/100 · {{ trust.label }}
+                            </span>
+                        {% else %}
+                            <span class="badge badge-inactive">N/D</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <form method="post" action="{{ path('admin_publication_status', {id: pub.id}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('admin_publication_' ~ pub.id) }}">
+                            <input type="hidden" name="filter_status" value="{{ filterStatus }}">
+                            <select name="status" class="status-select" onchange="this.form.submit()">
+                                <option value="ACTIVE" {% if pub.status == 'ACTIVE' %}selected{% endif %}>Active</option>
+                                <option value="EN_COURS" {% if pub.status == 'EN_COURS' %}selected{% endif %}>En cours</option>
+                                <option value="TERMINEE" {% if pub.status == 'TERMINEE' %}selected{% endif %}>Terminée</option>
+                                <option value="ANNULEE" {% if pub.status == 'ANNULEE' %}selected{% endif %}>Annulée</option>
+                            </select>
+                        </form>
+                    </td>
+                    <td>
+                        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+                            {% if trust and trust.isBad %}
+                                <form method="post" action="{{ path('admin_publication_delete', {id: pub.id}) }}" onsubmit="return confirm('Confirmer la suppression définitive de cette publication au trust score mauvais ?')">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('admin_pub_delete_' ~ pub.id) }}">
+                                    <button type="submit" class="btn btn-danger-outline btn-xs">🗑️ Supprimer</button>
+                                </form>
+                            {% else %}
+                                <span style="font-size:12px;color:var(--text-muted);">Suppression si trust faible</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

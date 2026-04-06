@@ -1,0 +1,116 @@
+{% extends "prestataire/layout.html.twig" %}
+
+{% block prestataire_title %}{{ service.title }}{% endblock %}
+{% block prestataire_page_title %}{{ service.title }}{% endblock %}
+{% block prestataire_page_subtitle %}Prix: {{ service.price|number_format(2, '.', ',') }} DT{% endblock %}
+
+{% block prestataire_content %}
+<div style="max-width: 900px;">
+    <!-- Status Badge -->
+    <div style="margin-bottom: 20px;">
+        <span class="badge {% if service.status == 'EN_ATTENTE' %}badge-pending{% elseif service.status == 'CONFIRMEE' %}badge-active{% else %}badge-rejected{% endif %}">
+            {% if service.status == 'EN_ATTENTE' %}⏳ En attente
+            {% elseif service.status == 'CONFIRMEE' %}✅ Confirmé
+            {% elseif service.status == 'REFUSEE' %}❌ Refusé
+            {% else %}✓ Terminé{% endif %}
+        </span>
+    </div>
+
+    <!-- Description -->
+    <div class="form-panel" style="margin-bottom: 24px;">
+        <div style="font-weight: 700; font-size: 16px; margin-bottom: 16px;">📝 Description</div>
+        <div style="color: var(--text); line-height: 1.6; white-space: pre-wrap;">
+            {{ service.description ?? 'Pas de description fournie' }}
+        </div>
+    </div>
+
+    <!-- Information Grid -->
+    <div class="form-panel" style="margin-bottom: 24px;">
+        <div style="font-weight: 700; font-size: 16px; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid var(--border);">ℹ️ Informations</div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div>
+                <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Catégorie</div>
+                <div style="font-weight: 600; color: var(--text);">{{ service.category ? service.category.name : 'Non classé' }}</div>
+            </div>
+            <div>
+                <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Prix</div>
+                <div style="font-weight: 700; color: var(--primary); font-size: 18px;">{{ service.price|number_format(2, '.', ',') }} DT</div>
+            </div>
+            <div style="grid-column: 1 / -1;">
+                <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Statut</div>
+                <div style="font-weight: 600; color: var(--text);">
+                    {% if service.status == 'EN_ATTENTE' %}En attente
+                    {% elseif service.status == 'CONFIRMEE' %}Confirmé
+                    {% elseif service.status == 'REFUSEE' %}Refusé
+                    {% else %}Terminé{% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reservations -->
+    <div class="form-panel" style="margin-bottom: 30px;">
+        <div style="font-weight: 700; font-size: 16px; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid var(--border);">📅 Réservations</div>
+        
+        {% if service.reservations is empty %}
+            <div style="text-align: center; padding: 40px 20px; background: var(--bg); border-radius: 8px; color: var(--text-muted);">
+                📭 Aucune réservation pour ce service
+            </div>
+        {% else %}
+            <div>
+                <div style="font-weight: 600; margin-bottom: 16px; color: var(--text);">
+                    <strong>{{ service.reservations|length }}</strong> réservation(s)
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    {% for reservation in service.reservations[:5] %}
+                        <div style="padding: 12px; background: var(--bg); border-radius: 8px; border-left: 3px solid var(--primary); display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <div style="font-weight: 600; color: var(--text);">{{ reservation.user.name }}</div>
+                                <div style="font-size: 13px; color: var(--text-muted);">{{ reservation.date|date('d/m/Y H:i') }}</div>
+                            </div>
+                            <span class="badge {% if reservation.status == 'PENDING' %}badge-pending{% elseif reservation.status == 'CONFIRMED' %}badge-active{% else %}badge-rejected{% endif %}" style="font-size: 11px;">
+                                {% if reservation.status == 'PENDING' %}En attente
+                                {% elseif reservation.status == 'CONFIRMED' %}Confirmée
+                                {% else %}Annulée{% endif %}
+                            </span>
+                        </div>
+                    {% endfor %}
+                </div>
+                {% if service.reservations|length > 5 %}
+                    <div style="text-align: center; padding: 12px; color: var(--text-muted); font-size: 13px;">
+                        ... et {{ service.reservations|length - 5 }} autre(s)
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Actions -->
+    <div style="display: flex; gap: 12px;">
+        <a href="{{ path('prestataire_service_edit', {'id': service.id}) }}" class="btn btn-primary" style="flex: 1; text-align: center;">
+            ✏️ Modifier
+        </a>
+        <form method="POST" action="{{ path('prestataire_service_delete', {'id': service.id}) }}" style="flex: 1;">
+            <button type="submit" class="btn btn-danger-outline" style="width: 100%;" onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce service ?');">
+                🗑️ Supprimer
+            </button>
+        </form>
+        <a href="{{ path('prestataire_services') }}" class="btn btn-outline" style="flex: 1; text-align: center;">
+            ← Retour
+        </a>
+    </div>
+</div>
+{% endblock %}
+        }
+
+        .action-buttons {
+            flex-direction: column;
+        }
+
+        .btn-large {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}

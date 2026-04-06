@@ -13,20 +13,23 @@ use Symfony\Component\Routing\Annotation\Route;
 class InvoiceController extends AbstractController
 {
     #[Route('/invoices', name: 'invoice_index')]
-    public function index(Request $request, InvoiceRepository $invoiceRepo): Response
-    {
+    public function index(
+        Request $request,
+        InvoiceRepository $invoiceRepo
+    ): Response {
         $user = $this->getUser();
         $date = $request->query->get('date');
 
         $qb = $invoiceRepo->createQueryBuilder('i')
-            ->innerJoin('i.payment', 'p')
-            ->innerJoin('p.reservation', 'r')
-            ->andWhere('r.user = :userId')
-            ->setParameter('userId', $user->getId());
+            ->join('i.payment', 'p')
+            ->join('p.reservation', 'r')
+            ->andWhere('r.user = :user')
+            ->setParameter('user', $user);
 
         if ($date) {
             $start = new \DateTime($date . ' 00:00:00');
-            $end   = new \DateTime($date . ' 23:59:59');
+            $end = new \DateTime($date . ' 23:59:59');
+
             $qb->andWhere('i.issueDate BETWEEN :start AND :end')
                ->setParameter('start', $start)
                ->setParameter('end', $end);
@@ -44,6 +47,10 @@ class InvoiceController extends AbstractController
     #[Route('/invoices/delete/{id}', name: 'invoice_delete', methods: ['POST'])]
     public function delete(Invoice $invoice, EntityManagerInterface $em): Response
     {
+        if ($invoice->getPayment()->getReservation()->getUser() !== $this->getUser()) {
+            throw $this->createAccessDeniedException();
+        }
+
         $em->remove($invoice);
         $em->flush();
 
@@ -51,11 +58,15 @@ class InvoiceController extends AbstractController
         return $this->redirectToRoute('invoice_index');
     }
 
-    #[Route('/invoices/{id}', name: 'invoice_preview', requirements: ['id' => '\d+'])]
+    #[Route('/invoices/{id}', name: 'invoice_preview')]
     public function preview(Invoice $invoice): Response
     {
+        if ($invoice->getPayment()->getReservation()->getUser() !== $this->getUser()) {
+            throw $this->createAccessDeniedException();
+        }
+
         return $this->render('etudiant/invoice_preview.html.twig', [
-            'invoice' => $invoice,
+            'invoice' => $invoice
         ]);
     }
 }

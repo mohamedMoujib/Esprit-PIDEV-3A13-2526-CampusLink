@@ -1,0 +1,133 @@
+{% extends 'base.html.twig' %}
+{% block title %}Mes services — CampusLink{% endblock %}
+{% block body %}
+
+<div class="page-header">
+    <div>
+        <div class="page-title">Mes services</div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;">
+        <button type="button" class="btn btn-translate" onclick="toggleTranslation()">
+            🌐 Traduire en anglais
+        </button>
+        <a href="{{ path('service_create') }}" class="btn btn-primary">+ Ajouter un service</a>
+    </div>
+</div>
+
+<form method="get" action="{{ path('service_mine') }}" class="filters-bar">
+    <input type="text" name="q" value="{{ app.request.query.get('q') }}"
+           placeholder="Rechercher un service..."
+           class="filter-input" style="min-width:220px;flex:1;">
+
+    <select name="status" class="filter-select" style="min-width:160px;">
+        <option value="">Tous les statuts</option>
+        <option value="EN_ATTENTE"  {% if app.request.query.get('status') == 'EN_ATTENTE'  %}selected{% endif %}>En attente</option>
+        <option value="CONFIRMEE"   {% if app.request.query.get('status') == 'CONFIRMEE'   %}selected{% endif %}>Confirmé</option>
+        <option value="REFUSEE"     {% if app.request.query.get('status') == 'REFUSEE'     %}selected{% endif %}>Refusé</option>
+        <option value="TERMINEE"    {% if app.request.query.get('status') == 'TERMINEE'    %}selected{% endif %}>Terminé</option>
+    </select>
+
+    <select name="category" class="filter-select" style="min-width:200px;">
+        <option value="">Toutes les catégories</option>
+        {% for cat in categories %}
+        <option value="{{ cat.id }}" {% if app.request.query.getInt('category') == cat.id %}selected{% endif %}>
+            {{ cat.nom ?? cat.name ?? '' }}
+        </option>
+        {% endfor %}
+    </select>
+
+    <a href="{{ path('service_mine') }}" class="btn btn-ghost">Réinitialiser</a>
+</form>
+
+<script>
+document.querySelectorAll('.filters-bar select').forEach(s => s.addEventListener('change', () => s.closest('form').submit()));
+document.querySelector('.filters-bar input')?.addEventListener('keydown', e => { if(e.key==='Enter') e.target.closest('form').submit(); });
+</script>
+
+{% if services|length == 0 %}
+<div class="empty-state" style="text-align:center;">
+    <div style="font-size:52px;margin-bottom:16px;">🛠️</div>
+    <div style="font-size:16px;font-weight:700;margin-bottom:8px;color:#374151;">Aucun service trouvé</div>
+    <div style="color:#6b7280;margin-bottom:20px;">Vous n'avez pas encore créé de service.</div>
+    <a href="{{ path('service_create') }}" class="btn btn-primary">+ Ajouter un service</a>
+</div>
+{% else %}
+<div class="cards-grid">
+    {% for service in services %}
+    {% set imageSrc = null %}
+    {% if service.image %}
+        {% set imageSrc = service.image starts with 'http' ? service.image : asset(service.image) %}
+    {% endif %}
+    <div class="service-card card" style="display:flex;flex-direction:column;overflow:hidden;transition:box-shadow 0.15s;" onmouseover="this.style.boxShadow='0 8px 28px rgba(0,0,0,0.1)'" onmouseout="this.style.boxShadow=''">
+
+        <div style="height:180px;overflow:hidden;background:#f3f4f6;display:flex;align-items:center;justify-content:center;">
+            {% if imageSrc %}
+                <img src="{{ imageSrc }}" alt="{{ service.title }}" style="width:100%;height:100%;object-fit:cover;">
+            {% else %}
+                <div style="display:flex;flex-direction:column;align-items:center;gap:8px;color:#9ca3af;">
+                    <div style="font-size:34px;">🖼️</div>
+                    <div style="font-size:12px;">Aucune image</div>
+                </div>
+            {% endif %}
+        </div>
+
+        <div style="padding:18px;flex:1;display:flex;flex-direction:column;gap:10px;">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
+                <div style="font-size:16px;font-weight:800;color:#111827;line-height:1.3;" class="service-title-fr">{{ service.title }}</div>
+                {% if service.user == app.user and app.user.userType == 'PRESTATAIRE' %}
+                    {% set st = service.status %}
+                    {% set badgeClass = st == 'CONFIRMEE' ? 'badge-active' : (st == 'EN_ATTENTE' ? 'badge-pending' : (st == 'REFUSEE' ? 'badge-rejected' : 'badge-inactive')) %}
+                    {% set badgeLabel = st == 'CONFIRMEE' ? 'Confirmé' : (st == 'EN_ATTENTE' ? 'En attente' : (st == 'REFUSEE' ? 'Refusé' : 'Terminé')) %}
+                    <span class="badge {{ badgeClass }}">{{ badgeLabel }}</span>
+                {% endif %}
+            </div>
+
+            <div style="font-size:13px;color:#6b7280;" class="service-cat-fr">
+                {{ service.category ? (service.category.nom ?? service.category.name) : 'Non catégorisé' }}
+            </div>
+
+            {% if service.description %}
+            <div style="font-size:14px;color:#374151;line-height:1.55;flex:1;" class="service-desc-fr">
+                {{ service.description|length > 180 ? service.description|slice(0,180) ~ '...' : service.description }}
+            </div>
+            {% endif %}
+
+            <div style="display:flex;gap:16px;font-size:13px;color:#9ca3af;align-items:center;">
+                <span>⏱ 1h</span>
+                <span>📅 {{ service.reservations is defined ? service.reservations|length : 0 }} réservations</span>
+            </div>
+
+            <div style="font-size:22px;font-weight:800;color:var(--primary);">
+                {{ service.price|number_format(2, ',', ' ') }} €
+            </div>
+        </div>
+
+        <div style="padding:12px 18px;border-top:1px solid #f3f4f6;display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;">
+            <a href="{{ path('service_show', {id: service.id, from: 'mine'}) }}" class="btn btn-ghost btn-sm">Voir détail</a>
+            <a href="{{ path('service_edit', {id: service.id}) }}"
+               title="Modifier"
+               style="color:#6b7280;font-size:20px;transition:color 0.15s;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='#6b7280'">✏️</a>
+            {% if app.user and (service.user == app.user or app.user.userType == 'ADMIN') %}
+                <form method="post" action="{{ path('service_delete', {id: service.id}) }}"
+                      style="display:inline;"
+                      onsubmit="return confirm('Supprimer ce service ?');">
+                    <input type="hidden" name="_token" value="{{ csrf_token('service_delete_' ~ service.id) }}">
+                    <button type="submit" class="btn btn-danger-outline btn-sm" title="Supprimer">🗑️</button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<script>
+let translated = false;
+function toggleTranslation() {
+    translated = !translated;
+    const btn = document.querySelector('.btn-translate');
+    btn.textContent = translated ? '🌐 Afficher en français' : '🌐 Traduire en anglais';
+}
+</script>
+
+{% endblock %}

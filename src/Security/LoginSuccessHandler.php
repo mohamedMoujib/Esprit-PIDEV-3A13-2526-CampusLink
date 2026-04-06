@@ -16,10 +16,10 @@ class LoginSuccessHandler implements AuthenticationSuccessHandlerInterface
     {
         $user = $token->getUser();
 
-        return match($user->getUserType()) {
+        return match ($user->getUserType()) {
             'ADMIN'       => new RedirectResponse($this->router->generate('admin_dashboard')),
-            'PRESTATAIRE' => new RedirectResponse($this->router->generate('prestataire_profile')),
-            'ETUDIANT'    => new RedirectResponse($this->router->generate('etudiant_profile')),
+            'PRESTATAIRE' => new RedirectResponse($this->router->generate('prestataire_reservations')),
+            'ETUDIANT'    => new RedirectResponse($this->router->generate('etudiant_reservations')),
             default       => new RedirectResponse($this->router->generate('app_login')),
         };
     }

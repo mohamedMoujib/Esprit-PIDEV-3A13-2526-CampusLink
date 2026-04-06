@@ -6,6 +6,7 @@ use Doctrine\ORM\Mapping as ORM;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use App\Repository\UserRepository;
+use App\Entity\Notification;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 
@@ -130,6 +131,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->reservations          = new ArrayCollection();
         $this->services              = new ArrayCollection();
         $this->trustPointHistories   = new ArrayCollection();
+        $this->notifications         = new ArrayCollection();
     }
 
     public function getCreatedAt(): ?\DateTimeInterface { return $this->createdAt; }
@@ -182,8 +184,13 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: TrustPointHistory::class)]
     private Collection $trustPointHistories;
 
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: Notification::class, orphanRemoval: true)]
+    private Collection $notifications;
+
     public function getPublications(): Collection { return $this->publications; }
     public function getReservations(): Collection { return $this->reservations; }
     public function getServices(): Collection { return $this->services; }
     public function getTrustPointHistories(): Collection { return $this->trustPointHistories; }
+
+    public function getNotifications(): Collection { return $this->notifications; }
 }

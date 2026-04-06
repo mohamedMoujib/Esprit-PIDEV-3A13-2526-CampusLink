@@ -1,0 +1,99 @@
+{% extends "prestataire/layout.html.twig" %}
+
+{% block prestataire_page_title %}
+    Réservations reçues
+{% endblock %}
+
+{% block prestataire_content %}
+
+<!-- 🔹 FILTERS -->
+<div style="display:flex;justify-content:space-between;margin-bottom:20px;">
+
+    <div>
+        <a href="?filter=all" class="btn btn-sm {{ filter=='all' ? 'btn-primary' : 'btn-outline' }}">Toutes</a>
+        <a href="?filter=upcoming" class="btn btn-sm {{ filter=='upcoming' ? 'btn-primary' : 'btn-outline' }}">À venir</a>
+        <a href="?filter=past" class="btn btn-sm {{ filter=='past' ? 'btn-primary' : 'btn-outline' }}">Passées</a>
+    </div>
+
+    <div>
+        <button class="btn btn-outline">📅 Calendrier</button>
+        <button class="btn btn-success">💰 Revenus</button>
+    </div>
+
+</div>
+
+<!-- 🔹 STATS -->
+<div class="cards-grid">
+
+    <div class="card" style="padding:15px;text-align:center;">
+        <h2>{{ total }}</h2>
+        <p>Total</p>
+    </div>
+
+    <div class="card" style="padding:15px;text-align:center;">
+        <h2 style="color:orange;">{{ pending }}</h2>
+        <p>En attente</p>
+    </div>
+
+    <div class="card" style="padding:15px;text-align:center;">
+        <h2 style="color:green;">{{ confirmed }}</h2>
+        <p>Confirmées</p>
+    </div>
+
+    <div class="card" style="padding:15px;text-align:center;">
+        <h2 style="color:#5D5FEF;">{{ revenue }} DT</h2>
+        <p>Revenus total</p>
+    </div>
+
+</div>
+
+<br>
+
+<!-- 🔹 LIST -->
+{% for r in reservations %}
+<div class="card" style="padding:20px;margin-bottom:15px;">
+
+    <div style="display:flex;justify-content:space-between;">
+
+        <div>
+            <h3>{{ r.service.title }}</h3>
+            <p>par {{ r.user.name }}</p>
+            <p>📅 {{ r.date|date('l d F Y H:i') }}</p>
+        </div>
+
+        <div>
+            {% if r.status == 'CONFIRMED' %}
+                <span class="badge badge-active">✔ Confirmée</span>
+            {% elseif r.status == 'PENDING' %}
+                <span class="badge badge-pending">⏳ En attente</span>
+            {% else %}
+                <span class="badge badge-rejected">❌ Annulée</span>
+            {% endif %}
+        </div>
+
+    </div>
+
+    <hr>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+
+        <strong style="color:#5D5FEF;">{{ r.price }} DT</strong>
+
+        <div>
+            <button class="btn btn-sm btn-outline">💬 Message</button>
+
+            {% if r.status != 'CANCELLED' %}
+            <form method="post" action="{{ path('prestataire_reservation_cancel', {id:r.id}) }}" style="display:inline;">
+                <button class="btn btn-sm btn-danger-outline">Annuler</button>
+            </form>
+            {% endif %}
+        </div>
+
+    </div>
+
+</div>
+{% else %}
+    <div class="empty-state">Aucune réservation.</div>
+{% endfor %}
+
+{% endblock %}
