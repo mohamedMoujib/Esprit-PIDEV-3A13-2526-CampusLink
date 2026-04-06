@@ -577,57 +577,105 @@
     </a>
 
     {% if app.user %}
+
+
 <nav class="topnav">
 
     {% if app.user.userType == 'ADMIN' %}
+
+        <a href="{{ path('admin_home') }}"
+           class="{{ app.request.attributes.get('_route') == 'admin_home' ? 'active' }}">
+            🏠 Dashboard
+        </a>
+
         <a href="{{ path('admin_dashboard') }}"
-           class="{% if 'admin' in app.request.attributes.get('_route') =='admin_dashboard' %}active{% endif %}">
-            <span class="nav-icon">👥</span> Gestion Utilisateurs
+           class="{{ app.request.attributes.get('_route') == 'admin_dashboard' ? 'active' }}">
+            👥 Utilisateurs
         </a>
+
         <a href="{{ path('admin_reviews') }}"
-           class="{% if 'admin_reviews' in app.request.attributes.get('_route') == 'admin_reviews' %}active{% endif %}">
-            <span class="nav-icon">⭐</span> Gestion des avis
+           class="{{ app.request.attributes.get('_route') == 'admin_reviews' ? 'active' }}">
+            ⭐ Avis
         </a>
+
         <a href="{{ path('admin_profile') }}"
-           class="{% if 'admin_profile' in app.request.attributes.get('_route') == 'admin_profile' %}active{% endif %}">
-            <span class="nav-icon">👤</span> Mon Profil
+           class="{{ app.request.attributes.get('_route') == 'admin_profile' ? 'active' }}">
+            👤 Profil
         </a>
 
     {% elseif app.user.userType == 'PRESTATAIRE' %}
-        {#<a href="{{ path('prestataire_dashboard') }}"#}
-        {#   class="{% if 'prestataire_dashboard' in app.request.attributes.get('_route') %}active{% endif %}">#}
-        {#    <span class="nav-icon">🛠</span> Mes services#}
-        {#</a>#}
-        {#<a href="#"#}
-          {# class="{% if 'reservations' in app.request.attributes.get('_route') %}active{% endif %}">#}
-            {#<span class="nav-icon">📅</span> Réservations#}
-        {#</a>#}
-        {#<a href="#"#}
-          {# class="{% if 'messagerie' in app.request.attributes.get('_route') %}active{% endif %}">#}
-            {#<span class="nav-icon">💬</span> Messagerie#}
-        {#</a>#}
-        {#<a href="#"#}
-          {# class="{% if 'avis' in app.request.attributes.get('_route') %}active{% endif %}">#}
-            {#<span class="nav-icon">⭐</span> Avis#}
-        {#</a>#}
-        <a href="{{ path('prestataire_profile') }}"
-           class="{% if 'profile' in app.request.attributes.get('_route') %}active{% endif %}">
-            <span class="nav-icon">👤</span> Mon profil
+
+        <a href="{{ path('prestataire_services') }}"
+           class="{{ app.request.attributes.get('_route') == 'prestataire_services' ? 'active' }}">
+            🛠 Mes services
         </a>
 
-        {% else %} {# ETUDIANT #}
-        {# <a href="#"><span class="nav-icon">🔍</span> Rechercher des services</a> #}
-        {# <a href="#"><span class="nav-icon">📢</span> Publications</a> #}
-        {# <a href="#"><span class="nav-icon">📅</span> Réservations</a> #}
-        {# <a href="#"><span class="nav-icon">💬</span> Messagerie</a> #}
-        {# <a href="#"><span class="nav-icon">💳</span> Factures</a> #}
-        {# <a href="#"><span class="nav-icon">⭐</span> Avis</a> #}
-        <a href="{{ path('etudiant_profile') }}"
-        class="{% if app.request.attributes.get('_route') == 'etudiant_profile' %}active{% endif %}">
-            <span class="nav-icon">👤</span> Mon profil
+        <a href="{{ path('prestataire_reservations') }}"
+           class="{{ app.request.attributes.get('_route') == 'prestataire_reservations' ? 'active' }}">
+            📅 Réservations
         </a>
+
+        <a href="#"
+           class="">
+            💬 Messagerie
+        </a>
+
+        <a href="#"
+           class="">
+            ⭐ Avis
+        </a>
+
+        <a href="#"
+           class="">
+            👤 Mon profil
+        </a>
+
+    {% else %}
+
+        {# ===== ETUDIANT ===== #}
+
+        <a href="#"
+           class="">
+            🔍 Rechercher
+        </a>
+
+        <a href="#"
+           class="">
+            📢 Publications
+        </a>
+
+        <a href="{{ path('etudiant_reservations') }}"
+           class="{{ app.request.attributes.get('_route') == 'etudiant_reservations' ? 'active' }}">
+            📅 Réservations
+        </a>
+
+        <a href="#"
+           class="">
+            💬 Messagerie
+        </a>
+
+        <a href="#"
+           class="">
+            💳 Factures
+        </a>
+
+        <a href="#"
+           class="">
+            ⭐ Avis
+        </a>
+
+        <a href="#"
+           class="">
+            👤 Mon profil
+        </a>
+
     {% endif %}
+
 </nav>
+
+
+
+
 {% endif %}
 
     <div class="header-right">

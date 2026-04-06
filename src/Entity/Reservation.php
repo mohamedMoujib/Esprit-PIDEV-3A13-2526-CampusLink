@@ -16,45 +16,90 @@ class Reservation
     #[ORM\Column]
     private ?int $id = null;
 
-    public function getId(): ?int { return $this->id; }
+    public function getId(): ?int
+    {
+        return $this->id;
+    }
 
     #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'reservations')]
     #[ORM\JoinColumn(name: 'student_id', nullable: false, onDelete: "CASCADE")]
     private ?User $user = null;
 
-    public function getUser(): ?User { return $this->user; }
-    public function setUser(?User $user): self { $this->user = $user; return $this; }
+    public function getUser(): ?User
+    {
+        return $this->user;
+    }
+    public function setUser(?User $user): self
+    {
+        $this->user = $user;
+        return $this;
+    }
 
     #[ORM\ManyToOne(targetEntity: Service::class, inversedBy: 'reservations')]
     #[ORM\JoinColumn(name: 'service_id', nullable: false, onDelete: "CASCADE")]
     private ?Service $service = null;
 
-    public function getService(): ?Service { return $this->service; }
-    public function setService(?Service $service): self { $this->service = $service; return $this; }
+    public function getService(): ?Service
+    {
+        return $this->service;
+    }
+    public function setService(?Service $service): self
+    {
+        $this->service = $service;
+        return $this;
+    }
 
     #[ORM\Column(type: 'datetime')]
     private \DateTimeInterface $date;
 
-    public function getDate(): \DateTimeInterface { return $this->date; }
-    public function setDate(\DateTimeInterface $date): self { $this->date = $date; return $this; }
+    public function getDate(): \DateTimeInterface
+    {
+        return $this->date;
+    }
+    public function setDate(\DateTimeInterface $date): self
+    {
+        $this->date = $date;
+        return $this;
+    }
 
     #[ORM\Column(columnDefinition: "ENUM('PENDING','CONFIRMED','CANCELLED')")]
     private string $status = 'PENDING';
 
-    public function getStatus(): string { return $this->status; }
-    public function setStatus(string $status): self { $this->status = $status; return $this; }
+    public function getStatus(): string
+    {
+        return $this->status;
+    }
+    public function setStatus(string $status): self
+    {
+        $this->status = $status;
+        return $this;
+    }
 
     #[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
     private string $price;
 
-    public function getPrice(): string { return $this->price; }
-    public function setPrice(string $price): self { $this->price = $price; return $this; }
+    public function getPrice(): string
+    {
+        return $this->price;
+    }
+    public function setPrice(string $price): self
+    {
+        $this->price = $price;
+        return $this;
+    }
 
     #[ORM\Column(type: 'string', nullable: true)]
     private ?string $localisation = null;
 
-    public function getLocalisation(): ?string { return $this->localisation; }
-    public function setLocalisation(?string $localisation): self { $this->localisation = $localisation; return $this; }
+    public function getLocalisation(): ?string
+    {
+        return $this->localisation;
+    }
+    public function setLocalisation(?string $localisation): self
+    {
+        $this->localisation = $localisation;
+        return $this;
+    }
 
     #[ORM\OneToMany(mappedBy: 'reservation', targetEntity: CalendarEvent::class)]
     private Collection $calendarEvents;
@@ -72,7 +117,10 @@ class Reservation
         $this->reviews = new ArrayCollection();
     }
 
-    public function getCalendarEvents(): Collection { return $this->calendarEvents; }
+    public function getCalendarEvents(): Collection
+    {
+        return $this->calendarEvents;
+    }
 
     public function addCalendarEvent(CalendarEvent $event): self
     {
@@ -93,7 +141,10 @@ class Reservation
         return $this;
     }
 
-    public function getPayments(): Collection { return $this->payments; }
+    public function getPayments(): Collection
+    {
+        return $this->payments;
+    }
 
     public function addPayment(Payment $payment): self
     {
@@ -114,7 +165,10 @@ class Reservation
         return $this;
     }
 
-    public function getReviews(): Collection { return $this->reviews; }
+    public function getReviews(): Collection
+    {
+        return $this->reviews;
+    }
 
     public function addReview(Review $review): self
     {

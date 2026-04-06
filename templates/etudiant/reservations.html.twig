@@ -1,0 +1,164 @@
+{% extends "base.html.twig" %}
+
+{% block body %}
+
+<div style="padding:30px;background:#f5f7fb;min-height:100vh;">
+
+<h2 style="margin-bottom:20px;">Mes Réservations</h2>
+
+<!-- BTN NEW -->
+<div style="text-align:right;margin-bottom:20px;">
+    <a href="{{ path('etudiant_reservations', {new:1}) }}" style="
+        background:#5D5FEF;
+        color:white;
+        padding:10px 18px;
+        border-radius:10px;
+        text-decoration:none;
+        font-weight:600;
+    ">
+        + Nouvelle réservation
+    </a>
+</div>
+
+<!-- FORM ADD -->
+{% if showForm %}
+<div style="background:white;padding:20px;border-radius:12px;margin-bottom:20px;">
+    <h3>Nouvelle réservation</h3>
+
+    <form method="post" action="{{ path('etudiant_reservation_new') }}">
+
+        <select name="service_id" required style="width:100%;padding:10px;margin-bottom:10px;">
+            {% for s in services %}
+                <option value="{{ s.id }}">{{ s.title }}</option>
+            {% endfor %}
+        </select>
+
+        <input type="datetime-local" name="date" required style="width:100%;padding:10px;margin-bottom:10px;">
+
+        <button style="background:#5D5FEF;color:white;padding:10px 20px;border:none;border-radius:8px;">
+            Confirmer
+        </button>
+    </form>
+</div>
+{% endif %}
+
+<!-- STATS -->
+<div style="display:flex;gap:15px;margin-bottom:20px;">
+    <div class="card">{{ total }}<br>Total</div>
+    <div class="card" style="color:orange">{{ pending }}<br>En attente</div>
+    <div class="card" style="color:green">{{ confirmed }}<br>Confirmées</div>
+    <div class="card" style="color:red">{{ cancelled }}<br>Annulées</div>
+</div>
+
+<!-- LIST -->
+{% for r in reservations %}
+
+<div style="
+background:white;
+padding:20px;
+border-radius:12px;
+margin-bottom:15px;
+display:flex;
+justify-content:space-between;
+align-items:center;
+box-shadow:0 4px 20px rgba(0,0,0,0.05);
+">
+
+    <!-- LEFT -->
+    <div>
+        <h3>{{ r.service.title }}</h3>
+        <p>avec {{ r.service.user.name }}</p>
+
+        {% if editId == r.id %}
+            <form method="post" action="{{ path('etudiant_reservation_edit', {id:r.id}) }}">
+                <input type="datetime-local" name="date" required style="padding:8px;">
+                <button style="background:#5D5FEF;color:white;border:none;padding:6px 10px;border-radius:6px;">✔</button>
+            </form>
+        {% else %}
+            <p>{{ r.date|date('d M Y H:i') }}</p>
+        {% endif %}
+
+        <strong style="color:#5D5FEF;">{{ r.price }} DT</strong>
+    </div>
+
+    <!-- RIGHT -->
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:10px;">
+
+        <!-- STATUS -->
+        {% if r.status == 'CONFIRMED' %}
+            <span style="background:#D1FAE5;color:#059669;padding:5px 10px;border-radius:20px;">✔ Confirmée</span>
+        {% elseif r.status == 'PENDING' %}
+            <span style="background:#FEF3C7;color:#D97706;padding:5px 10px;border-radius:20px;">⏳ En attente</span>
+        {% else %}
+            <span style="background:#FEE2E2;color:#DC2626;padding:5px 10px;border-radius:20px;">❌ Annulée</span>
+        {% endif %}
+
+        <!-- ACTIONS -->
+        <div style="display:flex;gap:10px;align-items:center;">
+
+
+            <!-- 📍 COORDINATION -->
+           <a href="/coordination" style="
+            background:#5D5FEF;
+            color:white;
+            padding:6px 14px;
+            border-radius:10px;
+            text-decoration:none;
+                font-size:13px;
+             font-weight:500;
+            box-shadow:0 4px 12px rgba(93,95,239,0.3);
+    transition:0.3s;
+         "
+        onmouseover="this.style.background='#4b4ddf'"
+         onmouseout="this.style.background='#5D5FEF'"
+           >
+    📍 Coordination
+</a>
+             <!-- ❌ ANNULER -->
+            <form method="post" action="{{ path('etudiant_reservation_cancel', {id:r.id}) }}">
+                <button style="
+                    background:linear-gradient(135deg,#ff4d4d,#ff0000);
+                    color:white;
+                    border:none;
+                    padding:6px 14px;
+                    border-radius:10px;
+                    cursor:pointer;
+                    box-shadow:0 4px 10px rgba(255,0,0,0.3);
+                ">
+                    Annuler
+                </button>
+            </form>
+
+             
+            <!-- ✏️ EDIT -->
+            <a href="{{ path('etudiant_reservations', {edit:r.id}) }}" style="
+                background:#E0E7FF;
+                padding:8px;
+                border-radius:8px;
+                text-decoration:none;
+            ">✏️</a>
+
+
+            <button onclick="openDeleteModal({{ r.id }})" style="
+             background:#5D5FEF;
+             border:none;
+              padding:8px 10px;
+              border-radius:10px;
+              cursor:pointer;
+              box-shadow:0 4px 10px rgba(135, 5, 0, 0.88);
+               transition:0.3s;
+                                         ">
+               <span style="color:black; font-size:14px;">🗑</span>
+                   </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endfor %}
+
+</div>
+
+{% endblock %}

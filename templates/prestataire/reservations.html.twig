@@ -1,0 +1,107 @@
+{% extends "base.html.twig" %}
+
+{% block body %}
+
+<div style="padding:30px;background:#f5f7fb;min-height:100vh;">
+
+<h2 style="margin-bottom:20px;">Réservations reçues</h2>
+
+<!-- STATS -->
+<div style="display:flex;gap:15px;margin-bottom:20px;">
+    <div class="card">{{ total }}<br>Total</div>
+    <div class="card" style="color:orange;">{{ pending }}<br>En attente</div>
+    <div class="card" style="color:green;">{{ confirmed }}<br>Confirmées</div>
+    <div class="card" style="color:#5D5FEF;">{{ revenue }} DT<br>Revenus</div>
+</div>
+
+<!-- LIST -->
+{% for r in reservations %}
+
+<div style="
+background:white;
+padding:20px;
+border-radius:12px;
+margin-bottom:15px;
+display:flex;
+justify-content:space-between;
+align-items:center;
+box-shadow:0 4px 20px rgba(0,0,0,0.05);
+">
+
+    <div>
+        <h3>{{ r.service.title }}</h3>
+        <p style="color:#666;">par {{ r.user.name }}</p>
+        <p style="color:#999;">📅 {{ r.date|date('d M Y H:i') }}</p>
+        <strong style="color:#5D5FEF;">{{ r.price }} DT</strong>
+    </div>
+
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:10px;">
+
+        {% if r.status == 'CONFIRMED' %}
+            <span style="background:#D1FAE5;color:#059669;padding:5px 10px;border-radius:20px;">✔ Confirmée</span>
+        {% elseif r.status == 'PENDING' %}
+            <span style="background:#FEF3C7;color:#D97706;padding:5px 10px;border-radius:20px;">⏳ En attente</span>
+        {% else %}
+            <span style="background:#FEE2E2;color:#DC2626;padding:5px 10px;border-radius:20px;">❌ Annulée</span>
+        {% endif %}
+
+        <div style="display:flex;gap:8px;">
+
+
+            {% if r.status == 'PENDING' %}
+            <form method="post" action="{{ path('reservation_confirm', {id: r.id}) }}">
+                <button style="background:green;color:white;border:none;padding:6px 12px;border-radius:8px;">✔</button>
+            </form>
+            {% endif %}
+
+            <form method="post" action="{{ path('reservation_cancel', {id: r.id}) }}">
+                <button style="background:#EF4444;color:white;border:none;padding:6px 12px;border-radius:8px;">Annuler</button>
+            </form>
+
+            <button onclick="openDeleteModal({{ r.id }})" style="background:#eee;border:none;padding:8px;border-radius:8px;">
+                🗑
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% else %}
+<p>Aucune réservation</p>
+{% endfor %}
+
+</div>
+
+<!-- MODAL -->
+<div id="deleteModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);justify-content:center;align-items:center;">
+
+    <div style="background:white;padding:25px;border-radius:12px;width:350px;text-align:center;">
+
+        <h3>Confirmation</h3>
+        <p>Voulez-vous supprimer cette réservation ?</p>
+
+        <form id="deleteForm" method="post">
+            <button type="button" onclick="closeModal()" style="padding:8px 15px;border-radius:8px;background:#eee;">Annuler</button>
+            <button style="background:#EF4444;color:white;padding:8px 15px;border-radius:8px;border:none;">
+                Supprimer
+            </button>
+        </form>
+
+    </div>
+
+</div>
+
+<script>
+function openDeleteModal(id){
+    document.getElementById('deleteModal').style.display='flex';
+    document.getElementById('deleteForm').action='/prestataire/reservations/'+id+'/delete';
+}
+
+function closeModal(){
+    document.getElementById('deleteModal').style.display='none';
+}
+</script>
+
+{% endblock %}
