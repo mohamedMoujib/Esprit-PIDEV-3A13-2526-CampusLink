@@ -22,7 +22,7 @@ class StudentController extends AbstractController
             return $this->redirectToRoute('service_catalog');
         }
         if ($user->getUserType() === 'ADMIN') {
-            return $this->redirectToRoute('admin_home');
+            return $this->redirectToRoute('admin_dashboard');
         }
 
         $kw = trim((string) $req->query->get('q', ''));

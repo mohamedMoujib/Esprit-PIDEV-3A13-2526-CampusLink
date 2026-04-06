@@ -1,0 +1,77 @@
+{% extends "prestataire/layout.html.twig" %}
+
+{% block prestataire_title %}Mes services{% endblock %}
+{% block prestataire_page_title %}Mes services{% endblock %}
+{% block prestataire_page_subtitle %}Gérez vos services et réservations{% endblock %}
+
+{% block prestataire_header_action %}
+    <a href="{{ path('prestataire_service_new') }}" class="btn btn-primary">
+        ➕ Ajouter un service
+    </a>
+{% endblock %}
+
+{% block prestataire_content %}
+{% if services is empty %}
+    <div class="empty-state" style="text-align: center; padding: 80px 20px;">
+        <div style="font-size: 48px; margin-bottom: 20px;">🛠️</div>
+        <div style="font-size: 18px; font-weight: 700; margin-bottom: 10px;">Aucun service créé</div>
+        <div style="color: var(--text-muted); margin-bottom: 30px;">Commencez par créer votre premier service</div>
+        <a href="{{ path('prestataire_service_new') }}" class="btn btn-primary">
+            ➕ Créer mon premier service
+        </a>
+    </div>
+{% else %}
+    <div class="cards-grid">
+        {% for service in services %}
+            <div class="card" style="padding: 20px; display: flex; flex-direction: column;">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+                    <div style="flex: 1;">
+                        <div style="font-weight: 700; font-size: 16px; color: var(--text);">{{ service.title }}</div>
+                    </div>
+                    <span class="badge 
+                        {% if service.status == 'EN_ATTENTE' %}badge-pending
+                        {% elseif service.status == 'CONFIRMEE' %}badge-active
+                        {% elseif service.status == 'REFUSEE' %}badge-rejected
+                        {% else %}badge-inactive{% endif %}"
+                        style="white-space: nowrap; font-size: 11px;">
+                        {% if service.status == 'EN_ATTENTE' %}⏳ En attente
+                        {% elseif service.status == 'CONFIRMEE' %}✅ Confirmé
+                        {% elseif service.status == 'REFUSEE' %}❌ Refusé
+                        {% else %}✓ Terminé{% endif %}
+                    </span>
+                </div>
+
+                {% if service.description %}
+                    <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px; line-height: 1.4;">
+                        {{ service.description[:100] }}{% if service.description|length > 100 %}...{% endif %}
+                    </div>
+                {% endif %}
+
+                <div style="border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 12px 0; margin: 12px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 13px;">
+                    <div>
+                        <div style="color: var(--text-muted); margin-bottom: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase;">Prix</div>
+                        <div style="font-weight: 700; color: var(--primary); font-size: 16px;">{{ service.price|number_format(2, '.', ',') }} DT</div>
+                    </div>
+                    <div>
+                        <div style="color: var(--text-muted); margin-bottom: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase;">Réservations</div>
+                        <div style="font-weight: 700;">📅 {{ service.reservations|length }}</div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 8px; margin-top: auto; padding-top: 12px;">
+                    <a href="{{ path('prestataire_service_details', {'id': service.id}) }}" 
+                       class="btn btn-outline btn-sm" style="flex: 1; text-align: center;">👁️ Voir</a>
+                    <a href="{{ path('prestataire_service_edit', {'id': service.id}) }}" 
+                       class="btn btn-ghost btn-sm" style="flex: 1; text-align: center;">✏️ Éditer</a>
+                    <form method="POST" action="{{ path('prestataire_service_delete', {'id': service.id}) }}" style="flex: 1;">
+                        <button type="submit" class="btn btn-danger-outline btn-sm" style="width: 100%;" 
+                                onclick="return confirm('Êtes-vous sûr?');">
+                            🗑️ Supprimer
+                        </button>
+                    </form>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
+{% endblock %}

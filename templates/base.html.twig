@@ -606,6 +606,11 @@
            class="{% if app.request.attributes.get('_route') == 'service_catalog' %}active{% endif %}">
             <span class="nav-icon">🔍</span> Catalogue
         </a>
+
+         <a href="{{ path('prestataire_reservations') }}"
+           class="{% if app.request.attributes.get('_route') == 'prestataire_reservations' %}active{% endif %}">
+            <span class="nav-icon"> 🎟️ </span> Reservation
+        </a>
         <a href="{{ path('tutor_reviews_index') }}"
            class="{% if 'tutor_reviews' in app.request.attributes.get('_route') %}active{% endif %}">
             <span class="nav-icon">⭐</span> Avis reçus
@@ -623,6 +628,11 @@
         <a href="{{ path('publication_index') }}"
            class="{% if (app.request.attributes.get('_route')|default('')) starts with 'publication_' %}active{% endif %}">
             <span class="nav-icon">📢</span> Publications
+        </a>
+
+         <a href="{{ path('etudiant_reservations') }}"
+           class="{% if app.request.attributes.get('_route') == 'etudiant_reservations' %}active{% endif %}">
+            <span class="nav-icon"> 🎟️ </span> Reservation
         </a>
         <a href="{{ path('student_reviews_index') }}"
            class="{% if 'student_reviews' in app.request.attributes.get('_route') %}active{% endif %}">

@@ -1,0 +1,55 @@
+{% extends "prestataire/layout.html.twig" %}
+
+{% block prestataire_title %}{{ service.id ? 'Modifier le service' : 'Créer un service' }}{% endblock %}
+{% block prestataire_page_title %}{{ service.id ? 'Modifier le service' : 'Créer un service' }}{% endblock %}
+{% block prestataire_page_subtitle %}{{ service.id ? 'Mettez à jour les informations de votre service' : 'Ajouter un nouveau service à votre offre' }}{% endblock %}
+
+{% block prestataire_content %}
+<div class="form-panel">
+    {{ form_start(form, {'attr': {'novalidate': 'novalidate'}}) }}
+
+    <div class="form-group">
+        {{ form_label(form.title) }}
+        {{ form_widget(form.title, {'attr': {'class': 'form-control', 'placeholder': 'Titre du service'}}) }}
+        {{ form_errors(form.title) }}
+    </div>
+
+    <div class="form-group">
+        {{ form_label(form.description) }}
+        {{ form_widget(form.description, {'attr': {'class': 'form-control', 'rows': '5', 'placeholder': 'Description détaillée'}}) }}
+        {{ form_errors(form.description) }}
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        <div class="form-group">
+            {{ form_label(form.price) }}
+            {{ form_widget(form.price, {'attr': {'class': 'form-control', 'type': 'number', 'step': '0.01', 'min': '0'}}) }}
+            {{ form_errors(form.price) }}
+        </div>
+
+        <div class="form-group">
+            {{ form_label(form.category) }}
+            {{ form_widget(form.category, {'attr': {'class': 'form-control'}}) }}
+            {{ form_errors(form.category) }}
+        </div>
+    </div>
+
+    {% if form.image is defined %}
+    <div class="form-group">
+        {{ form_label(form.image) }}
+        {{ form_widget(form.image, {'attr': {'class': 'form-control'}}) }}
+        {{ form_errors(form.image) }}
+        <small style="color: var(--text-muted); font-size: 12px; margin-top: 4px; display: block;">Format: JPG, PNG (max 5MB)</small>
+    </div>
+    {% endif %}
+
+    <div style="display: flex; gap: 12px; margin-top: 30px;">
+        {{ form_widget(form.submit, {'attr': {'class': 'btn btn-primary'}}) }}
+        <a href="{{ path('prestataire_services') }}" class="btn btn-outline">
+            Annuler
+        </a>
+    </div>
+
+    {{ form_end(form) }}
+</div>
+{% endblock %}
