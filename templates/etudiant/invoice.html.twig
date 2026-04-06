@@ -3,6 +3,25 @@
 {% block title %}Mes Factures{% endblock %}
 
 {% block body %}
+
+<style>
+.custom-table th,
+.custom-table td {
+    border: 1px solid #dddcfc; /* lines between rows & columns */
+    padding: 14px;
+}
+
+.custom-table thead th {
+    color: #5b54e8;
+    font-weight: 600;
+    border-bottom: 2px solid #5b54e8;
+}
+
+.custom-table tbody tr:hover {
+    background-color: #f7f7ff;
+}
+</style>
+
 <div class="container mt-4" style="max-width: 1100px;">
     <h2 class="mb-4" style="font-weight: 600; font-size: 28px;">Mes Factures</h2>
 
@@ -12,7 +31,7 @@
         {% endfor %}
     {% endfor %}
 
-    <!-- Date Filter Only -->
+    <!-- Date Filter -->
     <form method="get" class="d-flex gap-2 align-items-center mb-4">
         <input
             type="date"
@@ -21,43 +40,70 @@
             style="max-width: 220px;"
             value="{{ app.request.query.get('date') }}"
         >
-        <button type="submit" class="btn btn-primary btn-lg px-5" style="background-color: #5b54e8; border-color: #5b54e8;">Filtrer</button>
+        <button type="submit" class="btn btn-primary btn-lg px-5"
+                style="background-color: #5b54e8; border-color: #5b54e8;">
+            Filtrer
+        </button>
     </form>
 
-    <div class="table-responsive" style="border: 2px solid #5b54e8; border-radius: 12px; overflow: hidden;">
-        <table class="table table-hover align-middle mb-0 text-center" style="font-size: 16px;">
-            <thead style="background-color: #ededfd; border-bottom: 2px solid #5b54e8;">
+    <!-- TABLE -->
+<div class="table-responsive" style="border: 2px solid #5b54e8; border-radius: 12px; overflow-x: auto; margin: 0;">
+    <table class="table align-middle mb-0 text-center custom-table w-100" style="font-size: 16px; table-layout: fixed;">
+        
+        <thead style="background-color: #ededfd;">
+            <tr>
+                <th style="width: 60px;">#</th>
+                <th style="width: 180px;">Date</th>
+                <th>Détails</th>
+                <th style="width: 200px;">Actions</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for invoice in invoices %}
                 <tr>
-                    <th class="fw-600 py-3" style="width: 60px; color: #5b54e8;">#</th>
-                    <th class="fw-600 py-3" style="width: 180px; color: #5b54e8;">Date</th>
-                    <th class="fw-600 py-3" style="color: #5b54e8;">Détails</th>
-                    <th class="fw-600 py-3" style="width: 200px; color: #5b54e8;">Actions</th>
+                    <td class="text-muted fw-semibold">{{ loop.index }}</td>
+
+                    <td class="text-nowrap" style="font-size: 15px;">
+                        {{ invoice.issueDate ? invoice.issueDate|date('d/m/Y H:i') : 'N/A' }}
+                    </td>
+
+                    <td style="font-size: 15px; line-height: 1.6; word-wrap: break-word;">
+                        {{ invoice.details ?: 'Aucun détail' }}
+                    </td>
+
+                    <td>
+                        <div class="d-flex gap-3 justify-content-center">
+                            
+                            <a href="{{ path('invoice_preview', {'id': invoice.id}) }}"
+                               class="btn btn-outline-primary btn-sm px-3"
+                               style="border-color: #5b54e8; color: #5b54e8;">
+                                Aperçu
+                            </a>
+
+                            <form method="post"
+                                  action="{{ path('invoice_delete', {'id': invoice.id}) }}"
+                                  onsubmit="return confirm('Supprimer cette facture ?');">
+                                <button class="btn btn-sm px-3"
+                                        style="background-color: #e24b4a; border-color: #e24b4a; color: white;">
+                                    Supprimer
+                                </button>
+                            </form>
+
+                        </div>
+                    </td>
                 </tr>
-            </thead>
-            <tbody>
-                {% for invoice in invoices %}
-                    <tr style="border-bottom: 1px solid #dddcfc;">
-                        <td class="text-muted fw-semibold py-3">{{ loop.index }}</td>
-                        <td class="text-nowrap py-3" style="font-size: 15px;">{{ invoice.issueDate ? invoice.issueDate|date('d/m/Y H:i') : 'N/A' }}</td>
-                        <td class="py-3" style="font-size: 15px; line-height: 1.6; max-width: 420px; word-wrap: break-word;">
-                            {{ invoice.details ?: 'Aucun détail' }}
-                        </td>
-                        <td class="py-3">
-                            <div class="d-flex gap-3 justify-content-center">
-                                <a href="{{ path('invoice_preview', {'id': invoice.id}) }}" class="btn btn-outline-primary btn-sm px-3" style="border-color: #5b54e8; color: #5b54e8; font-size: 14px;">Aperçu</a>
-                                <form method="post" action="{{ path('invoice_delete', {'id': invoice.id}) }}" onsubmit="return confirm('Supprimer cette facture ?');">
-                                    <button class="btn btn-sm px-3" style="background-color: #e24b4a; border-color: #e24b4a; color: white; font-size: 14px;">Supprimer</button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                {% else %}
-                    <tr>
-                        <td colspan="4" class="text-center text-muted py-5" style="font-size: 16px;">Aucune facture trouvée pour cette date.</td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+            {% else %}
+                <tr>
+                    <td colspan="4" class="text-center text-muted" style="font-size: 16px; padding: 14px;">
+                        Aucune facture trouvée pour cette date.
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+
+    </table>
 </div>
+</div>
+
 {% endblock %}

@@ -1,51 +1,324 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Aperçu de la facture{% endblock %}
+{% block title %}Facture #{{ invoice.id }}{% endblock %}
 
 {% block body %}
-<div class="container my-5" style="max-width: 800px;">
 
-    <div class="card shadow-sm rounded-4 border-0 p-4" style="background: #fdfdfd;">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <div>
-                <h3 class="fw-bold" style="color:#5b54e8;">CampusLink</h3>
-                <small class="text-muted">Espace Étudiant</small>
+<style>
+.inv-wrap {
+    font-family: sans-serif;
+    max-width: 860px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+.inv-card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+}
+.inv-header {
+    background: #1a2744;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 28px 36px;
+    position: relative;
+}
+.inv-header::after {
+    content: '';
+    position: absolute;
+    right: 220px;
+    top: 0;
+    width: 90px;
+    height: 100%;
+    background: #3b82c4;
+    clip-path: ellipse(55px 100% at 50% 50%);
+}
+.inv-logo {
+    z-index: 1;
+}
+.inv-logo h2 {
+    color: #ffffff;
+    font-size: 22px;
+    font-weight: 600;
+    margin: 0 0 4px;
+}
+.inv-logo small {
+    color: #9ca8c0;
+    font-size: 12px;
+}
+.inv-title-block {
+    text-align: right;
+    z-index: 1;
+}
+.inv-title-block h1 {
+    color: #ffffff;
+    font-size: 28px;
+    font-weight: 700;
+    margin: 0 0 6px;
+    letter-spacing: 3px;
+}
+.inv-title-block p {
+    color: #9ca8c0;
+    font-size: 13px;
+    margin: 2px 0;
+}
+.inv-title-block p span {
+    color: #ffffff;
+    font-weight: 600;
+}
+.inv-body {
+    padding: 32px 36px;
+}
+.inv-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 28px;
+}
+.inv-meta-block h6 {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #6b7280;
+    margin: 0 0 8px;
+}
+.inv-meta-block p {
+    font-size: 13px;
+    color: #374151;
+    margin: 0 0 3px;
+}
+.inv-meta-block .amount-big {
+    font-size: 26px;
+    font-weight: 700;
+    color: #1a2744;
+}
+.inv-divider {
+    border: none;
+    border-top: 1px solid #e5e7eb;
+    margin: 0 0 24px;
+}
+.inv-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-bottom: 28px;
+}
+.inv-table thead tr {
+    background: #1a2744;
+}
+.inv-table thead th {
+    color: #ffffff;
+    font-weight: 600;
+    padding: 10px 16px;
+    text-align: left;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.inv-table thead th.text-right {
+    text-align: right;
+}
+.inv-table tbody tr {
+    border-bottom: 1px solid #e5e7eb;
+}
+.inv-table tbody tr:nth-child(even) {
+    background: #f9fafb;
+}
+.inv-table tbody td {
+    padding: 14px 16px;
+    color: #374151;
+    vertical-align: top;
+}
+.inv-table tbody td.text-right {
+    text-align: right;
+    font-weight: 600;
+}
+.inv-table tbody td.row-num {
+    color: #9ca8c0;
+    width: 36px;
+}
+.inv-footer-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding-top: 20px;
+    border-top: 1px solid #e5e7eb;
+}
+.inv-footer-note {
+    font-size: 12px;
+    color: #6b7280;
+    max-width: 340px;
+    line-height: 1.7;
+}
+.inv-footer-note strong {
+    font-weight: 600;
+    font-size: 12px;
+    color: #374151;
+}
+.inv-signature {
+    display: inline-block;
+    padding-top: 6px;
+    min-width: 160px;
+    border-top: 1px solid #d1d5db;
+    font-size: 11px;
+    color: #9ca8c0;
+    margin-top: 12px;
+}
+.inv-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+.btn-close-inv {
+    font-size: 13px;
+    padding: 9px 22px;
+    border: 1px solid #d1d5db;
+    background: transparent;
+    color: #374151;
+    border-radius: 8px;
+    cursor: pointer;
+    text-decoration: none;
+}
+.btn-close-inv:hover {
+    background: #f3f4f6;
+}
+.btn-print-inv {
+    font-size: 13px;
+    padding: 9px 22px;
+    border: none;
+    background: #1a2744;
+    color: #ffffff;
+    border-radius: 8px;
+    cursor: pointer;
+}
+.btn-print-inv:hover {
+    background: #243460;
+}
+
+@media print {
+
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    body * {
+        visibility: hidden;
+    }
+
+    .inv-wrap, .inv-wrap * {
+        visibility: visible;
+    }
+
+    .inv-wrap {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+    }
+
+    .inv-actions,
+    button,
+    .btn,
+    a {
+        display: none !important;
+    }
+
+    .inv-card {
+        box-shadow: none !important;
+        border: none !important;
+    }
+}
+</style>
+
+<div class="inv-wrap">
+    <div class="inv-card">
+
+        <!-- HEADER -->
+        <div class="inv-header">
+            <div class="inv-logo">
+                <h2>CampusLink</h2>
+                <small>Plateforme Étudiante</small>
             </div>
-            <div class="text-end">
-                <h5 class="fw-bold">Facture #{{ invoice.id }}</h5>
-                <small class="text-muted">{{ invoice.issueDate ? invoice.issueDate|date('d/m/Y H:i') : 'N/A' }}</small>
+            <div class="inv-title-block">
+                <h1>FACTURE</h1>
+                <p>Facture # <span>#{{ invoice.id }}</span></p>
+                <p>Date: <span>{{ invoice.issueDate ? invoice.issueDate|date('d/m/Y') : 'N/A' }}</span></p>
             </div>
         </div>
 
-        <hr>
+        <div class="inv-body">
 
-        <div class="row mb-4">
-            <div class="col-md-6">
-                <h6 class="fw-bold">Paiement</h6>
-                <p>
-                    ID Paiement: {{ invoice.payment.id }}<br>
-                    Méthode: {{ invoice.payment.method }}<br>
-                    Montant: {{ invoice.payment.amount }} €
-                </p>
+            <!-- META -->
+            <div class="inv-meta">
+                <div class="inv-meta-block">
+                    <h6>Paiement</h6>
+                    <p><strong>ID:</strong> {{ invoice.payment.id }}</p>
+                    <p><strong>Méthode:</strong> {{ invoice.payment.method }}</p>
+                </div>
+
+                <div class="inv-meta-block">
+                    <h6>Lieu de rencontre</h6>
+                    <p>{{ invoice.payment.meetingAddress }}</p>
+                    <p style="font-size:12px; color:#9ca8c0;">
+                        Lat: {{ invoice.payment.meetingLat }},
+                        Lng: {{ invoice.payment.meetingLng }}
+                    </p>
+                </div>
+
+                <div class="inv-meta-block" style="text-align: right;">
+                    <h6>Montant</h6>
+                    <p class="amount-big">{{ invoice.payment.amount }} €</p>
+                </div>
             </div>
-            <div class="col-md-6">
-                <h6 class="fw-bold">Lieu de rencontre</h6>
-                <p>
-                    {{ invoice.payment.meetingAddress }}<br>
-                    Latitude: {{ invoice.payment.meetingLat }}<br>
-                    Longitude: {{ invoice.payment.meetingLng }}
-                </p>
+
+            <hr class="inv-divider">
+
+            <!-- TABLE -->
+            <table class="inv-table">
+                <thead>
+                    <tr>
+                        <th style="width:36px;">Sl.</th>
+                        <th>Description</th>
+                        <th class="text-right">Montant</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="row-num">1.</td>
+                        <td style="white-space: pre-line;">
+                            {{ invoice.details ?: 'Aucun détail fourni' }}
+                        </td>
+                        <td class="text-right">{{ invoice.payment.amount }} €</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- FOOTER -->
+            <div class="inv-footer-row">
+                <div class="inv-footer-note">
+                    <strong>Pour toute question :</strong><br>
+                    CampusLink — Plateforme de mise en relation étudiante<br>
+                    Merci pour votre confiance 🙏
+                    <br>
+                    <span class="inv-signature">Signature autorisée</span>
+                </div>
+                <div class="inv-actions">
+                    <a href="{{ path('invoice_index') }}" class="btn-close-inv">
+                        Fermer
+                    </a>
+                    <button onclick="window.print()" class="btn-print-inv">
+                        Imprimer
+                    </button>
+                </div>
             </div>
-        </div>
 
-        <h6 class="fw-bold mb-2">Détails de la facture</h6>
-        <p style="line-height: 1.6; white-space: pre-line;">{{ invoice.details ?: 'Aucun détail fourni' }}</p>
-
-        <div class="text-end mt-4">
-            <a href="{{ path('invoice_index') }}" class="btn btn-outline-secondary px-4">Fermer</a>
-            <button onclick="window.print()" class="btn btn-primary px-4" style="background-color: #5b54e8; border-color: #5b54e8;">Imprimer</button>
         </div>
     </div>
-
 </div>
+
 {% endblock %}
