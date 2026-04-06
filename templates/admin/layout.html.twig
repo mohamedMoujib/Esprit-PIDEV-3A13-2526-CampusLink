@@ -1,0 +1,16 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+<div class="page-header">
+    <div>
+        <div class="page-title">
+            {% block page_icon %}👑{% endblock %}
+            {% block page_title %}Admin{% endblock %}
+        </div>
+        <div class="page-sub">{% block page_sub %}{% endblock %}</div>
+    </div>
+    {% block page_actions %}{% endblock %}
+</div>
+
+{% block page_content %}{% endblock %}
+{% endblock %}

@@ -1,0 +1,276 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Avis reçus - CampusLink{% endblock %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('styles/TutorReviews.css') }}">
+{% endblock %}
+
+{% block body %}
+<div class="page-content">
+
+    <!-- FLASH MESSAGES -->
+    {% for msg in app.flashes('success') %}
+        <div class="flash flash-success">✅ {{ msg }}</div>
+    {% endfor %}
+    {% for msg in app.flashes('error') %}
+        <div class="flash flash-error">❌ {{ msg }}</div>
+    {% endfor %}
+
+    <h1 class="page-title">Avis reçus</h1>
+
+    <!-- STATISTIQUES -->
+    <div class="stats-grid">
+        <div class="stats-card">
+            <div class="stats-label">Note moyenne</div>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span class="stats-value">{{ averageRating }}</span>
+                <span class="stats-icon stars-positive">★</span>
+            </div>
+        </div>
+        <div class="stats-card">
+            <div class="stats-label">Total d'avis</div>
+            <span class="stats-value">{{ totalReviews }}</span>
+        </div>
+        <div class="stats-card">
+            <div class="stats-label">Points de confiance</div>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span class="stats-value" style="color:#059669;">{{ trustPoints }}</span>
+                <span class="stats-icon">🏆</span>
+            </div>
+        </div>
+        <div class="stats-card">
+            <div class="stats-label">Affichés</div>
+            <span class="stats-value" style="color:#5D5FEF;">{{ reviews|length }}</span>
+        </div>
+    </div>
+
+    <!-- FILTRES -->
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:25px; flex-wrap:wrap;">
+        <span style="font-weight:600; font-size:14px;">Filtrer par note :</span>
+        <a href="{{ path('tutor_reviews_index') }}"                  class="filter-btn {{ currentFilter is null ? 'active' : '' }}">Tous</a>
+        <a href="{{ path('tutor_reviews_index', {filter: '5'}) }}"   class="filter-btn {{ currentFilter == '5'   ? 'active' : '' }}">⭐⭐⭐⭐⭐ +5</a>
+        <a href="{{ path('tutor_reviews_index', {filter: '4'}) }}"   class="filter-btn {{ currentFilter == '4'   ? 'active' : '' }}">⭐⭐⭐⭐ +4</a>
+        <a href="{{ path('tutor_reviews_index', {filter: '3'}) }}"   class="filter-btn {{ currentFilter == '3'   ? 'active' : '' }}">⭐⭐⭐ +3</a>
+        <a href="{{ path('tutor_reviews_index', {filter: 'low'}) }}" class="filter-btn {{ currentFilter == 'low' ? 'active' : '' }}">⭐⭐ +1/+2</a>
+        <a href="{{ path('tutor_reviews_index', {filter: 'neg'}) }}" class="filter-btn {{ currentFilter == 'neg' ? 'active' : '' }}">👎 Négatifs</a>
+
+        <div style="margin-left:auto; display:flex; align-items:center; gap:10px;">
+            <span style="font-weight:600; font-size:14px;">Traduire en :</span>
+            <select id="langSelector" class="filter-combo">
+                <option value="fr">🇫🇷 Français</option>
+                <option value="ar">🇹🇳 العربية</option>
+                <option value="en">🇬🇧 English</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- LISTE DES AVIS -->
+    <div class="reviews-list">
+        {% if reviews is empty %}
+            <div class="empty-state">
+                ⭐ Aucun avis
+                {% if currentFilter is not null %}
+                    pour ce filtre.
+                    <br><small><a href="{{ path('tutor_reviews_index') }}" style="color:#5D5FEF;">Voir tous les avis</a></small>
+                {% else %}
+                    reçu pour le moment.<br>
+                    <small>Les avis de vos étudiants apparaîtront ici.</small>
+                {% endif %}
+            </div>
+        {% else %}
+            {% for review in reviews %}
+                {% set rating    = review.rating %}
+                {% set absRating = (rating < 0 ? -rating : rating) %}
+                {% if absRating > 5 %}
+                    {% set absRating = 5 %}
+                {% endif %}
+                {% set colorClass = rating < 0 ? 'stars-negative' : (rating > 0 ? 'stars-positive' : 'stars-neutral') %}
+
+                <div class="review-card">
+
+                    <div class="card-header">
+                        <div class="card-info">
+                            <div class="service-title">
+                                📚 {{ review.reservation.service.title ?? 'Service inconnu' }}
+                            </div>
+                            <div class="student-name">
+                                par {{ review.student.name ?? 'Étudiant inconnu' }}
+                            </div>
+                        </div>
+                        <div class="card-date">{{ 'now'|date('d M Y') }}</div>
+                    </div>
+
+                    <div class="stars-display">
+                        <span class="stars {{ colorClass }}">
+                            {% for i in 1..5 %}{% if i <= absRating %}★{% else %}☆{% endif %}{% endfor %}
+                        </span>
+                        <span class="stars-badge {{ colorClass }}">
+                            {{ rating > 0 ? '(+' ~ rating ~ ')' : '(' ~ rating ~ ')' }}
+                        </span>
+                    </div>
+
+                    <div style="display:flex; align-items:flex-start; gap:10px;">
+                        <p class="review-comment" style="flex:1;">{{ review.comment }}</p>
+                        <button class="btn-translate"
+                                data-comment="{{ review.comment|e('html_attr') }}"
+                                data-id="{{ review.id }}"
+                                onclick="handleTranslate(this)">
+                            🌐 Traduire
+                        </button>
+                    </div>
+
+                    <div class="translation-box" id="translation-{{ review.id }}">
+                        <div class="translation-label" id="translation-label-{{ review.id }}"></div>
+                        <div class="translated-text"   id="translated-text-{{ review.id }}"></div>
+                    </div>
+
+                    <div class="card-footer" style="justify-content:space-between;">
+                        <span class="badge
+                            {% if rating == 5 %}badge-excellent
+                            {% elseif rating == 4 %}badge-good
+                            {% elseif rating == 3 %}badge-average
+                            {% elseif rating < 0 %}badge-negative
+                            {% else %}badge-average{% endif %}">
+                            {% if rating == 5 %}⭐ Excellent
+                            {% elseif rating == 4 %}👍 Très bien
+                            {% elseif rating == 3 %}😊 Bien
+                            {% elseif rating < 0 %}👎 Avis négatif
+                            {% else %}⚠️ À améliorer{% endif %}
+                        </span>
+
+                        {% if not review.isReported %}
+                            <button onclick="openReportModal({{ review.id }})" class="btn btn-secondary" style="font-size:12px;">
+                                🚩 Signaler
+                            </button>
+                        {% else %}
+                            <span class="badge badge-reported">🚩 Signalé</span>
+                        {% endif %}
+                    </div>
+
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+</div>
+
+<!-- MODAL SIGNALEMENT -->
+<div id="reportModal" class="modal-overlay">
+    <div class="form-card modal-box">
+        <h2>🚩 Signaler un avis</h2>
+        <form method="post" id="reportForm">
+
+            <div class="form-group">
+                <label>Catégorie <span class="required">*</span></label>
+                <select name="reason_category" id="reasonCategory" class="comment-area" style="min-height:auto; padding:10px;" required>
+                    <option value="">-- Choisir une catégorie --</option>
+                    {% for reason in reportReasons %}
+                        <option value="{{ reason }}">{{ reason }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>
+                    Détails <span class="required">*</span>
+                    <span class="char-counter" id="reportCounter">0 / {{ maxReasonLength }}</span>
+                </label>
+                <textarea
+                    name="reason"
+                    id="reportReason"
+                    class="comment-area"
+                    placeholder="Expliquez pourquoi vous signalez cet avis (minimum {{ minReasonLength }} caractères)..."
+                    maxlength="{{ maxReasonLength }}"
+                    required
+                ></textarea>
+                <small class="hint">Entre {{ minReasonLength }} et {{ maxReasonLength }} caractères.</small>
+            </div>
+
+            <div style="display:flex; gap:10px;">
+                <button type="submit" class="btn btn-danger">🚩 Confirmer</button>
+                <button type="button" onclick="document.getElementById('reportModal').classList.remove('open')" class="btn btn-secondary">Annuler</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block javascripts %}
+<script>
+const translateUrl   = "{{ path('tutor_reviews_translate') }}";
+const langSelector   = document.getElementById('langSelector');
+const MIN_REASON_LEN = {{ minReasonLength }};
+const MAX_REASON_LEN = {{ maxReasonLength }};
+
+// ===================== REPORT MODAL =====================
+function openReportModal(id) {
+    document.getElementById('reportForm').action = '/tutor/reviews/report/' + id;
+    document.getElementById('reportModal').classList.add('open');
+    document.getElementById('reportReason').value   = '';
+    document.getElementById('reasonCategory').value = '';
+    const counter = document.getElementById('reportCounter');
+    counter.textContent = '0 / ' + MAX_REASON_LEN;
+    counter.style.color = '#f0a500';
+}
+
+document.getElementById('reportModal').addEventListener('click', function (e) {
+    if (e.target === this) this.classList.remove('open');
+});
+
+// ===================== COMPTEUR CARACTÈRES =====================
+document.getElementById('reportReason')?.addEventListener('input', function () {
+    const len     = this.value.length;
+    const counter = document.getElementById('reportCounter');
+    counter.textContent = len + ' / ' + MAX_REASON_LEN;
+    counter.style.color = len > MAX_REASON_LEN * 0.9
+        ? '#e74c3c'
+        : (len < MIN_REASON_LEN ? '#f0a500' : '#27ae60');
+});
+
+// ===================== TRADUCTION =====================
+async function handleTranslate(btn) {
+    const id      = btn.dataset.id;
+    const comment = btn.dataset.comment;
+    const lang    = langSelector.value;
+    const box     = document.getElementById('translation-' + id);
+    const label   = document.getElementById('translation-label-' + id);
+    const text    = document.getElementById('translated-text-' + id);
+
+    if (box.classList.contains('visible')) {
+        box.classList.remove('visible');
+        btn.textContent = '🌐 Traduire';
+        btn.className   = 'btn-translate';
+        return;
+    }
+
+    if (lang === 'fr') return;
+
+    btn.textContent = '⏳';
+    btn.disabled    = true;
+
+    const flags = { ar: '🇹🇳', en: '🇬🇧' };
+    const names = { ar: 'العربية', en: 'English' };
+
+    try {
+        const resp = await fetch(translateUrl, {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body:    `text=${encodeURIComponent(comment)}&lang=${lang}`
+        });
+        const data = await resp.json();
+
+        label.textContent = flags[lang] + '  Traduction en ' + names[lang];
+        text.textContent  = data.translated;
+        text.className    = 'translated-text' + (lang === 'ar' ? ' rtl' : '');
+        box.classList.add('visible');
+        btn.textContent = '✕ Masquer';
+        btn.className   = 'btn-hide';
+    } catch (err) {
+        btn.textContent = '🌐 Traduire';
+    }
+
+    btn.disabled = false;
+}
+</script>
+{% endblock %}

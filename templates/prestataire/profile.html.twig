@@ -1,0 +1,285 @@
+{% extends 'base.html.twig' %}
+{% block title %}Mon Profil — CampusLink{% endblock %}
+
+{% block body %}
+<div style="max-width:900px; margin:0 auto;">
+
+    {# ── Page title ── #}
+    <div class="page-header">
+        <div>
+            <div class="page-title">👤 Mon Profil</div>
+            <div class="page-sub">
+                Type de compte :
+                {% if user.userType == 'ETUDIANT' %}
+                    <span class="badge" style="background:#dbeafe; color:#1e40af;">🎓 Étudiant</span>
+                {% elseif user.userType == 'PRESTATAIRE' %}
+                    <span class="badge" style="background:#f3e8ff; color:#7c3aed;">💼 Prestataire</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {# ── Flash messages ── #}
+    {% for message in app.flashes('success') %}
+        <div class="flash flash-success">✅ {{ message }}</div>
+    {% endfor %}
+    {% for message in app.flashes('error') %}
+        <div class="flash flash-error">❌ {{ message }}</div>
+    {% endfor %}
+
+    {# ══════════════════════════════════════
+       CARD 1 — Avatar + Personal Info
+    ══════════════════════════════════════ #}
+    <div class="form-panel" style="margin-bottom:24px;">
+
+        {# ── Avatar row ── #}
+        <div style="position:relative; width:100px; height:100px; cursor:pointer;"
+     onclick="document.getElementById('avatarInput').click()">
+    {% if user.profilePicture %}
+        <img id="avatarPreview"
+             src="/uploads/profiles/{{ user.profilePicture }}"
+             style="width:100px;height:100px;border-radius:50%;object-fit:cover;border:3px solid var(--primary-light);">
+    {% else %}
+        <div id="avatarPreview"
+             style="width:100px;height:100px;border-radius:50%;background:#e0e7ff;
+                    display:flex;align-items:center;justify-content:center;font-size:48px;">
+            👤
+        </div>
+    {% endif %}
+    <div style="position:absolute;bottom:0;right:0;background:var(--primary);color:white;
+                border-radius:50%;width:28px;height:28px;display:flex;align-items:center;
+                justify-content:center;font-size:14px;border:2px solid white;">✏️</div>
+</div>
+<input type="file" id="avatarInput" name="profilePicture"
+       accept="image/*" hidden>
+            <div>
+                <div style="font-size:20px; font-weight:800; color:var(--text);">{{ user.name }}</div>
+                <div style="font-size:13px; color:var(--text-muted); margin-top:2px;">{{ user.email }}</div>
+                <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">
+                    Membre depuis {{ user.createdAt ? user.createdAt|date('d/m/Y') : 'N/A' }}
+                </div>
+            </div>
+        </div>
+
+        {# ── Personal Info Form ── #}
+        <div class="form-panel-header">
+            <span class="form-panel-icon">📋</span>
+            <div>
+                <div class="form-panel-title">Informations personnelles</div>
+                <div class="form-panel-sub">Modifiez vos données de profil</div>
+            </div>
+        </div>
+        <hr class="panel-divider">
+
+        <form method="post" action="{{ path(save_route) }}"
+            enctype="multipart/form-data"   {# ← ADD THIS #}
+            data-turbo="false" novalidate>    
+            <input type="hidden" name="action" value="save_profile">
+
+            {# ── Prénom + Nom ── #}
+            <div class="form-row" style="margin-bottom:16px;">
+                <div class="form-group">
+                    <label class="form-label">Prénom <span class="required-star">*</span></label>
+                    <input type="text" name="prenom" class="form-control"
+                           value="{{ prenom }}" required minlength="2"
+                           placeholder="Votre prénom">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Nom <span class="required-star">*</span></label>
+                    <input type="text" name="nom" class="form-control"
+                           value="{{ nom }}" required minlength="2"
+                           placeholder="Votre nom">
+                </div>
+            </div>
+
+            {# ── Email + Phone ── #}
+            <div class="form-row" style="margin-bottom:16px;">
+                <div class="form-group">
+                    <label class="form-label">Email <span class="required-star">*</span></label>
+                    <input type="email" name="email" class="form-control"
+                           value="{{ user.email }}" required
+                           placeholder="votre@email.com">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Téléphone</label>
+                    <input type="tel" name="phone" class="form-control"
+                           value="{{ user.phone ?? '' }}"
+                           placeholder="ex: +21612345678">
+                </div>
+            </div>
+
+            {# ── Université (full width) ── #}
+            <div class="form-group" style="margin-bottom:16px;">
+                <label class="form-label">Université</label>
+                <input type="text" name="universite" class="form-control"
+                       value="{{ user.universite ?? '' }}"
+                       placeholder="Votre université">
+            </div>
+
+            {# ── Filière + Spécialisation ── #}
+            <div class="form-row" style="margin-bottom:16px;">
+                <div class="form-group">
+                    <label class="form-label">Filière</label>
+                    <input type="text" name="filiere" class="form-control"
+                           value="{{ user.filiere ?? '' }}"
+                           placeholder="Votre filière">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Spécialisation</label>
+                    <input type="text" name="specialization" class="form-control"
+                           value="{{ user.specialization ?? '' }}"
+                           placeholder="Votre spécialisation">
+                </div>
+            </div>
+
+            {# ── Genre + Adresse ── #}
+            <div class="form-row" style="margin-bottom:24px;">
+                <div class="form-group">
+                    <label class="form-label">Genre</label>
+                    <select name="gender" class="form-control">
+                        <option value="">Sélectionnez...</option>
+                        <option value="male"   {% if user.gender == 'male' %}selected{% endif %}>Homme</option>
+                        <option value="female" {% if user.gender == 'female' %}selected{% endif %}>Femme</option>
+                        <option value="other"  {% if user.gender == 'other' %}selected{% endif %}>Autre</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Adresse</label>
+                    <input type="text" name="address" class="form-control"
+                           value="{{ user.address ?? '' }}"
+                           placeholder="Votre adresse">
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <span style="font-size:13px; color:var(--text-muted);">
+                    ℹ️ Les champs <span class="required-star">*</span> sont obligatoires
+                </span>
+                <button type="submit" class="btn btn-primary">
+                    💾 Enregistrer les modifications
+                </button>
+            </div>
+        </form>
+    </div>
+
+    {# ══════════════════════════════════════
+       CARD 2 — Change Password
+    ══════════════════════════════════════ #}
+    <div class="form-panel" style="margin-bottom:24px;">
+
+        <div class="form-panel-header">
+            <span class="form-panel-icon">🔐</span>
+            <div>
+                <div class="form-panel-title">Sécurité</div>
+                <div class="form-panel-sub">Changez votre mot de passe</div>
+            </div>
+        </div>
+        <hr class="panel-divider">
+
+        <form method="post" action="{{ path(save_route) }}" data-turbo="false"
+              id="passwordForm" novalidate>
+            <input type="hidden" name="action" value="change_password">
+
+            <div class="form-group" style="margin-bottom:16px; max-width:420px;">
+                <label class="form-label">Mot de passe actuel <span class="required-star">*</span></label>
+                <input type="password" name="current_password" id="currentPwd"
+                       class="form-control" placeholder="••••••••" required>
+                <span class="field-error" id="err-current"></span>
+            </div>
+
+            <div class="form-row" style="margin-bottom:24px;">
+                <div class="form-group">
+                    <label class="form-label">Nouveau mot de passe <span class="required-star">*</span></label>
+                    <input type="password" name="new_password" id="newPwd"
+                           class="form-control" placeholder="••••••••" required>
+                    <span class="field-error" id="err-new"></span>
+                    <span class="form-hint">8 caractères min, une majuscule, un chiffre</span>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Confirmer <span class="required-star">*</span></label>
+                    <input type="password" name="confirm_password" id="confirmPwd"
+                           class="form-control" placeholder="••••••••" required>
+                    <span class="field-error" id="err-confirm"></span>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-outline">
+                🔑 Changer le mot de passe
+            </button>
+        </form>
+    </div>
+
+    {# ══════════════════════════════════════
+       CARD 3 — Logout
+    ══════════════════════════════════════ #}
+    <div class="form-panel" style="border-color:#fca5a5;">
+        <div class="form-panel-header">
+            <span class="form-panel-icon">🚪</span>
+            <div>
+                <div class="form-panel-title" style="color:var(--danger);">Déconnexion</div>
+                <div class="form-panel-sub">Terminer votre session</div>
+            </div>
+        </div>
+        <hr class="panel-divider">
+        <div style="display:flex; align-items:center; gap:16px; padding-top:8px;">
+            <form method="post" action="{{ path('app_logout') }}" data-turbo="false">
+                <button type="submit" class="btn btn-danger-outline">
+                    🚪 Se déconnecter
+                </button>
+            </form>
+            <span style="font-size:13px; color:var(--text-muted);">
+                Vous serez redirigé vers la page de connexion.
+            </span>
+        </div>
+    </div>
+
+</div>
+
+<style>
+.field-error {
+    font-size: 11px;
+    color: #EF4444;
+    padding-left: 4px;
+    min-height: 16px;
+    display: block;
+}
+</style>
+
+<script>
+document.getElementById('passwordForm').addEventListener('submit', function(e) {
+    let valid = true;
+    const setError = (id, msg) => {
+        document.getElementById(id).textContent = msg;
+        if (msg) valid = false;
+    };
+    const current = document.getElementById('currentPwd').value;
+    const next    = document.getElementById('newPwd').value;
+    const confirm = document.getElementById('confirmPwd').value;
+
+    setError('err-current', !current ? 'Champ requis.' : '');
+    setError('err-new',
+        !next            ? 'Champ requis.' :
+        next.length < 8  ? 'Au moins 8 caractères.' :
+        !/[A-Z]/.test(next) ? 'Une majuscule requise.' :
+        !/[0-9]/.test(next) ? 'Un chiffre requis.' : ''
+    );
+    setError('err-confirm', next !== confirm ? 'Les mots de passe ne correspondent pas.' : '');
+    if (!valid) e.preventDefault();
+});
+document.getElementById('avatarInput').addEventListener('change', function () {
+    const file = this.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+        const preview = document.getElementById('avatarPreview');
+        // Replace whatever element is there with an <img>
+        const img = document.createElement('img');
+        img.src = e.target.result;
+        img.id  = 'avatarPreview';
+        img.style.cssText = 'width:100px;height:100px;border-radius:50%;object-fit:cover;border:3px solid var(--primary-light);';
+        preview.replaceWith(img);
+    };
+    reader.readAsDataURL(file);
+});
+</script>
+{% endblock %}
