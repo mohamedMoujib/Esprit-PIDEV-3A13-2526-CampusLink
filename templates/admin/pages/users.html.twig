@@ -223,5 +223,18 @@
 
     </table>
 </div>
+<script>
+// ── Live search — filters as you type (debounced 300ms) ──
+const searchInput = document.querySelector('input[name="q"]');
+const form        = searchInput.closest('form');
 
+let debounceTimer;
+
+searchInput.addEventListener('input', function() {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+        form.submit();
+    }, 300); // wait 300ms after user stops typing
+});
+</script>
 {% endblock %}

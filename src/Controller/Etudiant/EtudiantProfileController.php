@@ -19,48 +19,53 @@ class EtudiantProfileController extends AbstractController
     public function index(Request $request): Response
     {
         /** @var \App\Entity\User $user */
-        $user = $this->getUser();
+        $user      = $this->getUser();
+        $uploadDir = $this->getParameter('kernel.project_dir') . '/public/uploads/profiles/';
+
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0777, true);
+        }
 
         if ($request->isMethod('POST')) {
             $action = $request->request->get('action');
 
             // ── Save profile ──
             if ($action === 'save_profile') {
+                $prenom = trim($request->request->get('prenom', ''));
+                $nom    = trim($request->request->get('nom', ''));
+
+                // ── Handle profile picture upload ──
+                $newPictureName = null;
                 $profilePicture = $request->files->get('profilePicture');
 
                 if ($profilePicture) {
-                    // Validate
                     $allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+
                     if (!in_array($profilePicture->getMimeType(), $allowed)) {
-                        $this->addFlash('error', 'Format d\'image non supporté. Utilisez JPG, PNG ou WebP.');
-                        return $this->redirectToRoute($saveRoute);
+                        $this->addFlash('error', 'Format non supporté. Utilisez JPG, PNG ou WebP.');
+                        return $this->redirectToRoute('etudiant_profile');
                     }
-                    if ($profilePicture->getSize() > 3 * 1024 * 1024) { // 3 MB
-                        $this->addFlash('error', 'L\'image ne doit pas dépasser 3 Mo.');
-                        return $this->redirectToRoute($saveRoute);
+
+                    if ($profilePicture->getSize() > 3 * 1024 * 1024) {
+                        $this->addFlash('error', 'Image trop volumineuse (max 3MB).');
+                        return $this->redirectToRoute('etudiant_profile');
                     }
 
                     // Delete old picture
-                    $oldPicture = $user->getProfilePicture();
-                    if ($oldPicture) {
-                        $oldPath = $this->getParameter('kernel.project_dir') . '/public/uploads/profiles/' . $oldPicture;
+                    if ($user->getProfilePicture()) {
+                        $oldPath = $uploadDir . $user->getProfilePicture();
                         if (file_exists($oldPath)) {
                             unlink($oldPath);
                         }
                     }
 
                     // Save new picture
-                    $filename = uniqid('avatar_', true) . '.' . $profilePicture->guessExtension();
-                    $profilePicture->move(
-                        $this->getParameter('kernel.project_dir') . '/public/uploads/profiles/',
-                        $filename
-                    );
-                    $user->setProfilePicture($filename);
+                    $newPictureName = 'avatar_' . $user->getId() . '_' . time() . '.' . $profilePicture->guessExtension();
+                    $profilePicture->move($uploadDir, $newPictureName);
                 }
-                $prenom = trim($request->request->get('prenom', ''));
-                $nom    = trim($request->request->get('nom', ''));
 
-                $jsonData = json_encode([
+                // ── Build payload ──
+                $payload = [
                     'name'           => $prenom . ' ' . $nom,
                     'email'          => trim($request->request->get('email', '')),
                     'phone'          => $request->request->get('phone') ?: null,
@@ -69,9 +74,18 @@ class EtudiantProfileController extends AbstractController
                     'universite'     => $request->request->get('universite') ?: null,
                     'filiere'        => $request->request->get('filiere') ?: null,
                     'specialization' => $request->request->get('specialization') ?: null,
-                ]);
+                ];
 
-                $jsonRequest = Request::create('/api/users/' . $user->getId(), 'PUT', content: $jsonData);
+                // ✅ Include picture in payload only if a new one was uploaded
+                if ($newPictureName) {
+                    $payload['profilePicture'] = $newPictureName;
+                }
+
+                $jsonRequest = Request::create(
+                    '/api/users/' . $user->getId(),
+                    'PUT',
+                    content: json_encode($payload)
+                );
                 $jsonRequest->headers->set('Content-Type', 'application/json');
 
                 $response   = $this->userController->update($user->getId(), $jsonRequest);
@@ -102,8 +116,11 @@ class EtudiantProfileController extends AbstractController
                 } elseif ($new !== $confirm) {
                     $this->addFlash('error', 'Les mots de passe ne correspondent pas.');
                 } else {
-                    $jsonData    = json_encode(['password' => $new]);
-                    $jsonRequest = Request::create('/api/users/' . $user->getId(), 'PUT', content: $jsonData);
+                    $jsonRequest = Request::create(
+                        '/api/users/' . $user->getId(),
+                        'PUT',
+                        content: json_encode(['password' => $new])
+                    );
                     $jsonRequest->headers->set('Content-Type', 'application/json');
 
                     $response   = $this->userController->update($user->getId(), $jsonRequest);
@@ -125,14 +142,13 @@ class EtudiantProfileController extends AbstractController
             return $this->redirectToRoute('etudiant_profile');
         }
 
-        // Split name into prenom + nom
         $nameParts = explode(' ', $user->getName(), 2);
 
         return $this->render('Etudiant/profile.html.twig', [
-            'user'      => $user,
-            'prenom'    => $nameParts[0] ?? '',
-            'nom'       => $nameParts[1] ?? '',
-            'save_route'=> 'etudiant_profile',
+            'user'       => $user,
+            'prenom'     => $nameParts[0] ?? '',
+            'nom'        => $nameParts[1] ?? '',
+            'save_route' => 'etudiant_profile',
         ]);
     }
 }
