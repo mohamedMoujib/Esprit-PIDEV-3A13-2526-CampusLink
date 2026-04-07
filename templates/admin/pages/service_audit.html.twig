@@ -18,7 +18,7 @@
                     <td><strong>{{ row.service.title }}</strong><div style="font-size:12px;color:var(--text-muted);">{{ row.service.description ? (row.service.description|length > 90 ? row.service.description|slice(0,90) ~ '…' : row.service.description) : 'Sans description' }}</div></td>
                     <td>{{ row.service.user ? row.service.user.name : '—' }}</td>
                     <td>{{ row.service.category ? row.service.category.name : '—' }}</td>
-                    <td>{{ row.service.price }} €</td>
+                    <td>{{ row.service.price }} DT</td>
                     <td><ul style="margin-left:18px;display:flex;flex-direction:column;gap:4px;">{% for issue in row.issues %}<li>{{ issue }}</li>{% endfor %}</ul></td>
                 </tr>
             {% endfor %}

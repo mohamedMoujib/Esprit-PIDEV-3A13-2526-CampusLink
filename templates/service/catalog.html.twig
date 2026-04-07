@@ -83,7 +83,7 @@ document.querySelectorAll('.filters-bar select').forEach(s => s.addEventListener
                 <span>⏱ 1h</span>
                 <span>📅 {{ service.reservations is defined ? service.reservations|length : 0 }} réservations</span>
             </div>
-            <div style="font-size:22px;font-weight:800;color:var(--primary);">{{ service.price|number_format(2, ',', ' ') }} €</div>
+            <div style="font-size:22px;font-weight:800;color:var(--primary);">{{ service.price|number_format(2, ',', ' ') }} DT</div>
             <a href="{{ path('service_show', {id: service.id}) }}" class="btn btn-primary" style="justify-content:center;width:100%;">Voir détail</a>
         </div>
     </div>

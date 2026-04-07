@@ -70,7 +70,7 @@
                 <span>⏱ 1h</span>
                 <span>📅 {{ service.reservations is defined ? service.reservations|length : 0 }} réservations</span>
             </div>
-            <div style="font-size:22px;font-weight:800;color:var(--primary);">{{ service.price|number_format(2, ',', ' ') }} €</div>
+            <div style="font-size:22px;font-weight:800;color:var(--primary);">{{ service.price|number_format(2, ',', ' ') }} DT</div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
                 <a href="{{ path('service_show', {id: service.id}) }}" class="btn btn-ghost" style="flex:1;justify-content:center;min-width:120px;">Voir détail</a>
                 <button type="button" class="btn btn-primary" style="flex:1;justify-content:center;min-width:120px;">📅 Réserver</button>

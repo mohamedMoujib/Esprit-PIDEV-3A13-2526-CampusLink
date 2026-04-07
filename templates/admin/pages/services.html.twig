@@ -37,7 +37,7 @@
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
                 <div>
                     <div class="form-group"><label class="form-label">Titre du service *</label><input type="text" name="title" class="form-control" required></div>
-                    <div class="form-group"><label class="form-label">Prix (€) *</label><input type="number" name="price" step="0.01" min="0" class="form-control" required></div>
+                    <div class="form-group"><label class="form-label">Prix (DT) *</label><input type="number" name="price" step="0.01" min="0" class="form-control" required></div>
                     <div class="form-group"><label class="form-label">Statut initial</label><select name="status" class="form-control"><option value="EN_ATTENTE">En attente</option><option value="CONFIRMEE">Confirmée</option></select></div>
                     <div class="form-group"><label class="form-label">Catégorie</label><select name="category_id" class="form-control"><option value="">Non catégorisé</option>{% for cat in categories %}<option value="{{ cat.id }}">{{ cat.name }}</option>{% endfor %}</select></div>
                 </div>
