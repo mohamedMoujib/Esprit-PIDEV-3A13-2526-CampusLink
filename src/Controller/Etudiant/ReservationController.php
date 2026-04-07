@@ -33,9 +33,6 @@ class ReservationController extends AbstractController
 
         $services = $serviceRepo->findAll();
 
-        $showForm = $request->query->get('new');
-        $editId = $request->query->get('edit');
-
         return $this->render('etudiant/reservations.html.twig', [
             'reservations' => $reservations,
             'total' => $total,
@@ -43,20 +40,33 @@ class ReservationController extends AbstractController
             'confirmed' => $confirmed,
             'cancelled' => $cancelled,
             'services' => $services,
-            'showForm' => $showForm,
-            'editId' => $editId
+            'showForm' => $request->query->get('new'),
+            'editId' => $request->query->get('edit'),
         ]);
     }
 
     #[Route('/new', name: 'etudiant_reservation_new', methods: ['POST'])]
     public function new(Request $request, EntityManagerInterface $em, ServiceRepository $serviceRepo): Response
     {
-        $service = $serviceRepo->find($request->request->get('service_id'));
+        $serviceId = $request->request->get('service_id');
+        $date = $request->request->get('date');
+
+        if (!$serviceId || !$date) {
+            $this->addFlash('error', 'Champs obligatoires');
+            return $this->redirectToRoute('etudiant_reservations');
+        }
+
+        $service = $serviceRepo->find($serviceId);
+
+        if (!$service) {
+            $this->addFlash('error', 'Service invalide');
+            return $this->redirectToRoute('etudiant_reservations');
+        }
 
         $reservation = new Reservation();
         $reservation->setUser($this->getUser());
         $reservation->setService($service);
-        $reservation->setDate(new \DateTime($request->request->get('date')));
+        $reservation->setDate(new \DateTime($date));
         $reservation->setPrice($service->getPrice());
         $reservation->setStatus('PENDING');
 
@@ -73,7 +83,14 @@ class ReservationController extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
-        $reservation->setDate(new \DateTime($request->request->get('date')));
+        $date = $request->request->get('date');
+
+        if (!$date) {
+            $this->addFlash('error', 'Date invalide');
+            return $this->redirectToRoute('etudiant_reservations');
+        }
+
+        $reservation->setDate(new \DateTime($date));
         $em->flush();
 
         return $this->redirectToRoute('etudiant_reservations');
@@ -92,17 +109,16 @@ class ReservationController extends AbstractController
         return $this->redirectToRoute('etudiant_reservations');
     }
 
-
     #[Route('/{id}/delete', name: 'etudiant_reservation_delete', methods: ['POST'])]
-public function delete(Reservation $reservation, EntityManagerInterface $em): Response
-{
-    if ($reservation->getUser() !== $this->getUser()) {
-        throw $this->createAccessDeniedException();
+    public function delete(Reservation $reservation, EntityManagerInterface $em): Response
+    {
+        if ($reservation->getUser() !== $this->getUser()) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $em->remove($reservation);
+        $em->flush();
+
+        return $this->redirectToRoute('etudiant_reservations');
     }
-
-    $em->remove($reservation);
-    $em->flush();
-
-    return $this->redirectToRoute('etudiant_reservations');
-}
 }
