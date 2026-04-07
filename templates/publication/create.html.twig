@@ -17,19 +17,47 @@
                     <div class="form-panel-title">
                         {% if publication is defined %}Modifier la publication{% else %}Nouvelle Publication{% endif %}
                     </div>
-                    <div class="form-panel-sub">Seule la demande de service est autorisée pour un étudiant</div>
+                    <div class="form-panel-sub">Choisissez le type de publication</div>
                 </div>
             </div>
             <hr class="panel-divider">
 
-            <input type="hidden" name="type_publication" value="DEMANDE_SERVICE">
-            <div class="info-box">
-                <span class="info-box-icon">📋</span>
-                <div>
-                    <div class="info-box-title">Type de publication</div>
-                    <div class="info-box-text">Demande de service</div>
+            {% if publication is defined %}
+                {# En édition : type fixe, non modifiable #}
+                <input type="hidden" name="type_publication" value="{{ publication.typePublication }}">
+                <div class="info-box">
+                    <span class="info-box-icon">{{ publication.typePublication == 'VENTE_OBJET' ? '🛒' : '📋' }}</span>
+                    <div>
+                        <div class="info-box-title">Type de publication</div>
+                        <div class="info-box-text">{{ publication.typePublication == 'VENTE_OBJET' ? 'Vente d\'objet' : 'Demande de service' }}</div>
+                    </div>
                 </div>
-            </div>
+            {% else %}
+                {# En création : choix du type #}
+                <div class="form-group">
+                    <label class="form-label">Type de publication <span class="required-star">*</span></label>
+                    <div style="display:flex;gap:12px;flex-wrap:wrap;" id="typeSelector">
+                        <label id="type-demande" onclick="selectType('DEMANDE_SERVICE')"
+                               style="flex:1;min-width:150px;cursor:pointer;border:2px solid #6366f1;border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:10px;background:#eef2ff;transition:all .2s;">
+                            <input type="radio" name="type_publication" value="DEMANDE_SERVICE" checked style="display:none;">
+                            <span style="font-size:22px;">📋</span>
+                            <div>
+                                <div style="font-weight:700;color:#4338ca;font-size:14px;">Demande de service</div>
+                                <div style="font-size:12px;color:#6366f1;">Chercher un tuteur, prestataire...</div>
+                            </div>
+                        </label>
+                        <label id="type-vente" onclick="selectType('VENTE_OBJET')"
+                               style="flex:1;min-width:150px;cursor:pointer;border:2px solid #e5e7eb;border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:10px;background:#fff;transition:all .2s;">
+                            <input type="radio" name="type_publication" value="VENTE_OBJET" style="display:none;">
+                            <span style="font-size:22px;">🛒</span>
+                            <div>
+                                <div style="font-weight:700;color:#374151;font-size:14px;">Vente d'objet</div>
+                                <div style="font-size:12px;color:#9ca3af;">Vendre un livre, matériel...</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            {% endif %}
 
             <div class="form-group">
                 <label class="form-label" for="titre">Titre <span class="required-star">*</span></label>
@@ -51,7 +79,7 @@
 
             <div class="form-row">
                 <div class="form-group">
-                    <label class="form-label" for="prix">Budget proposé (TD)</label>
+                    <label class="form-label" for="prix" id="prixLabel">Budget proposé (TD)</label>
                     <input type="number" id="prix" name="prix" class="form-control"
                            placeholder="Ex: 25.00"
                            step="0.01" min="0"
@@ -95,7 +123,7 @@
             <div class="form-actions">
                 <a href="{{ path('publication_index') }}" class="btn btn-ghost">← Retour</a>
                 <button type="submit" id="submitBtn" class="btn btn-primary" {% if publication is not defined %}disabled style="opacity:0.5;"{% endif %}>
-                    📢 {% if publication is defined %}Enregistrer{% else %}Publier{% endif %}
+                     {% if publication is defined %}Enregistrer{% else %}Publier{% endif %}
                 </button>
             </div>
         </div>
@@ -146,20 +174,53 @@
 </div>
 
 <script>
+// ── Compteur description ──
 const msgArea = document.getElementById('message');
 const msgCount = document.getElementById('msgCount');
 function updateCount() { if(msgCount) msgCount.textContent = msgArea.value.length + '/1000'; }
 if(msgArea) { msgArea.addEventListener('input', updateCount); updateCount(); }
 
+// ── Sélecteur de type ──
+let currentType = 'DEMANDE_SERVICE';
+function selectType(type) {
+    currentType = type;
+
+    const demande = document.getElementById('type-demande');
+    const vente   = document.getElementById('type-vente');
+    const prixLabel = document.getElementById('prixLabel');
+    const titreInput = document.getElementById('titre');
+
+    if (!demande || !vente) return;
+
+    if (type === 'DEMANDE_SERVICE') {
+        demande.style.border = '2px solid #6366f1';
+        demande.style.background = '#eef2ff';
+        demande.querySelector('div div:first-child').style.color = '#4338ca';
+        vente.style.border = '2px solid #e5e7eb';
+        vente.style.background = '#fff';
+        vente.querySelector('div div:first-child').style.color = '#374151';
+        demande.querySelector('input').checked = true;
+        if(prixLabel) prixLabel.textContent = 'Budget proposé (DT)';
+        if(titreInput) titreInput.placeholder = 'Ex: Cherche tuteur maths niveau L1...';
+    } else {
+        vente.style.border = '2px solid #f59e0b';
+        vente.style.background = '#fffbeb';
+        vente.querySelector('div div:first-child').style.color = '#b45309';
+        demande.style.border = '2px solid #e5e7eb';
+        demande.style.background = '#fff';
+        demande.querySelector('div div:first-child').style.color = '#374151';
+        vente.querySelector('input').checked = true;
+        if(prixLabel) prixLabel.textContent = 'Prix de vente (DT) *';
+        if(titreInput) titreInput.placeholder = 'Ex: Vends livre analyse L2 en bon état...';
+    }
+}
+
+// ── Termes & conditions ──
 const termsCheck = document.getElementById('termsCheck');
 const submitBtn  = document.getElementById('submitBtn');
 if(termsCheck && submitBtn) {
     function syncTerms() {
-        if (!termsCheck.required) {
-            submitBtn.disabled = false;
-            submitBtn.style.opacity = '1';
-            return;
-        }
+        if (!termsCheck.required) { submitBtn.disabled = false; submitBtn.style.opacity = '1'; return; }
         submitBtn.disabled = !termsCheck.checked;
         submitBtn.style.opacity = termsCheck.checked ? '1' : '0.5';
     }
@@ -167,6 +228,7 @@ if(termsCheck && submitBtn) {
     syncTerms();
 }
 
+// ── Upload image ──
 const fileInput  = document.getElementById('imageFile');
 const imgPreview = document.getElementById('imgPreview');
 const imgLabel   = document.getElementById('imgLabel');
@@ -194,6 +256,7 @@ if(removeBtn) {
     });
 }
 
+// ── Assistant IA ──
 let aiPubData = {};
 async function generatePubAI() {
     const idea = document.getElementById('aiIdea').value.trim();

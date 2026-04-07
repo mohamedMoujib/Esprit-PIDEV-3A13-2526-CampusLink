@@ -134,7 +134,6 @@ class Publication
         return $this;
     }
 
-    // ✅ FIX: DB column type is timestamp, use datetime in Doctrine
     #[ORM\Column(name: 'requested_date', type: 'datetime', nullable: true)]
     private ?\DateTimeInterface $requestedDate = null;
 
@@ -178,7 +177,6 @@ class Publication
         return $this;
     }
 
-    // ✅ FIX: DB uses EN_COURS/TERMINEE/ANNULEE — not CLOSED/ARCHIVED
     #[ORM\Column(columnDefinition: "ENUM('ACTIVE','EN_COURS','TERMINEE','ANNULEE')")]
     private string $status = 'ACTIVE';
 
