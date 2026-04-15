@@ -9,7 +9,6 @@
 
         <h2 class="form-title mb-4">Coordination de Transaction</h2>
 
-        <!-- FLASH MESSAGE -->
         {% for msg in app.flashes('success') %}
             <div class="alert alert-success">{{ msg }}</div>
         {% endfor %}
@@ -20,15 +19,12 @@
 
         <form method="post">
 
-            <!-- CSRF -->
             <input type="hidden" name="_token" value="{{ csrf_token('payment_form') }}">
 
-            <!-- Hidden location fields -->
             <input type="hidden" name="lat" id="lat">
             <input type="hidden" name="lng" id="lng">
             <input type="hidden" name="address" id="address">
 
-            <!-- ✅ Provider (FIXED) -->
             <div class="mb-3">
                 <label class="form-label fw-bold">Nom Prestataire</label>
                 <input type="text" class="form-control"
@@ -36,7 +32,6 @@
                        readonly>
             </div>
 
-            <!-- ✅ Amount (FIXED) -->
             <div class="mb-3">
                 <label class="form-label fw-bold">Montant convenu (DT)</label>
                 <input type="text" class="form-control"
@@ -48,7 +43,6 @@
                 </small>
             </div>
 
-            <!-- Payment Method -->
             <div class="mb-3">
                 <label class="form-label fw-bold">Méthode de paiement externe</label>
 
@@ -68,9 +62,17 @@
                 </small>
             </div>
 
-            <!-- MAP -->
             <div class="mb-4">
                 <label class="form-label fw-bold">Lieu de rencontre</label>
+
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <span class="fw-semibold">Utiliser votre localisation courante ?</span>
+                    <button type="button"
+                            class="btn btn-primary btn-sm px-3"
+                            onclick="useCurrentLocation()">
+                        📍 Utiliser ma position
+                    </button>
+                </div>
 
                 <div id="map"
                      style="height:450px; background:#e8e0d8; border:1px solid #ccc; border-radius:6px;">
@@ -79,7 +81,6 @@
                 <p id="selectedAddress" class="mt-2 text-primary"></p>
             </div>
 
-            <!-- BUTTON -->
             <button class="btn btn-primary">
                 Valider l'engagement de transaction
             </button>
@@ -89,7 +90,6 @@
     </div>
 </div>
 
-<!-- LEAFLET -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
@@ -102,23 +102,52 @@
 
     let marker;
 
-    map.on('click', async function(e) {
-        let { lat, lng } = e.latlng;
-
+    async function setLocation(lat, lng) {
         if (marker) map.removeLayer(marker);
+
         marker = L.marker([lat, lng]).addTo(map);
+        map.setView([lat, lng], 15);
 
         document.getElementById('lat').value = lat;
         document.getElementById('lng').value = lng;
 
-        let response = await fetch(`https://api.opencagedata.com/geocode/v1/json?q=${lat}+${lng}&key=294699815f1b4034839f3e125ca32ca9&language=fr`);
-        let data = await response.json();
+        try {
+            let response = await fetch(`https://api.opencagedata.com/geocode/v1/json?q=${lat}+${lng}&key=294699815f1b4034839f3e125ca32ca9&language=fr`);
+            let data = await response.json();
 
-        let address = data.results[0]?.formatted || `${lat}, ${lng}`;
+            let address = data.results[0]?.formatted || `${lat}, ${lng}`;
 
-        document.getElementById('address').value = address;
-        document.getElementById('selectedAddress').innerText = "📍 " + address;
+            document.getElementById('address').value = address;
+            document.getElementById('selectedAddress').innerText = "📍 " + address;
+        } catch (e) {
+            document.getElementById('selectedAddress').innerText = "📍 " + lat + ", " + lng;
+        }
+    }
+
+    map.on('click', function(e) {
+        let { lat, lng } = e.latlng;
+        setLocation(lat, lng);
     });
+
+    function useCurrentLocation() {
+        if (!navigator.geolocation) {
+            alert("La géolocalisation n'est pas supportée.");
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                let lat = position.coords.latitude;
+                let lng = position.coords.longitude;
+
+                setLocation(lat, lng);
+            },
+            function(error) {
+                alert("Impossible d'obtenir votre position.");
+                console.error(error);
+            }
+        );
+    }
 </script>
 
 {% endblock %}
