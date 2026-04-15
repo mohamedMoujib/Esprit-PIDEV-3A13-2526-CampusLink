@@ -21,9 +21,7 @@ class InvoiceController extends AbstractController
         $date = $request->query->get('date');
 
         $qb = $invoiceRepo->createQueryBuilder('i')
-            ->join('i.payment', 'p')
-            ->join('p.reservation', 'r')
-            ->andWhere('r.user = :user')
+            ->andWhere('i.user = :user')
             ->setParameter('user', $user);
 
         if ($date) {
@@ -47,7 +45,7 @@ class InvoiceController extends AbstractController
     #[Route('/invoices/delete/{id}', name: 'invoice_delete', methods: ['POST'])]
     public function delete(Invoice $invoice, EntityManagerInterface $em): Response
     {
-        if ($invoice->getPayment()->getReservation()->getUser() !== $this->getUser()) {
+        if ($invoice->getUser() !== $this->getUser()) {
             throw $this->createAccessDeniedException();
         }
 
@@ -55,13 +53,14 @@ class InvoiceController extends AbstractController
         $em->flush();
 
         $this->addFlash('success', 'Facture supprimée avec succès.');
+
         return $this->redirectToRoute('invoice_index');
     }
 
     #[Route('/invoices/{id}', name: 'invoice_preview')]
     public function preview(Invoice $invoice): Response
     {
-        if ($invoice->getPayment()->getReservation()->getUser() !== $this->getUser()) {
+        if ($invoice->getUser() !== $this->getUser()) {
             throw $this->createAccessDeniedException();
         }
 
