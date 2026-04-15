@@ -1,0 +1,39 @@
+{% extends 'base.html.twig' %}
+{% block title %}Activer mon compte{% endblock %}
+{% block body %}
+<div style="display:flex; justify-content:center; padding:60px 16px;">
+<div style="background:white; border-radius:20px; box-shadow:0 8px 40px rgba(0,0,0,0.10); padding:40px; width:100%; max-width:400px;">
+
+    <div style="text-align:center; margin-bottom:24px;">
+        <div style="font-size:40px;">✉️</div>
+        <div style="font-size:22px; font-weight:800;">Activer votre compte</div>
+        <div style="font-size:13px; color:#6B7280; margin-top:4px;">Entrez le code à 6 chiffres envoyé par email</div>
+    </div>
+
+    {% for message in app.flashes('error') %}
+        <div class="flash flash-error">❌ {{ message }}</div>
+    {% endfor %}
+    {% for message in app.flashes('success') %}
+        <div class="flash flash-success">✅ {{ message }}</div>
+    {% endfor %}
+
+    <form method="post">
+        <div class="form-group" style="margin-bottom:16px;">
+            <label class="form-label">Code d'activation</label>
+            <input type="text" name="code" class="form-control"
+                   placeholder="000000" maxlength="6"
+                   style="font-size:28px; letter-spacing:8px; text-align:center; font-weight:800;"
+                   required autofocus>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;">
+            Activer mon compte
+        </button>
+    </form>
+
+    <p style="text-align:center; font-size:13px; color:#6B7280; margin-top:16px;">
+        Pas reçu ? <a href="{{ path('app_register') }}" style="color:#5D5FEF;">Réessayer l'inscription</a>
+    </p>
+
+</div>
+</div>
+{% endblock %}

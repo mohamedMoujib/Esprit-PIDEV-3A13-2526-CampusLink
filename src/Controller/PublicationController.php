@@ -80,7 +80,7 @@ class PublicationController extends AbstractController
         ]);
     }
 
-    #[Route('/create', name: 'publication_create', methods: ['GET', 'POST'])]
+    #[Route('/create', name: 'publication_create', methods: ['GET', ' '])]
     public function create(Request $req, EntityManagerInterface $em): Response
     {
         /** @var User $user */

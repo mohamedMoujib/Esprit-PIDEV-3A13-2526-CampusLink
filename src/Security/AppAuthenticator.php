@@ -42,7 +42,6 @@ class AppAuthenticator extends AbstractLoginFormAuthenticator
                     throw new CustomUserMessageAuthenticationException('Identifiants invalides.');
                 }
 
-                // ✅ THE KEY CHECK — submitted role must match DB role
                 if ($user->getUserType() !== $submittedRole) {
                     throw new CustomUserMessageAuthenticationException(
                         'Ce compte n\'est pas un compte ' . match($submittedRole) {
@@ -53,6 +52,16 @@ class AppAuthenticator extends AbstractLoginFormAuthenticator
                         } . '.'
                     );
                 }
+                if ($user->getStatus() == 'INACTIVE') {
+                     throw new CustomUserMessageAuthenticationException(
+                        'Votre compte n\'est pas encore activé. Vérifiez votre email.'
+                    );
+            }
+             if ($user->getStatus() == 'BANNED') {
+                     throw new CustomUserMessageAuthenticationException(
+                        'Votre compte est banni.'
+                    );
+            }
 
                 return $user;
             }),
