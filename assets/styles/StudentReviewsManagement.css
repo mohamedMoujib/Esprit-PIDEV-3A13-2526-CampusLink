@@ -175,3 +175,136 @@ body { background: var(--bg); font-family: 'Segoe UI', sans-serif; color: var(--
     font-size: 12px;
     margin-bottom: 12px;
 }
+
+/* ============= SOCIAL SHARING BUTTONS ============= */
+.card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.share-buttons {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.btn-share {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    color: white;
+}
+
+.btn-share:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.btn-facebook {
+    background: #1877f2;
+}
+
+.btn-facebook:hover {
+    background: #0c63d4;
+}
+
+.btn-twitter {
+    background: #1da1f2;
+}
+
+.btn-twitter:hover {
+    background: #0d8bd9;
+}
+
+.btn-linkedin {
+    background: #0077b5;
+}
+
+.btn-linkedin:hover {
+    background: #005885;
+}
+
+.btn-whatsapp {
+    background: #25d366;
+}
+
+.btn-whatsapp:hover {
+    background: #1da851;
+}
+
+.btn-copy {
+    background: #6b7280;
+}
+
+.btn-copy:hover {
+    background: #4b5563;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .card-footer {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .share-buttons {
+        justify-content: center;
+        padding-top: 10px;
+        border-top: 1px solid #e5e7eb;
+    }
+}
+
+/* ============= AI SUGGESTION OVERLAY (COPILOT STYLE) ============= */
+.textarea-wrapper {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+}
+
+.ai-suggestion-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 12px 14px;
+    font-size: 14px;
+    font-family: inherit;
+    line-height: inherit;
+    color: #9ca3af;
+    opacity: 0.5;
+    pointer-events: none;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow: hidden;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    display: none;
+    z-index: 1;
+}
+
+.comment-area {
+    position: relative;
+    background: transparent;
+    z-index: 2;
+}
+
+/* Style pour kbd */
+kbd {
+    background: #f3f4f6;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 11px;
+    font-family: monospace;
+    color: #374151;
+}

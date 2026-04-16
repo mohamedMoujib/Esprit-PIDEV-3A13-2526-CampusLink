@@ -26,3 +26,7 @@ services:
     App\Service\AiAssistantService:
         bind:
             $n8nBaseUrl: '%env(default::string:N8N_BASE_URL)%'
+
+    App\Service\GroqReviewsModerationService:
+        bind:
+            $groqApiKey: '%env(GROQ_API_KEY)%'

@@ -1,0 +1,288 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Statistiques des avis - CampusLink{% endblock %}
+
+{% block stylesheets %}
+<link rel="stylesheet" href="{{ asset('styles/TutorReviewsStats.css') }}">
+{% endblock %}
+
+{% block body %}
+<div class="page-content">
+
+    <!-- HEADER -->
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
+        <div>
+            <h1 class="page-title">📊 Statistiques des avis</h1>
+            <p style="color: #6b7280; font-size: 14px; margin-top: 5px;">Analyse détaillée de vos performances</p>
+        </div>
+        <a href="{{ path('tutor_reviews_index') }}" class="btn btn-secondary">
+            ← Retour aux avis
+        </a>
+    </div>
+
+    <!-- BADGES SECTION -->
+    {% if allBadges is not empty %}
+        <div class="stats-card" style="margin-bottom: 25px;">
+            <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap; margin-bottom: 15px;">
+                <span style="font-weight: 600; font-size: 16px;">🏆 Vos badges :</span>
+                {% for badge in allBadges %}
+                    <span class="badge-pill" style="background: {{ badge.color }};" title="{{ badge.description }}">
+                        <span style="font-size: 18px;">{{ badge.icon }}</span>
+                        {{ badge.name }}
+                    </span>
+                {% endfor %}
+            </div>
+
+            {% if progress %}
+                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e5e7eb;">
+                    <div style="font-size: 14px; color: #6b7280; margin-bottom: 10px;">
+                        🎯 Prochain badge : <strong style="color: {{ progress.nextBadge.color }};">{{ progress.nextBadge.icon }} {{ progress.nextBadge.name }}</strong>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div>
+                            <div style="font-size: 12px; color: #6b7280; margin-bottom: 5px;">
+                                Points de confiance : {{ trustPoints }} / {{ progress.nextBadge.minTrustPoints }}
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: {{ progress.trustPointsProgress }}%; background: #10b981;"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div style="font-size: 12px; color: #6b7280; margin-bottom: 5px;">
+                                Note moyenne : {{ averageRating }} / {{ progress.nextBadge.minAvgRating }}
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: {{ progress.ratingProgress }}%; background: #fbbf24;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    {% endif %}
+
+    <!-- STATS OVERVIEW -->
+    <div class="stats-grid">
+        <div class="stats-card">
+            <div class="stats-icon" style="background: #dbeafe;">📝</div>
+            <div>
+                <div class="stats-value">{{ totalReviews }}</div>
+                <div class="stats-label">Total des avis</div>
+            </div>
+        </div>
+        <div class="stats-card">
+            <div class="stats-icon" style="background: #fef3c7;">⭐</div>
+            <div>
+                <div class="stats-value">{{ averageRating }}</div>
+                <div class="stats-label">Note moyenne</div>
+            </div>
+        </div>
+        <div class="stats-card">
+            <div class="stats-icon" style="background: #dcfce7;">🏆</div>
+            <div>
+                <div class="stats-value">{{ trustPoints }}</div>
+                <div class="stats-label">Points de confiance</div>
+            </div>
+        </div>
+        <div class="stats-card">
+            <div class="stats-icon" style="background: #e0e7ff;">💬</div>
+            <div>
+                <div class="stats-value">{{ avgCommentLength }}</div>
+                <div class="stats-label">Mots par avis (moy.)</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CHARTS ROW 1 -->
+    <div class="charts-row">
+        <!-- DISTRIBUTION DES NOTES -->
+        <div class="chart-card">
+            <h3 class="chart-title">📊 Distribution des notes</h3>
+            <div class="bar-chart">
+                {% set maxCount = max(ratingDistribution|map(v => v)) %}
+                {% for rating, count in ratingDistribution %}
+                    {% set percentage = maxCount > 0 ? (count / maxCount * 100) : 0 %}
+                    {% set isPositive = rating|number_format > 0 %}
+                    {% set isNegative = rating|number_format < 0 %}
+                    <div class="bar-item">
+                        <div class="bar-label">{{ rating > 0 ? '+' : '' }}{{ rating }}⭐</div>
+                        <div class="bar-container">
+                            <div class="bar-fill {{ isPositive ? 'bar-positive' : (isNegative ? 'bar-negative' : 'bar-neutral') }}" 
+                                 style="width: {{ percentage }}%;">
+                            </div>
+                        </div>
+                        <div class="bar-value">{{ count }}</div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- RÉPARTITION POSITIF/NÉGATIF -->
+        <div class="chart-card">
+            <h3 class="chart-title">🎯 Répartition des avis</h3>
+            <div class="pie-chart-container">
+                {% set total = positiveReviews + negativeReviews + neutralReviews %}
+                {% if total > 0 %}
+                    {% set posPercent = (positiveReviews / total * 100)|round %}
+                    {% set negPercent = (negativeReviews / total * 100)|round %}
+                    {% set neuPercent = (neutralReviews / total * 100)|round %}
+                    
+                    <div class="pie-stats">
+                        <div class="pie-stat-item">
+                            <div class="pie-stat-color" style="background: #10b981;"></div>
+                            <div>
+                                <div class="pie-stat-label">Positifs</div>
+                                <div class="pie-stat-value">{{ positiveReviews }} ({{ posPercent }}%)</div>
+                            </div>
+                        </div>
+                        <div class="pie-stat-item">
+                            <div class="pie-stat-color" style="background: #ef4444;"></div>
+                            <div>
+                                <div class="pie-stat-label">Négatifs</div>
+                                <div class="pie-stat-value">{{ negativeReviews }} ({{ negPercent }}%)</div>
+                            </div>
+                        </div>
+                        <div class="pie-stat-item">
+                            <div class="pie-stat-color" style="background: #94a3b8;"></div>
+                            <div>
+                                <div class="pie-stat-label">Neutres</div>
+                                <div class="pie-stat-value">{{ neutralReviews }} ({{ neuPercent }}%)</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pie-visual">
+                        <svg viewBox="0 0 100 100" style="width: 200px; height: 200px;">
+                            {% set posAngle = posPercent * 3.6 %}
+                            {% set negAngle = negPercent * 3.6 %}
+                            {% set neuAngle = neuPercent * 3.6 %}
+                            
+                            <!-- Positifs -->
+                            <circle cx="50" cy="50" r="40" fill="none" stroke="#10b981" stroke-width="20"
+                                    stroke-dasharray="{{ posAngle }} 251.2" transform="rotate(-90 50 50)"/>
+                            <!-- Négatifs -->
+                            <circle cx="50" cy="50" r="40" fill="none" stroke="#ef4444" stroke-width="20"
+                                    stroke-dasharray="{{ negAngle }} 251.2" 
+                                    stroke-dashoffset="{{ -(posAngle) }}" transform="rotate(-90 50 50)"/>
+                            <!-- Neutres -->
+                            <circle cx="50" cy="50" r="40" fill="none" stroke="#94a3b8" stroke-width="20"
+                                    stroke-dasharray="{{ neuAngle }} 251.2" 
+                                    stroke-dashoffset="{{ -(posAngle + negAngle) }}" transform="rotate(-90 50 50)"/>
+                        </svg>
+                    </div>
+                {% else %}
+                    <div style="text-align: center; padding: 40px; color: #9ca3af;">
+                        Aucune donnée disponible
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- ÉVOLUTION DES PERFORMANCES -->
+    <div class="chart-card" style="margin-bottom: 25px;">
+        <h3 class="chart-title">📈 Évolution de vos performances</h3>
+        
+        <!-- TENDANCE GLOBALE -->
+        <div class="trend-card">
+            <div class="trend-info">
+                <div class="trend-label">Tendance globale</div>
+                <div class="trend-comparison">
+                    <div>
+                        <span style="font-size: 12px; color: #6b7280;">10 premiers avis</span>
+                        <div style="font-size: 20px; font-weight: 700; color: #6b7280;">{{ oldAvg }}</div>
+                    </div>
+                    <div style="font-size: 24px; color: #9ca3af;">→</div>
+                    <div>
+                        <span style="font-size: 12px; color: #6b7280;">10 derniers avis</span>
+                        <div style="font-size: 20px; font-weight: 700; color: #6b7280;">{{ recentAvg }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="trend-badge {{ trend > 0 ? 'trend-up' : (trend < 0 ? 'trend-down' : 'trend-stable') }}">
+                {% if trend > 0 %}
+                    <span style="font-size: 24px;">📈</span>
+                    <div>
+                        <div style="font-size: 20px; font-weight: 700;">+{{ trend }}</div>
+                        <div style="font-size: 12px;">En progression</div>
+                    </div>
+                {% elseif trend < 0 %}
+                    <span style="font-size: 24px;">📉</span>
+                    <div>
+                        <div style="font-size: 20px; font-weight: 700;">{{ trend }}</div>
+                        <div style="font-size: 12px;">En régression</div>
+                    </div>
+                {% else %}
+                    <span style="font-size: 24px;">➡️</span>
+                    <div>
+                        <div style="font-size: 20px; font-weight: 700;">Stable</div>
+                        <div style="font-size: 12px;">Pas de changement</div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- PROGRESSION PAR TRANCHES -->
+        <div class="progression-chart">
+            {% set maxAvg = 5 %}
+            {% set minAvg = -5 %}
+            {% for data in progressionData %}
+                {% set normalizedHeight = ((data.avg - minAvg) / (maxAvg - minAvg)) * 100 %}
+                <div class="progression-bar">
+                    <div class="progression-value">{{ data.avg }}</div>
+                    <div class="progression-fill-container">
+                        <div class="progression-fill {{ data.avg >= 0 ? 'fill-positive' : 'fill-negative' }}" 
+                             style="height: {{ normalizedHeight }}%;">
+                            <div class="progression-tooltip">
+                                {{ data.count }} avis<br>
+                                Moyenne: {{ data.avg }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="progression-label">{{ data.label }}</div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- TOP SERVICES -->
+    <div class="chart-card">
+        <h3 class="chart-title">🎓 Top 5 services les plus évalués</h3>
+        {% if serviceStats is not empty %}
+            <div class="service-list">
+                {% for service in serviceStats %}
+                    <div class="service-item">
+                        <div class="service-info">
+                            <div class="service-name">{{ service.title }}</div>
+                            <div class="service-meta">{{ service.count }} avis • Note moyenne: {{ service.avgRating }}</div>
+                        </div>
+                        <div class="service-rating">
+                            <span class="stars-positive">
+                                {% for i in 1..5 %}
+                                    {% if i <= service.avgRating|round %}★{% else %}☆{% endif %}
+                                {% endfor %}
+                            </span>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div style="text-align: center; padding: 40px; color: #9ca3af;">
+                Aucun service évalué pour le moment
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- ALERTES -->
+    {% if reportedReviews > 0 %}
+        <div class="alert-card">
+            <div class="alert-icon">⚠️</div>
+            <div>
+                <div class="alert-title">Avis signalés</div>
+                <div class="alert-text">Vous avez {{ reportedReviews }} avis signalé{{ reportedReviews > 1 ? 's' : '' }} en attente de traitement par l'administration.</div>
+            </div>
+        </div>
+    {% endif %}
+
+</div>
+{% endblock %}

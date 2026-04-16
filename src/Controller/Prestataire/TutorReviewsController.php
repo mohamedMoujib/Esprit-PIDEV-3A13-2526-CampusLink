@@ -30,7 +30,8 @@ class TutorReviewsController extends AbstractController
     public function __construct(
         private ReviewRepository       $repo,
         private EntityManagerInterface $em,
-        private HttpClientInterface    $client
+        private HttpClientInterface    $client,
+        private \App\Service\ReviewsBadgeService $badgeService
     ) {}
 
     // ===================== GET CURRENT USER =====================
@@ -102,6 +103,52 @@ class TutorReviewsController extends AbstractController
         return $this->json(['valid' => true]);
     }
 
+    // ===================== API: FILTER REVIEWS =====================
+
+    #[Route('/api/filter', name: 'api_filter', methods: ['GET'])]
+    public function filterReviews(Request $request): Response
+    {
+        $user = $this->getCurrentTutor();
+        $filter = $request->query->get('filter');
+        $allReviews = $this->repo->findByTutorWithDetails($user->getId());
+
+        $reviews = $allReviews;
+        if ($filter !== null) {
+            $reviews = array_values(array_filter($allReviews, function (Review $r) use ($filter) {
+                $rating = $r->getRating() ?? 0;
+                return match ($filter) {
+                    '5'   => $rating === 5,
+                    '4'   => $rating === 4,
+                    '3'   => $rating === 3,
+                    'low' => $rating >= 1 && $rating <= 2,
+                    'neg' => $rating < 0,
+                    default => true,
+                };
+            }));
+        }
+
+        $data = array_map(function (Review $r) {
+            $rating = $r->getRating() ?? 0;
+            $absRating = abs($rating);
+            if ($absRating > 5) $absRating = 5;
+
+            return [
+                'id'          => $r->getId(),
+                'student'     => $r->getStudent()?->getName() ?? 'Étudiant inconnu',
+                'service'     => $r->getReservation()?->getService()?->getTitle() ?? 'Service inconnu',
+                'rating'      => $rating,
+                'absRating'   => $absRating,
+                'comment'     => $r->getComment() ?? '',
+                'isReported'  => $r->isReported(),
+            ];
+        }, $reviews);
+
+        return $this->json([
+            'reviews' => $data,
+            'count'   => count($data),
+        ]);
+    }
+
     // ===================== INDEX =====================
 
     #[Route('/', name: 'index')]
@@ -134,6 +181,11 @@ class TutorReviewsController extends AbstractController
             ? round(array_sum(array_map(fn($r) => $r->getRating() ?? 0, $allReviews)) / count($allReviews), 1)
             : 0;
 
+        // Obtenir le badge et la progression
+        $badge = $this->badgeService->getBadge($trust, $avg);
+        $allBadges = $this->badgeService->getAllBadges($trust, $avg, count($allReviews), 0);
+        $progress = $this->badgeService->getProgressToNextBadge($trust, $avg);
+
         return $this->render('prestataire/TutorReviews.html.twig', [
             'reviews'         => $reviews,
             'trustPoints'     => $trust,
@@ -143,6 +195,9 @@ class TutorReviewsController extends AbstractController
             'reportReasons'   => self::REPORT_REASONS,
             'minReasonLength' => self::MIN_REASON_LENGTH,
             'maxReasonLength' => self::MAX_REASON_LENGTH,
+            'badge'           => $badge,
+            'allBadges'       => $allBadges,
+            'progress'        => $progress,
         ]);
     }
 

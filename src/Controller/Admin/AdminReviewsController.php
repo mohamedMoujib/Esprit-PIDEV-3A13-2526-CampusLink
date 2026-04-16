@@ -5,6 +5,8 @@ namespace App\Controller\Admin;
 use App\Entity\Review;
 use App\Repository\ReviewRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Knp\Bundle\SnappyBundle\Snappy\Response\PdfResponse;
+use Knp\Snappy\Pdf;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -15,7 +17,8 @@ class AdminReviewsController extends AbstractController
 {
     public function __construct(
         private ReviewRepository       $repo,
-        private EntityManagerInterface $em
+        private EntityManagerInterface $em,
+        private Pdf                    $pdfGenerator
     ) {}
 
     private function getCurrentAdmin(): \App\Entity\User
@@ -160,6 +163,77 @@ class AdminReviewsController extends AbstractController
         return $this->redirectToRoute('admin_reviews_index');
     }
 
+    // ===================== API: SEARCH & FILTER =====================
+
+    #[Route('/api/search', name: 'api_search', methods: ['GET'])]
+    public function searchReviews(Request $request): Response
+    {
+        $allReviews = $this->repo->findAllWithDetails();
+
+        $filterPrestataire = $request->query->get('prestataire', '');
+        $filterRating      = $request->query->get('rating', '');
+        $filterSearch      = trim($request->query->get('search', ''));
+
+        $reviews = $allReviews;
+
+        if (!empty($filterPrestataire)) {
+            $reviews = array_filter($reviews, fn(Review $r) =>
+                $r->getPrestataire()?->getName() === $filterPrestataire
+            );
+        }
+
+        if (!empty($filterRating)) {
+            $reviews = array_filter($reviews, function (Review $r) use ($filterRating) {
+                $rating = $r->getRating() ?? 0;
+                return match ($filterRating) {
+                    'positive'      => $rating > 0,
+                    'negative'      => $rating < 0,
+                    'very_positive' => $rating >= 4,
+                    'very_negative' => $rating <= -4,
+                    'neutral'       => $rating === 0,
+                    'reported'      => $r->isReported() === true,
+                    default         => true,
+                };
+            });
+        }
+
+        if (!empty($filterSearch)) {
+            $search  = mb_strtolower($filterSearch);
+            $reviews = array_filter($reviews, function (Review $r) use ($search) {
+                return str_contains(mb_strtolower($r->getComment() ?? ''), $search)
+                    || str_contains(mb_strtolower($r->getReservation()?->getService()?->getTitle() ?? ''), $search)
+                    || str_contains(mb_strtolower($r->getStudent()?->getName() ?? ''), $search)
+                    || str_contains(mb_strtolower($r->getPrestataire()?->getName() ?? ''), $search);
+            });
+        }
+
+        $reviews = array_values($reviews);
+
+        $data = array_map(function (Review $r) {
+            $rating = $r->getRating() ?? 0;
+            $absRating = abs($rating);
+            if ($absRating > 5) $absRating = 5;
+
+            return [
+                'id'            => $r->getId(),
+                'student'       => $r->getStudent()?->getName() ?? 'Inconnu',
+                'prestataire'   => $r->getPrestataire()?->getName() ?? 'Inconnu',
+                'service'       => $r->getReservation()?->getService()?->getTitle() ?? 'Inconnu',
+                'rating'        => $rating,
+                'absRating'     => $absRating,
+                'comment'       => $r->getComment() ?? '',
+                'isReported'    => $r->isReported(),
+                'reportReason'  => $r->getReportReason() ?? '',
+                'reportedAt'    => $r->getReportedAt()?->format('d/m/Y à H:i') ?? '',
+            ];
+        }, $reviews);
+
+        return $this->json([
+            'reviews' => $data,
+            'count'   => count($data),
+        ]);
+    }
+
     // ===================== API: GET REVIEW DETAILS =====================
 
     #[Route('/api/details/{id}', name: 'api_details', methods: ['GET'])]
@@ -190,7 +264,9 @@ class AdminReviewsController extends AbstractController
     #[Route('/export/{format}', name: 'export', methods: ['GET'])]
     public function export(string $format, Request $request): Response
     {
+        $admin = $this->getCurrentAdmin();
         $allowedFormats = ['csv', 'pdf'];
+        
         if (!in_array($format, $allowedFormats, true)) {
             throw $this->createNotFoundException('Format non supporté.');
         }
@@ -198,10 +274,21 @@ class AdminReviewsController extends AbstractController
         $allReviews = $this->repo->findAllWithDetails();
         $timestamp  = (new \DateTime())->format('Ymd_His');
 
+        // Calculer les statistiques
+        $stats = [
+            'total'    => count($allReviews),
+            'positive' => count(array_filter($allReviews, fn($r) => ($r->getRating() ?? 0) > 0)),
+            'negative' => count(array_filter($allReviews, fn($r) => ($r->getRating() ?? 0) < 0)),
+            'reported' => count(array_filter($allReviews, fn($r) => $r->isReported() === true)),
+        ];
+
         if ($format === 'csv') {
-            $csv  = "Étudiant,Prestataire,Service,Note,Commentaire,Signalé,Raison,Date signalement\n";
+            $csv  = "\xEF\xBB\xBF"; // UTF-8 BOM pour Excel
+            $csv .= "ID,Étudiant,Prestataire,Service,Note,Commentaire,Signalé,Raison,Date signalement\n";
+            
             foreach ($allReviews as $r) {
                 $csv .= implode(',', [
+                    $r->getId(),
                     '"' . ($r->getStudent()?->getName() ?? 'N/A') . '"',
                     '"' . ($r->getPrestataire()?->getName() ?? 'N/A') . '"',
                     '"' . ($r->getReservation()?->getService()?->getTitle() ?? 'N/A') . '"',
@@ -215,18 +302,21 @@ class AdminReviewsController extends AbstractController
 
             return new Response($csv, 200, [
                 'Content-Type'        => 'text/csv; charset=UTF-8',
-                'Content-Disposition' => 'attachment; filename="avis_' . $timestamp . '.csv"',
+                'Content-Disposition' => 'attachment; filename="avis_campuslink_' . $timestamp . '.csv"',
             ]);
         }
 
-        // PDF simple avec HTML converti
-        $html = $this->renderView('reviews/AdminReviewsExport.html.twig', [
-            'reviews'   => $allReviews,
-            'timestamp' => $timestamp,
+        // Export PDF avec KnpSnappyBundle
+        $html = $this->renderView('admin/pages/reviews_pdf.html.twig', [
+            'reviews'    => $allReviews,
+            'stats'      => $stats,
+            'exportDate' => (new \DateTime())->format('d/m/Y à H:i'),
+            'adminName'  => $admin->getName(),
         ]);
 
-        return new Response($html, 200, [
-            'Content-Type' => 'text/html; charset=UTF-8',
-        ]);
+        return new PdfResponse(
+            $this->pdfGenerator->getOutputFromHtml($html),
+            'avis_campuslink_' . $timestamp . '.pdf'
+        );
     }
 }

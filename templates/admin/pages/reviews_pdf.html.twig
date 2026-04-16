@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Export des Avis - CampusLink</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', 'Helvetica', sans-serif;
+            font-size: 11px;
+            color: #333;
+            line-height: 1.4;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #6c63ff 0%, #574fd6 100%);
+            color: white;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        
+        .header .subtitle {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+        
+        .meta-info {
+            background: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-left: 4px solid #6c63ff;
+        }
+        
+        .meta-info table {
+            width: 100%;
+        }
+        
+        .meta-info td {
+            padding: 5px 10px;
+        }
+        
+        .meta-info .label {
+            font-weight: bold;
+            color: #6c63ff;
+            width: 150px;
+        }
+        
+        .stats-grid {
+            display: table;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            display: table-cell;
+            width: 25%;
+            padding: 15px;
+            text-align: center;
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+        }
+        
+        .stat-card .number {
+            font-size: 28px;
+            font-weight: bold;
+            color: #6c63ff;
+            margin-bottom: 5px;
+        }
+        
+        .stat-card .label {
+            font-size: 11px;
+            color: #6c757d;
+            text-transform: uppercase;
+        }
+        
+        .reviews-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        .reviews-table thead {
+            background: #6c63ff;
+            color: white;
+        }
+        
+        .reviews-table th {
+            padding: 10px 8px;
+            text-align: left;
+            font-size: 10px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+        
+        .reviews-table td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #e9ecef;
+            vertical-align: top;
+        }
+        
+        .reviews-table tbody tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        
+        .reviews-table tbody tr:hover {
+            background: #e9ecef;
+        }
+        
+        .stars {
+            font-size: 14px;
+            letter-spacing: 1px;
+        }
+        
+        .stars-positive {
+            color: #f0a500;
+        }
+        
+        .stars-negative {
+            color: #e74c3c;
+        }
+        
+        .stars-neutral {
+            color: #aaa;
+        }
+        
+        .rating-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+        
+        .rating-badge.positive {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .rating-badge.negative {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .rating-badge.neutral {
+            background: #e9ecef;
+            color: #6c757d;
+        }
+        
+        .comment-text {
+            font-size: 10px;
+            color: #495057;
+            max-width: 300px;
+            word-wrap: break-word;
+        }
+        
+        .reported-badge {
+            display: inline-block;
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffc107;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 9px;
+            font-weight: bold;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 2px solid #e9ecef;
+            text-align: center;
+            font-size: 9px;
+            color: #6c757d;
+        }
+        
+        .page-break {
+            page-break-after: always;
+        }
+        
+        @media print {
+            .reviews-table {
+                page-break-inside: auto;
+            }
+            
+            .reviews-table tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📊 Export des Avis - CampusLink</h1>
+        <div class="subtitle">Rapport généré le {{ exportDate }}</div>
+    </div>
+    
+    <div class="meta-info">
+        <table>
+            <tr>
+                <td class="label">Date d'export :</td>
+                <td>{{ exportDate }}</td>
+                <td class="label">Nombre total d'avis :</td>
+                <td>{{ reviews|length }}</td>
+            </tr>
+            <tr>
+                <td class="label">Période :</td>
+                <td>Tous les avis</td>
+                <td class="label">Généré par :</td>
+                <td>{{ adminName }}</td>
+            </tr>
+        </table>
+    </div>
+    
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="number">{{ stats.total }}</div>
+            <div class="label">Total</div>
+        </div>
+        <div class="stat-card">
+            <div class="number">{{ stats.positive }}</div>
+            <div class="label">Positifs</div>
+        </div>
+        <div class="stat-card">
+            <div class="number">{{ stats.negative }}</div>
+            <div class="label">Négatifs</div>
+        </div>
+        <div class="stat-card">
+            <div class="number">{{ stats.reported }}</div>
+            <div class="label">Signalés</div>
+        </div>
+    </div>
+    
+    <table class="reviews-table">
+        <thead>
+            <tr>
+                <th style="width: 8%;">ID</th>
+                <th style="width: 15%;">Étudiant</th>
+                <th style="width: 15%;">Prestataire</th>
+                <th style="width: 15%;">Service</th>
+                <th style="width: 10%;">Note</th>
+                <th style="width: 32%;">Commentaire</th>
+                <th style="width: 5%;">Signalé</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for review in reviews %}
+                {% set rating = review.rating ?? 0 %}
+                {% set absRating = rating < 0 ? -rating : rating %}
+                {% if absRating > 5 %}
+                    {% set absRating = 5 %}
+                {% endif %}
+                {% set colorClass = rating < 0 ? 'negative' : (rating > 0 ? 'positive' : 'neutral') %}
+                
+                <tr>
+                    <td>#{{ review.id }}</td>
+                    <td>{{ review.student.name ?? 'N/A' }}</td>
+                    <td>{{ review.prestataire.name ?? 'N/A' }}</td>
+                    <td>{{ review.reservation.service.title ?? 'N/A' }}</td>
+                    <td>
+                        <span class="stars stars-{{ colorClass }}">
+                            {% for i in 1..5 %}
+                                {% if i <= absRating %}★{% else %}☆{% endif %}
+                            {% endfor %}
+                        </span>
+                        <span class="rating-badge {{ colorClass }}">
+                            {{ rating > 0 ? '+' ~ rating : rating }}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="comment-text">
+                            {{ review.comment|length > 150 ? review.comment|slice(0, 150) ~ '...' : review.comment }}
+                        </div>
+                    </td>
+                    <td style="text-align: center;">
+                        {% if review.isReported %}
+                            <span class="reported-badge">⚠️ OUI</span>
+                        {% else %}
+                            <span style="color: #28a745;">✓</span>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <div class="footer">
+        <p>CampusLink - Plateforme de mise en relation étudiants/prestataires</p>
+        <p>Document confidentiel - © {{ 'now'|date('Y') }} CampusLink. Tous droits réservés.</p>
+    </div>
+</body>
+</html>

@@ -3,7 +3,7 @@
 {% block title %}Gestion des avis - CampusLink Admin{% endblock %}
 
 {% block stylesheets %}
-    <link rel="stylesheet" href="{{ asset('styles/AdminReviews.css') }}">
+    <link rel="stylesheet" href="{{ asset('styles/AdminReviewsManagement.css') }}">
 {% endblock %}
 
 {% block body %}
@@ -59,10 +59,10 @@
     </div>
 
     <!-- FILTRES -->
-    <form method="get" action="{{ path('admin_reviews_index') }}" class="filter-section">
+    <form method="get" action="{{ path('admin_reviews_index') }}" class="filter-section" id="filterForm">
         <div class="filter-group">
             <label class="filter-label">Prestataire</label>
-            <select name="prestataire" class="filter-select">
+            <select name="prestataire" id="filterPrestataire" class="filter-select">
                 <option value="">Tous les prestataires</option>
                 {% for p in prestataires %}
                     <option value="{{ p }}" {{ filterPrestataire == p ? 'selected' : '' }}>{{ p }}</option>
@@ -72,7 +72,7 @@
 
         <div class="filter-group">
             <label class="filter-label">Note</label>
-            <select name="rating" class="filter-select">
+            <select name="rating" id="filterRating" class="filter-select">
                 <option value="">Toutes les notes</option>
                 <option value="positive"      {{ filterRating == 'positive'      ? 'selected' : '' }}>Positives (+1 à +5)</option>
                 <option value="negative"      {{ filterRating == 'negative'      ? 'selected' : '' }}>Négatives (-5 à -1)</option>
@@ -88,6 +88,7 @@
             <input
                 type="text"
                 name="search"
+                id="filterSearch"
                 class="filter-input"
                 placeholder="Commentaire, service, étudiant, prestataire..."
                 value="{{ filterSearch }}"
@@ -97,22 +98,22 @@
         <div class="filter-group">
             <label class="filter-label">&nbsp;</label>
             <div style="display:flex; gap:8px;">
-                <button type="submit" class="btn btn-primary btn-sm">🔍 Filtrer</button>
-                <a href="{{ path('admin_reviews_index') }}" class="btn btn-secondary btn-sm">🔄 Reset</a>
+                <button type="button" id="btnFilter" class="btn btn-primary btn-sm">🔍 Filtrer</button>
+                <button type="button" id="btnReset" class="btn btn-secondary btn-sm">🔄 Reset</button>
             </div>
         </div>
     </form>
 
     <!-- RÉSULTAT FILTRE -->
-    {% if filterPrestataire or filterRating or filterSearch %}
-        <div style="margin-bottom:16px; font-size:14px; color:var(--text-muted);">
-            {{ reviews|length }} avis trouvé{{ reviews|length > 1 ? 's' : '' }}
-            {% if filterSearch %}pour "<strong>{{ filterSearch }}</strong>"{% endif %}
-        </div>
-    {% endif %}
+    <div id="filterResult" style="margin-bottom:16px; font-size:14px; color:var(--text-muted); display:none;"></div>
+
+    <!-- LOADING -->
+    <div id="loadingSpinner" style="display:none; text-align:center; padding:40px; font-size:18px;">
+        ⏳ Chargement...
+    </div>
 
     <!-- LISTE DES AVIS -->
-    <div class="reviews-list">
+    <div class="reviews-list" id="reviewsList">
         {% if reviews is empty %}
             <div class="empty-state">
                 📝 Aucun avis trouvé.<br>
@@ -259,6 +260,141 @@
 
 {% block javascripts %}
 <script>
+const apiSearchUrl = "{{ path('admin_reviews_api_search') }}";
+const unreportUrl  = "{{ path('admin_reviews_unreport', {id: '__ID__'}) }}";
+const deleteUrl    = "{{ path('admin_reviews_delete', {id: '__ID__'}) }}";
+
+// ===================== AJAX SEARCH & FILTER =====================
+async function loadReviews() {
+    const prestataire = document.getElementById('filterPrestataire').value;
+    const rating      = document.getElementById('filterRating').value;
+    const search      = document.getElementById('filterSearch').value;
+
+    const params = new URLSearchParams();
+    if (prestataire) params.append('prestataire', prestataire);
+    if (rating) params.append('rating', rating);
+    if (search) params.append('search', search);
+
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const reviewsList    = document.getElementById('reviewsList');
+    const filterResult   = document.getElementById('filterResult');
+
+    loadingSpinner.style.display = 'block';
+    reviewsList.innerHTML = '';
+
+    try {
+        const response = await fetch(`${apiSearchUrl}?${params.toString()}`);
+        const data = await response.json();
+
+        loadingSpinner.style.display = 'none';
+
+        if (prestataire || rating || search) {
+            filterResult.style.display = 'block';
+            filterResult.innerHTML = `${data.count} avis trouvé${data.count > 1 ? 's' : ''}${search ? ' pour "<strong>' + search + '</strong>"' : ''}`;
+        } else {
+            filterResult.style.display = 'none';
+        }
+
+        if (data.reviews.length === 0) {
+            reviewsList.innerHTML = `
+                <div class="empty-state">
+                    📝 Aucun avis trouvé.<br>
+                    ${prestataire || rating || search ? '<small><a href="#" onclick="resetFilters(); return false;" style="color:var(--primary);">Voir tous les avis</a></small>' : '<small>Les avis apparaîtront ici.</small>'}
+                </div>
+            `;
+        } else {
+            reviewsList.innerHTML = data.reviews.map(review => renderReviewCard(review)).join('');
+        }
+    } catch (error) {
+        loadingSpinner.style.display = 'none';
+        reviewsList.innerHTML = '<div class="empty-state">❌ Erreur lors du chargement des avis.</div>';
+        console.error('Erreur:', error);
+    }
+}
+
+function renderReviewCard(review) {
+    const colorClass = review.rating < 0 ? 'stars-negative' : (review.rating > 0 ? 'stars-positive' : 'stars-neutral');
+    const stars = '★'.repeat(review.absRating) + '☆'.repeat(5 - review.absRating);
+    const sign = review.rating > 0 ? '+' : '';
+    
+    let badgeClass = 'badge-average';
+    let badgeText = '⚠️ À améliorer';
+    if (review.rating === 5) { badgeClass = 'badge-excellent'; badgeText = '⭐ Excellent'; }
+    else if (review.rating === 4) { badgeClass = 'badge-good'; badgeText = '👍 Très bien'; }
+    else if (review.rating === 3) { badgeClass = 'badge-average'; badgeText = '😊 Bien'; }
+    else if (review.rating < 0) { badgeClass = 'badge-negative'; badgeText = '👎 Avis négatif'; }
+
+    const reportBanner = review.isReported ? `
+        <div class="report-banner">
+            <span class="report-banner-icon">⚠️</span>
+            <div>
+                <div class="report-banner-title">Signalé par le prestataire</div>
+                <div class="report-banner-text">Raison : ${review.reportReason || 'Non précisée'}</div>
+                ${review.reportedAt ? `<div class="report-banner-text">Signalé le : ${review.reportedAt}</div>` : ''}
+            </div>
+        </div>
+    ` : '';
+
+    const unreportBtn = review.isReported ? `
+        <form method="post" action="${unreportUrl.replace('__ID__', review.id)}" style="display:inline;">
+            <button type="submit" class="btn btn-success btn-sm">✓ Marquer traité</button>
+        </form>
+    ` : '';
+
+    return `
+        <div class="review-card ${review.isReported ? 'is-reported' : ''}">
+            <div class="card-header">
+                <div class="card-info-grid">
+                    <div class="info-student">👤 Étudiant : ${review.student}</div>
+                    <div class="info-service">📚 Service : ${review.service}</div>
+                    <div class="info-prestataire">🎓 Prestataire : ${review.prestataire}</div>
+                </div>
+                <div class="card-date">${new Date().toLocaleDateString('fr-FR')}</div>
+            </div>
+            <div class="stars-display">
+                <span class="stars ${colorClass}">${stars}</span>
+                <span class="stars-badge ${colorClass}">(${sign}${review.rating})</span>
+            </div>
+            ${reportBanner}
+            <p class="review-comment">${review.comment}</p>
+            <div class="card-footer">
+                <span class="badge ${badgeClass}">${badgeText}</span>
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <button onclick="openDetailsModal(${review.id})" class="btn btn-secondary btn-sm">👁 Voir détails</button>
+                    ${unreportBtn}
+                    <form method="post" action="${deleteUrl.replace('__ID__', review.id)}" style="display:inline;"
+                          onsubmit="return confirm('Supprimer cet avis ?\\n\\nÉtudiant : ${review.student}\\nPrestataire : ${review.prestataire}\\n\\n⚠️ Action irréversible !')">
+                        <button type="submit" class="btn btn-danger btn-sm">🗑 Supprimer</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function resetFilters() {
+    document.getElementById('filterPrestataire').value = '';
+    document.getElementById('filterRating').value = '';
+    document.getElementById('filterSearch').value = '';
+    loadReviews();
+}
+
+// ===================== EVENT LISTENERS =====================
+document.getElementById('btnFilter').addEventListener('click', loadReviews);
+document.getElementById('btnReset').addEventListener('click', resetFilters);
+
+document.getElementById('filterSearch').addEventListener('input', debounce(loadReviews, 500));
+document.getElementById('filterPrestataire').addEventListener('change', loadReviews);
+document.getElementById('filterRating').addEventListener('change', loadReviews);
+
+function debounce(func, wait) {
+    let timeout;
+    return function(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+    };
+}
+
 // ===================== DETAILS MODAL =====================
 async function openDetailsModal(reviewId) {
     try {
@@ -303,5 +439,8 @@ async function openDetailsModal(reviewId) {
 document.getElementById('detailsModal').addEventListener('click', function (e) {
     if (e.target === this) this.classList.remove('open');
 });
+
+// ===================== INITIAL LOAD =====================
+loadReviews();
 </script>
 {% endblock %}

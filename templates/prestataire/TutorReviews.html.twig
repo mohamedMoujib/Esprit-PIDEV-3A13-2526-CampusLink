@@ -3,7 +3,7 @@
 {% block title %}Avis reçus - CampusLink{% endblock %}
 
 {% block stylesheets %}
-    <link rel="stylesheet" href="{{ asset('styles/TutorReviews.css') }}">
+    <link rel="stylesheet" href="{{ asset('styles/TutorReviewsManagement.css') }}">
 {% endblock %}
 
 {% block body %}
@@ -17,7 +17,54 @@
         <div class="flash flash-error">❌ {{ msg }}</div>
     {% endfor %}
 
-    <h1 class="page-title">Avis reçus</h1>
+    <!-- HEADER -->
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
+        <h1 class="page-title">Avis reçus</h1>
+        <a href="{{ path('tutor_stats_index') }}" class="btn btn-primary">
+            📊 Voir les statistiques
+        </a>
+    </div>
+
+    <!-- BADGES SECTION -->
+    {% if allBadges is not empty %}
+        <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 25px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+            <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap; margin-bottom: 15px;">
+                <span style="font-weight: 600; font-size: 16px;">🏆 Vos badges :</span>
+                {% for badge in allBadges %}
+                    <span style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 20px; background: {{ badge.color }}; color: white; font-weight: 600; font-size: 14px;" title="{{ badge.description }}">
+                        <span style="font-size: 18px;">{{ badge.icon }}</span>
+                        {{ badge.name }}
+                    </span>
+                {% endfor %}
+            </div>
+
+            {% if progress %}
+                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e5e7eb;">
+                    <div style="font-size: 14px; color: #6b7280; margin-bottom: 10px;">
+                        🎯 Prochain badge : <strong style="color: {{ progress.nextBadge.color }};">{{ progress.nextBadge.icon }} {{ progress.nextBadge.name }}</strong>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div>
+                            <div style="font-size: 12px; color: #6b7280; margin-bottom: 5px;">
+                                Points de confiance : {{ trustPoints }} / {{ progress.nextBadge.minTrustPoints }}
+                            </div>
+                            <div style="background: #e5e7eb; height: 8px; border-radius: 4px; overflow: hidden;">
+                                <div style="background: #10b981; height: 100%; width: {{ progress.trustPointsProgress }}%; transition: width 0.3s;"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div style="font-size: 12px; color: #6b7280; margin-bottom: 5px;">
+                                Note moyenne : {{ averageRating }} / {{ progress.nextBadge.minAvgRating }}
+                            </div>
+                            <div style="background: #e5e7eb; height: 8px; border-radius: 4px; overflow: hidden;">
+                                <div style="background: #fbbf24; height: 100%; width: {{ progress.ratingProgress }}%; transition: width 0.3s;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    {% endif %}
 
     <!-- STATISTIQUES -->
     <div class="stats-grid">
@@ -48,12 +95,12 @@
     <!-- FILTRES -->
     <div style="display:flex; align-items:center; gap:10px; margin-bottom:25px; flex-wrap:wrap;">
         <span style="font-weight:600; font-size:14px;">Filtrer par note :</span>
-        <a href="{{ path('tutor_reviews_index') }}"                  class="filter-btn {{ currentFilter is null ? 'active' : '' }}">Tous</a>
-        <a href="{{ path('tutor_reviews_index', {filter: '5'}) }}"   class="filter-btn {{ currentFilter == '5'   ? 'active' : '' }}">⭐⭐⭐⭐⭐ +5</a>
-        <a href="{{ path('tutor_reviews_index', {filter: '4'}) }}"   class="filter-btn {{ currentFilter == '4'   ? 'active' : '' }}">⭐⭐⭐⭐ +4</a>
-        <a href="{{ path('tutor_reviews_index', {filter: '3'}) }}"   class="filter-btn {{ currentFilter == '3'   ? 'active' : '' }}">⭐⭐⭐ +3</a>
-        <a href="{{ path('tutor_reviews_index', {filter: 'low'}) }}" class="filter-btn {{ currentFilter == 'low' ? 'active' : '' }}">⭐⭐ +1/+2</a>
-        <a href="{{ path('tutor_reviews_index', {filter: 'neg'}) }}" class="filter-btn {{ currentFilter == 'neg' ? 'active' : '' }}">👎 Négatifs</a>
+        <button type="button" class="filter-btn" data-filter="" onclick="filterReviews('')">Tous</button>
+        <button type="button" class="filter-btn" data-filter="5" onclick="filterReviews('5')">⭐⭐⭐⭐⭐ +5</button>
+        <button type="button" class="filter-btn" data-filter="4" onclick="filterReviews('4')">⭐⭐⭐⭐ +4</button>
+        <button type="button" class="filter-btn" data-filter="3" onclick="filterReviews('3')">⭐⭐⭐ +3</button>
+        <button type="button" class="filter-btn" data-filter="low" onclick="filterReviews('low')">⭐⭐ +1/+2</button>
+        <button type="button" class="filter-btn" data-filter="neg" onclick="filterReviews('neg')">👎 Négatifs</button>
 
         <div style="margin-left:auto; display:flex; align-items:center; gap:10px;">
             <span style="font-weight:600; font-size:14px;">Traduire en :</span>
@@ -65,8 +112,13 @@
         </div>
     </div>
 
+    <!-- LOADING -->
+    <div id="loadingSpinner" style="display:none; text-align:center; padding:40px; font-size:18px;">
+        ⏳ Chargement...
+    </div>
+
     <!-- LISTE DES AVIS -->
-    <div class="reviews-list">
+    <div class="reviews-list" id="reviewsList">
         {% if reviews is empty %}
             <div class="empty-state">
                 ⭐ Aucun avis
@@ -198,14 +250,111 @@
 
 {% block javascripts %}
 <script>
-const translateUrl   = "{{ path('tutor_reviews_translate') }}";
-const langSelector   = document.getElementById('langSelector');
+const translateUrl = "{{ path('tutor_reviews_translate') }}";
+const apiFilterUrl = "{{ path('tutor_reviews_api_filter') }}";
+const reportUrl    = "{{ path('tutor_reviews_report', {id: '__ID__'}) }}";
+const langSelector = document.getElementById('langSelector');
 const MIN_REASON_LEN = {{ minReasonLength }};
 const MAX_REASON_LEN = {{ maxReasonLength }};
+let currentFilter = '{{ currentFilter ?? '' }}';
+
+// ===================== AJAX FILTER =====================
+async function filterReviews(filter) {
+    currentFilter = filter;
+    
+    // Update active button
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.filter === filter) {
+            btn.classList.add('active');
+        }
+    });
+
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const reviewsList    = document.getElementById('reviewsList');
+
+    loadingSpinner.style.display = 'block';
+    reviewsList.innerHTML = '';
+
+    try {
+        const params = filter ? `?filter=${filter}` : '';
+        const response = await fetch(`${apiFilterUrl}${params}`);
+        const data = await response.json();
+
+        loadingSpinner.style.display = 'none';
+
+        if (data.reviews.length === 0) {
+            reviewsList.innerHTML = `
+                <div class="empty-state">
+                    ⭐ Aucun avis ${filter ? 'pour ce filtre.' : 'reçu pour le moment.'}
+                    <br>${filter ? '<small><a href="#" onclick="filterReviews(\'\'); return false;" style="color:#5D5FEF;">Voir tous les avis</a></small>' : '<small>Les avis de vos étudiants apparaîtront ici.</small>'}
+                </div>
+            `;
+        } else {
+            reviewsList.innerHTML = data.reviews.map(review => renderReviewCard(review)).join('');
+        }
+    } catch (error) {
+        loadingSpinner.style.display = 'none';
+        reviewsList.innerHTML = '<div class="empty-state">❌ Erreur lors du chargement des avis.</div>';
+        console.error('Erreur:', error);
+    }
+}
+
+function renderReviewCard(review) {
+    const colorClass = review.rating < 0 ? 'stars-negative' : (review.rating > 0 ? 'stars-positive' : 'stars-neutral');
+    const stars = '★'.repeat(review.absRating) + '☆'.repeat(5 - review.absRating);
+    const sign = review.rating > 0 ? '+' : '';
+    
+    let badgeClass = 'badge-average';
+    let badgeText = '⚠️ À améliorer';
+    if (review.rating === 5) { badgeClass = 'badge-excellent'; badgeText = '⭐ Excellent'; }
+    else if (review.rating === 4) { badgeClass = 'badge-good'; badgeText = '👍 Très bien'; }
+    else if (review.rating === 3) { badgeClass = 'badge-average'; badgeText = '😊 Bien'; }
+    else if (review.rating < 0) { badgeClass = 'badge-negative'; badgeText = '👎 Avis négatif'; }
+
+    const reportBtn = !review.isReported ? `
+        <button onclick="openReportModal(${review.id})" class="btn btn-secondary" style="font-size:12px;">
+            🚩 Signaler
+        </button>
+    ` : '<span class="badge badge-reported">🚩 Signalé</span>';
+
+    return `
+        <div class="review-card">
+            <div class="card-header">
+                <div class="card-info">
+                    <div class="service-title">📚 ${review.service}</div>
+                    <div class="student-name">par ${review.student}</div>
+                </div>
+                <div class="card-date">${new Date().toLocaleDateString('fr-FR', {day: 'numeric', month: 'short', year: 'numeric'})}</div>
+            </div>
+            <div class="stars-display">
+                <span class="stars ${colorClass}">${stars}</span>
+                <span class="stars-badge ${colorClass}">(${sign}${review.rating})</span>
+            </div>
+            <div style="display:flex; align-items:flex-start; gap:10px;">
+                <p class="review-comment" style="flex:1;">${review.comment}</p>
+                <button class="btn-translate"
+                        data-comment="${review.comment.replace(/"/g, '&quot;')}"
+                        data-id="${review.id}"
+                        onclick="handleTranslate(this)">
+                    🌐 Traduire
+                </button>
+            </div>
+            <div class="translation-box" id="translation-${review.id}">
+                <div class="translation-label" id="translation-label-${review.id}"></div>
+                <div class="translated-text" id="translated-text-${review.id}"></div>
+            </div>
+            <div class="card-footer" style="justify-content:space-between;">
+                <span class="badge ${badgeClass}">${badgeText}</span>
+                ${reportBtn}
+            </div>
+        </div>
+    `;
+}
 
 // ===================== REPORT MODAL =====================
 function openReportModal(id) {
-    document.getElementById('reportForm').action = '/tutor/reviews/report/' + id;
+    document.getElementById('reportForm').action = reportUrl.replace('__ID__', id);
     document.getElementById('reportModal').classList.add('open');
     document.getElementById('reportReason').value   = '';
     document.getElementById('reasonCategory').value = '';
@@ -272,5 +421,8 @@ async function handleTranslate(btn) {
 
     btn.disabled = false;
 }
+
+// ===================== INITIAL LOAD =====================
+filterReviews(currentFilter);
 </script>
 {% endblock %}

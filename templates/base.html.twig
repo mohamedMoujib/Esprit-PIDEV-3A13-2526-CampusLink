@@ -4,6 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}CampusLink — Plateforme de Services Étudiants{% endblock %}</title>
+    
+    {# Open Graph meta tags pour le partage sur les réseaux sociaux #}
+    <meta property="og:title" content="{% block og_title %}CampusLink — Plateforme de Services Étudiants{% endblock %}" />
+    <meta property="og:description" content="{% block og_description %}Plateforme de mise en relation entre étudiants et prestataires de services éducatifs{% endblock %}" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="{{ app.request.uri }}" />
+    <meta property="og:image" content="{{ absolute_url(asset('images/logo.png')) }}" />
+    <meta property="og:site_name" content="CampusLink" />
+    
+    {# Twitter Card meta tags #}
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="{% block twitter_title %}CampusLink — Plateforme de Services Étudiants{% endblock %}" />
+    <meta name="twitter:description" content="{% block twitter_description %}Plateforme de mise en relation entre étudiants et prestataires de services éducatifs{% endblock %}" />
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -592,6 +606,10 @@
            class="{% if 'admin_reviews' in app.request.attributes.get('_route') %}active{% endif %}">
             <span class="nav-icon">⭐</span> Avis
         </a>
+        <a href="{{ path('leaderboard_index') }}"
+           class="{% if 'leaderboard' in app.request.attributes.get('_route') %}active{% endif %}">
+            <span class="nav-icon">🏆</span> Classement
+        </a>
         <a href="{{ path('admin_profile') }}"
            class="{% if app.request.attributes.get('_route') == 'admin_profile' %}active{% endif %}">
             <span class="nav-icon">👤</span> Mon profil
@@ -615,6 +633,10 @@
            class="{% if 'tutor_reviews' in app.request.attributes.get('_route') %}active{% endif %}">
             <span class="nav-icon">⭐</span> Avis reçus
         </a>
+        <a href="{{ path('leaderboard_index') }}"
+           class="{% if 'leaderboard' in app.request.attributes.get('_route') %}active{% endif %}">
+            <span class="nav-icon">🏆</span> Classement
+        </a>
         <a href="{{ path('prestataire_profile') }}"
            class="{% if app.request.attributes.get('_route') == 'prestataire_profile' %}active{% endif %}">
             <span class="nav-icon">👤</span> Mon profil
@@ -637,6 +659,10 @@
         <a href="{{ path('student_reviews_index') }}"
            class="{% if 'student_reviews' in app.request.attributes.get('_route') %}active{% endif %}">
             <span class="nav-icon">⭐</span> Mes avis
+        </a>
+        <a href="{{ path('leaderboard_index') }}"
+           class="{% if 'leaderboard' in app.request.attributes.get('_route') %}active{% endif %}">
+            <span class="nav-icon">🏆</span> Classement
         </a>
         <a href="{{ path('etudiant_profile') }}"
         class="{% if app.request.attributes.get('_route') == 'etudiant_profile' %}active{% endif %}">
