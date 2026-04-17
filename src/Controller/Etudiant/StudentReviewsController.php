@@ -7,6 +7,7 @@ use App\Form\ReviewFormType;
 use App\Repository\ReviewRepository;
 use App\Service\GroqReviewsModerationService;
 use Doctrine\ORM\EntityManagerInterface;
+use Knp\Component\Pager\PaginatorInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -23,7 +24,8 @@ class StudentReviewsController extends AbstractController
     public function __construct(
         private ReviewRepository       $repo,
         private EntityManagerInterface $em,
-        private GroqReviewsModerationService  $moderationService
+        private GroqReviewsModerationService  $moderationService,
+        private PaginatorInterface     $paginator
     ) {}
 
     private function getCurrentStudent(): \App\Entity\User
@@ -182,10 +184,16 @@ class StudentReviewsController extends AbstractController
     }
 
     #[Route('/', name: 'index')]
-    public function index(): Response
+    public function index(Request $request): Response
     {
         $user = $this->getCurrentStudent();
         $reviews = $this->repo->findByStudentWithDetails($user->getId());
+
+        $pagination = $this->paginator->paginate(
+            $reviews,
+            $request->query->getInt('page', 1),
+            5
+        );
 
         $confirmedReservations = $this->repo->getConfirmedReservationsForStudent($user->getId());
 
@@ -194,7 +202,10 @@ class StudentReviewsController extends AbstractController
         $form = $this->createForm(ReviewFormType::class, $review);
 
         return $this->render('etudiant/StudentReviews.html.twig', [
-            'reviews'               => $reviews,
+            'reviews'               => $pagination,
+            'totalReviews'          => count($reviews),
+            'currentPage'           => $request->query->getInt('page', 1),
+            'totalPages'            => $pagination->getPageCount(),
             'confirmedReservations' => $confirmedReservations,
             'maxCommentLength'      => self::MAX_COMMENT_LENGTH,
             'minCommentLength'      => self::MIN_COMMENT_LENGTH,

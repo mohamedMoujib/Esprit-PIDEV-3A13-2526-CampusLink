@@ -204,6 +204,9 @@
             {% endfor %}
         {% endif %}
     </div>
+
+    <!-- PAGINATION -->
+    <div id="paginationControls" style="display:flex; justify-content:center; align-items:center; gap:8px; margin-top:24px; flex-wrap:wrap;"></div>
 </div>
 
 <!-- MODAL SIGNALEMENT -->
@@ -259,7 +262,7 @@ const MAX_REASON_LEN = {{ maxReasonLength }};
 let currentFilter = '{{ currentFilter ?? '' }}';
 
 // ===================== AJAX FILTER =====================
-async function filterReviews(filter) {
+async function filterReviews(filter, page = 1) {
     currentFilter = filter;
     
     // Update active button
@@ -277,8 +280,11 @@ async function filterReviews(filter) {
     reviewsList.innerHTML = '';
 
     try {
-        const params = filter ? `?filter=${filter}` : '';
-        const response = await fetch(`${apiFilterUrl}${params}`);
+        const params = new URLSearchParams();
+        if (filter) params.append('filter', filter);
+        params.append('page', page);
+
+        const response = await fetch(`${apiFilterUrl}?${params.toString()}`);
         const data = await response.json();
 
         loadingSpinner.style.display = 'none';
@@ -293,11 +299,32 @@ async function filterReviews(filter) {
         } else {
             reviewsList.innerHTML = data.reviews.map(review => renderReviewCard(review)).join('');
         }
+
+        renderPagination(data.page, data.totalPages, filter);
     } catch (error) {
         loadingSpinner.style.display = 'none';
         reviewsList.innerHTML = '<div class="empty-state">❌ Erreur lors du chargement des avis.</div>';
         console.error('Erreur:', error);
     }
+}
+
+function renderPagination(currentPage, totalPages, filter) {
+    const container = document.getElementById('paginationControls');
+    if (!container || totalPages <= 1) { if(container) container.innerHTML = ''; return; }
+
+    const btnStyle = (active) => `style="padding:6px 12px; border-radius:6px; border:1px solid #d1d5db; background:${active ? '#5D5FEF' : '#fff'}; color:${active ? '#fff' : '#374151'}; cursor:pointer; font-size:13px;"`;
+
+    let html = `<button ${btnStyle(false)} onclick="filterReviews('${filter}', ${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>‹ Préc</button>`;
+    for (let i = 1; i <= totalPages; i++) {
+        if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+            html += `<button ${btnStyle(i === currentPage)} onclick="filterReviews('${filter}', ${i})">${i}</button>`;
+        } else if (i === currentPage - 3 || i === currentPage + 3) {
+            html += `<span style="padding:6px 4px;">…</span>`;
+        }
+    }
+    html += `<button ${btnStyle(false)} onclick="filterReviews('${filter}', ${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Suiv ›</button>`;
+    html += `<span style="font-size:12px; color:#6b7280; margin-left:8px;">Page ${currentPage} / ${totalPages}</span>`;
+    container.innerHTML = html;
 }
 
 function renderReviewCard(review) {
@@ -423,6 +450,6 @@ async function handleTranslate(btn) {
 }
 
 // ===================== INITIAL LOAD =====================
-filterReviews(currentFilter);
+filterReviews(currentFilter, 1);
 </script>
 {% endblock %}

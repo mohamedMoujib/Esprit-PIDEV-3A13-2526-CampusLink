@@ -5,6 +5,7 @@ namespace App\Controller\Prestataire;
 use App\Entity\Review;
 use App\Repository\ReviewRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Knp\Component\Pager\PaginatorInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -31,7 +32,8 @@ class TutorReviewsController extends AbstractController
         private ReviewRepository       $repo,
         private EntityManagerInterface $em,
         private HttpClientInterface    $client,
-        private \App\Service\ReviewsBadgeService $badgeService
+        private \App\Service\ReviewsBadgeService $badgeService,
+        private PaginatorInterface     $paginator
     ) {}
 
     // ===================== GET CURRENT USER =====================
@@ -110,6 +112,9 @@ class TutorReviewsController extends AbstractController
     {
         $user = $this->getCurrentTutor();
         $filter = $request->query->get('filter');
+        $page   = max(1, $request->query->getInt('page', 1));
+        $limit  = 5;
+        
         $allReviews = $this->repo->findByTutorWithDetails($user->getId());
 
         $reviews = $allReviews;
@@ -126,6 +131,11 @@ class TutorReviewsController extends AbstractController
                 };
             }));
         }
+
+        $total      = count($reviews);
+        $totalPages = (int) ceil($total / $limit);
+        $page       = min($page, max(1, $totalPages));
+        $paged      = array_slice($reviews, ($page - 1) * $limit, $limit);
 
         $data = array_map(function (Review $r) {
             $rating = $r->getRating() ?? 0;
@@ -141,11 +151,14 @@ class TutorReviewsController extends AbstractController
                 'comment'     => $r->getComment() ?? '',
                 'isReported'  => $r->isReported(),
             ];
-        }, $reviews);
+        }, $paged);
 
         return $this->json([
-            'reviews' => $data,
-            'count'   => count($data),
+            'reviews'     => $data,
+            'count'       => $total,
+            'page'        => $page,
+            'totalPages'  => $totalPages,
+            'limit'       => $limit,
         ]);
     }
 
@@ -159,9 +172,9 @@ class TutorReviewsController extends AbstractController
         $allReviews = $this->repo->findByTutorWithDetails($user->getId());
 
         // Filtrage
-        $reviews = $allReviews;
+        $filtered = $allReviews;
         if ($filter !== null) {
-            $reviews = array_values(array_filter($allReviews, function (Review $r) use ($filter) {
+            $filtered = array_values(array_filter($allReviews, function (Review $r) use ($filter) {
                 $rating = $r->getRating() ?? 0;
                 return match ($filter) {
                     '5'   => $rating === 5,
@@ -173,6 +186,12 @@ class TutorReviewsController extends AbstractController
                 };
             }));
         }
+
+        $pagination = $this->paginator->paginate(
+            $filtered,
+            $request->query->getInt('page', 1),
+            5
+        );
 
         $trust = (int) $this->em->getConnection()
             ->fetchOne('SELECT trust_points FROM users WHERE id = ?', [$user->getId()]);
@@ -187,7 +206,7 @@ class TutorReviewsController extends AbstractController
         $progress = $this->badgeService->getProgressToNextBadge($trust, $avg);
 
         return $this->render('prestataire/TutorReviews.html.twig', [
-            'reviews'         => $reviews,
+            'reviews'         => $pagination,
             'trustPoints'     => $trust,
             'averageRating'   => $avg,
             'totalReviews'    => count($allReviews),

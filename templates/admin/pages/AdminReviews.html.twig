@@ -208,6 +208,9 @@
             {% endfor %}
         {% endif %}
     </div>
+
+    <!-- PAGINATION -->
+    <div id="paginationControls" style="display:flex; justify-content:center; align-items:center; gap:8px; margin-top:24px; flex-wrap:wrap;"></div>
 </div>
 
 <!-- MODAL DÉTAILS -->
@@ -265,7 +268,7 @@ const unreportUrl  = "{{ path('admin_reviews_unreport', {id: '__ID__'}) }}";
 const deleteUrl    = "{{ path('admin_reviews_delete', {id: '__ID__'}) }}";
 
 // ===================== AJAX SEARCH & FILTER =====================
-async function loadReviews() {
+async function loadReviews(page = 1) {
     const prestataire = document.getElementById('filterPrestataire').value;
     const rating      = document.getElementById('filterRating').value;
     const search      = document.getElementById('filterSearch').value;
@@ -274,6 +277,7 @@ async function loadReviews() {
     if (prestataire) params.append('prestataire', prestataire);
     if (rating) params.append('rating', rating);
     if (search) params.append('search', search);
+    params.append('page', page);
 
     const loadingSpinner = document.getElementById('loadingSpinner');
     const reviewsList    = document.getElementById('reviewsList');
@@ -305,11 +309,32 @@ async function loadReviews() {
         } else {
             reviewsList.innerHTML = data.reviews.map(review => renderReviewCard(review)).join('');
         }
+
+        renderPagination(data.page, data.totalPages);
     } catch (error) {
         loadingSpinner.style.display = 'none';
         reviewsList.innerHTML = '<div class="empty-state">❌ Erreur lors du chargement des avis.</div>';
         console.error('Erreur:', error);
     }
+}
+
+function renderPagination(currentPage, totalPages) {
+    const container = document.getElementById('paginationControls');
+    if (!container || totalPages <= 1) { if(container) container.innerHTML = ''; return; }
+
+    const btnStyle = (active) => `style="padding:6px 12px; border-radius:6px; border:1px solid #d1d5db; background:${active ? 'var(--primary)' : '#fff'}; color:${active ? '#fff' : '#374151'}; cursor:pointer; font-size:13px;"`;
+
+    let html = `<button ${btnStyle(false)} onclick="loadReviews(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>‹ Préc</button>`;
+    for (let i = 1; i <= totalPages; i++) {
+        if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+            html += `<button ${btnStyle(i === currentPage)} onclick="loadReviews(${i})">${i}</button>`;
+        } else if (i === currentPage - 3 || i === currentPage + 3) {
+            html += `<span style="padding:6px 4px;">…</span>`;
+        }
+    }
+    html += `<button ${btnStyle(false)} onclick="loadReviews(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Suiv ›</button>`;
+    html += `<span style="font-size:12px; color:#6b7280; margin-left:8px;">Page ${currentPage} / ${totalPages}</span>`;
+    container.innerHTML = html;
 }
 
 function renderReviewCard(review) {
@@ -380,12 +405,12 @@ function resetFilters() {
 }
 
 // ===================== EVENT LISTENERS =====================
-document.getElementById('btnFilter').addEventListener('click', loadReviews);
+document.getElementById('btnFilter').addEventListener('click', () => loadReviews(1));
 document.getElementById('btnReset').addEventListener('click', resetFilters);
 
-document.getElementById('filterSearch').addEventListener('input', debounce(loadReviews, 500));
-document.getElementById('filterPrestataire').addEventListener('change', loadReviews);
-document.getElementById('filterRating').addEventListener('change', loadReviews);
+document.getElementById('filterSearch').addEventListener('input', debounce(() => loadReviews(1), 500));
+document.getElementById('filterPrestataire').addEventListener('change', () => loadReviews(1));
+document.getElementById('filterRating').addEventListener('change', () => loadReviews(1));
 
 function debounce(func, wait) {
     let timeout;
@@ -441,6 +466,6 @@ document.getElementById('detailsModal').addEventListener('click', function (e) {
 });
 
 // ===================== INITIAL LOAD =====================
-loadReviews();
+loadReviews(1);
 </script>
 {% endblock %}

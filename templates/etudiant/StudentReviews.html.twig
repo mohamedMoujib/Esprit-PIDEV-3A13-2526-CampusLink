@@ -148,6 +148,38 @@
         {% endif %}
     </div>
 
+    <!-- PAGINATION -->
+    <div style="display:flex; justify-content:center; align-items:center; gap:8px; margin-top:24px; flex-wrap:wrap;">
+        {% if totalPages > 1 %}
+            <a href="{{ path('student_reviews_index', {'page': currentPage - 1}) }}"
+               class="btn btn-secondary"
+               style="padding:6px 14px; font-size:13px; {{ currentPage == 1 ? 'pointer-events:none; opacity:0.4;' : '' }}">
+                ‹ Préc
+            </a>
+
+            {% for i in 1..totalPages %}
+                {% if i == 1 or i == totalPages or (i >= currentPage - 2 and i <= currentPage + 2) %}
+                    <a href="{{ path('student_reviews_index', {'page': i}) }}"
+                       style="padding:6px 12px; border-radius:6px; border:1px solid #d1d5db; font-size:13px; text-decoration:none;
+                              background:{{ i == currentPage ? '#6c63ff' : '#fff' }};
+                              color:{{ i == currentPage ? '#fff' : '#374151' }};">
+                        {{ i }}
+                    </a>
+                {% elseif i == currentPage - 3 or i == currentPage + 3 %}
+                    <span style="padding:6px 4px; color:#6b7280;">…</span>
+                {% endif %}
+            {% endfor %}
+
+            <a href="{{ path('student_reviews_index', {'page': currentPage + 1}) }}"
+               class="btn btn-secondary"
+               style="padding:6px 14px; font-size:13px; {{ currentPage == totalPages ? 'pointer-events:none; opacity:0.4;' : '' }}">
+                Suiv ›
+            </a>
+
+            <span style="font-size:12px; color:#6b7280; margin-left:8px;">Page {{ currentPage }} / {{ totalPages }}</span>
+        {% endif %}
+    </div>
+
 </div>
 
 <!-- MODAL ÉDITION -->

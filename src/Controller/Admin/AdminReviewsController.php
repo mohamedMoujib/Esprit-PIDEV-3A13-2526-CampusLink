@@ -6,6 +6,7 @@ use App\Entity\Review;
 use App\Repository\ReviewRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Knp\Bundle\SnappyBundle\Snappy\Response\PdfResponse;
+use Knp\Component\Pager\PaginatorInterface;
 use Knp\Snappy\Pdf;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -18,7 +19,8 @@ class AdminReviewsController extends AbstractController
     public function __construct(
         private ReviewRepository       $repo,
         private EntityManagerInterface $em,
-        private Pdf                    $pdfGenerator
+        private Pdf                    $pdfGenerator,
+        private PaginatorInterface     $paginator
     ) {}
 
     private function getCurrentAdmin(): \App\Entity\User
@@ -50,16 +52,16 @@ class AdminReviewsController extends AbstractController
         $filterSearch      = trim($request->query->get('search', ''));
 
         // Appliquer les filtres
-        $reviews = $allReviews;
+        $filtered = $allReviews;
 
         if (!empty($filterPrestataire)) {
-            $reviews = array_filter($reviews, fn(Review $r) =>
+            $filtered = array_filter($filtered, fn(Review $r) =>
                 $r->getPrestataire()?->getName() === $filterPrestataire
             );
         }
 
         if (!empty($filterRating)) {
-            $reviews = array_filter($reviews, function (Review $r) use ($filterRating) {
+            $filtered = array_filter($filtered, function (Review $r) use ($filterRating) {
                 $rating = $r->getRating() ?? 0;
                 return match ($filterRating) {
                     'positive'      => $rating > 0,
@@ -75,7 +77,7 @@ class AdminReviewsController extends AbstractController
 
         if (!empty($filterSearch)) {
             $search  = mb_strtolower($filterSearch);
-            $reviews = array_filter($reviews, function (Review $r) use ($search) {
+            $filtered = array_filter($filtered, function (Review $r) use ($search) {
                 return str_contains(mb_strtolower($r->getComment() ?? ''), $search)
                     || str_contains(mb_strtolower($r->getReservation()?->getService()?->getTitle() ?? ''), $search)
                     || str_contains(mb_strtolower($r->getStudent()?->getName() ?? ''), $search)
@@ -83,7 +85,14 @@ class AdminReviewsController extends AbstractController
             });
         }
 
-        $reviews = array_values($reviews);
+        $filtered = array_values($filtered);
+
+        // Pagination
+        $pagination = $this->paginator->paginate(
+            $filtered,
+            $request->query->getInt('page', 1),
+            5
+        );
 
         // Statistiques (toujours sur tous les avis)
         $stats = [
@@ -101,7 +110,7 @@ class AdminReviewsController extends AbstractController
         sort($prestataires);
 
         return $this->render('admin/pages/AdminReviews.html.twig', [
-            'reviews'           => $reviews,
+            'reviews'           => $pagination,
             'stats'             => $stats,
             'prestataires'      => $prestataires,
             'filterPrestataire' => $filterPrestataire,
@@ -173,6 +182,8 @@ class AdminReviewsController extends AbstractController
         $filterPrestataire = $request->query->get('prestataire', '');
         $filterRating      = $request->query->get('rating', '');
         $filterSearch      = trim($request->query->get('search', ''));
+        $page              = max(1, $request->query->getInt('page', 1));
+        $limit             = 5;
 
         $reviews = $allReviews;
 
@@ -207,7 +218,11 @@ class AdminReviewsController extends AbstractController
             });
         }
 
-        $reviews = array_values($reviews);
+        $reviews   = array_values($reviews);
+        $total     = count($reviews);
+        $totalPages = (int) ceil($total / $limit);
+        $page      = min($page, max(1, $totalPages));
+        $paged     = array_slice($reviews, ($page - 1) * $limit, $limit);
 
         $data = array_map(function (Review $r) {
             $rating = $r->getRating() ?? 0;
@@ -226,11 +241,14 @@ class AdminReviewsController extends AbstractController
                 'reportReason'  => $r->getReportReason() ?? '',
                 'reportedAt'    => $r->getReportedAt()?->format('d/m/Y à H:i') ?? '',
             ];
-        }, $reviews);
+        }, $paged);
 
         return $this->json([
-            'reviews' => $data,
-            'count'   => count($data),
+            'reviews'     => $data,
+            'count'       => $total,
+            'page'        => $page,
+            'totalPages'  => $totalPages,
+            'limit'       => $limit,
         ]);
     }
 
