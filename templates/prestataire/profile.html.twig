@@ -4,16 +4,22 @@
 {% block body %}
 <div style="max-width:900px; margin:0 auto;">
 
+    {# ── Page title ── #}
     <div class="page-header">
         <div>
             <div class="page-title">👤 Mon Profil</div>
             <div class="page-sub">
                 Type de compte :
-                <span class="badge" style="background:#f3e8ff; color:#7c3aed;">💼 Prestataire</span>
+                {% if user.userType == 'ETUDIANT' %}
+                    <span class="badge" style="background:#dbeafe; color:#1e40af;">🎓 Étudiant</span>
+                {% elseif user.userType == 'PRESTATAIRE' %}
+                    <span class="badge" style="background:#f3e8ff; color:#7c3aed;">💼 Prestataire</span>
+                {% endif %}
             </div>
         </div>
     </div>
 
+    {# ── Flash messages ── #}
     {% for message in app.flashes('success') %}
         <div class="flash flash-success">✅ {{ message }}</div>
     {% endfor %}
@@ -25,50 +31,6 @@
        CARD 1 — Avatar + Personal Info
     ══════════════════════════════════════ #}
     <div class="form-panel" style="margin-bottom:24px;">
-
-        {# ── Avatar row — correctly wrapped in flex ── #}
-        <div style="display:flex; align-items:center; gap:24px;
-                    padding-bottom:24px; border-bottom:1px solid var(--border);">
-
-            {# Clickable avatar ── #}
-            <div style="position:relative; width:100px; height:100px;
-                        cursor:pointer; flex-shrink:0;"
-                 onclick="document.getElementById('avatarInput').click()">
-
-                {% if user.profilePicture %}
-                    <img id="avatarPreview"
-                         src="/uploads/profiles/{{ user.profilePicture }}"
-                         style="width:100px; height:100px; border-radius:50%;
-                                object-fit:cover; border:3px solid var(--primary-light);">
-                {% else %}
-                    <div id="avatarPreview"
-                         style="width:100px; height:100px; border-radius:50%;
-                                background:#f3e8ff; display:flex; align-items:center;
-                                justify-content:center; font-size:48px;">
-                        💼
-                    </div>
-                {% endif %}
-
-                <div style="position:absolute; bottom:0; right:0;
-                            background:var(--primary); color:white; border-radius:50%;
-                            width:28px; height:28px; display:flex; align-items:center;
-                            justify-content:center; font-size:13px; border:2px solid white;">
-                    ✏️
-                </div>
-            </div>
-
-            {# User info ── #}
-            <div>
-                <div style="font-size:20px; font-weight:800; color:var(--text);">{{ user.name }}</div>
-                <div style="font-size:13px; color:var(--text-muted); margin-top:2px;">{{ user.email }}</div>
-                <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">
-                    Membre depuis {{ user.createdAt ? user.createdAt|date('d/m/Y') : 'N/A' }}
-                </div>
-                <div style="font-size:11px; color:var(--text-muted); margin-top:6px; font-style:italic;">
-                    📷 Cliquez sur la photo pour la modifier (JPG, PNG — max 3MB)
-                </div>
-            </div>
-        </div>
 
         <div class="form-panel-header">
             <span class="form-panel-icon">📋</span>
@@ -86,13 +48,76 @@
               novalidate>
             <input type="hidden" name="action" value="save_profile">
 
-            {# Hidden file input inside the form ── #}
+            {# Hidden file input — triggered by avatar click ── #}
             <input type="file"
                    id="avatarInput"
                    name="profilePicture"
                    accept="image/jpeg,image/png,image/webp,image/gif"
                    hidden>
 
+            {# ── Avatar row ── #}
+            <div style="display:flex; align-items:center; gap:24px;
+                        padding-bottom:24px; border-bottom:1px solid var(--border);">
+
+                {# Avatar circle — clickable ── #}
+                <div style="position:relative; width:100px; height:100px; cursor:pointer; flex-shrink:0;"
+                    onclick="document.getElementById('avatarInput').click()">
+
+                    {# Preview container — always same size #}
+                    <div id="avatarPreviewContainer"
+                        style="width:100px; height:100px; border-radius:50%; overflow:hidden;
+                                border:3px solid var(--primary-light); background:#e0e7ff;
+                                display:flex; align-items:center; justify-content:center;">
+
+                        {% if user.profilePicture and 'res.cloudinary.com' in user.profilePicture %}
+                            {% set avatarSrc = user.profilePicture|replace({
+                                '/upload/': '/upload/w_200,h_200,c_fill,g_face,r_max,q_auto,f_auto/'
+                            }) %}
+                            <img id="avatarPreview"
+                                src="{{ avatarSrc }}"
+                                style="width:100%; height:100%; object-fit:cover; display:block;"
+                                onerror="this.style.display='none'; document.getElementById('avatarPlaceholder').style.display='flex'">
+                        {% elseif user.profilePicture %}
+                            <img id="avatarPreview"
+                                src="/uploads/profiles/{{ user.profilePicture }}"
+                                style="width:100%; height:100%; object-fit:cover; display:block;"
+                                onerror="this.style.display='none'; document.getElementById('avatarPlaceholder').style.display='flex'">
+                        {% endif %}
+                        
+                        <span id="avatarPlaceholder" 
+                              style="font-size:48px; {% if user.profilePicture %}display:none;{% else %}display:flex;{% endif %}">
+                            👤
+                        </span>
+                    </div>
+
+                    {# Edit badge ── #}
+                    <div style="position:absolute; bottom:0; right:0;
+                                background:var(--primary); color:white; border-radius:50%;
+                                width:28px; height:28px; display:flex; align-items:center;
+                                justify-content:center; font-size:13px; border:2px solid white;
+                                cursor:pointer;">
+                        ✏️
+                    </div>
+                </div>
+
+                {# User info ── #}
+                <div>
+                    <div style="font-size:20px; font-weight:800; color:var(--text);">
+                        {{ user.name }}
+                    </div>
+                    <div style="font-size:13px; color:var(--text-muted); margin-top:2px;">
+                        {{ user.email }}
+                    </div>
+                    <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">
+                        Membre depuis {{ user.createdAt ? user.createdAt|date('d/m/Y') : 'N/A' }}
+                    </div>
+                    <div style="font-size:11px; color:var(--text-muted); margin-top:6px; font-style:italic;">
+                        📷 Cliquez sur la photo pour la modifier (JPG, PNG — max 3MB)
+                    </div>
+                </div>
+            </div>
+
+            {# ── Prénom + Nom ── #}
             <div class="form-row" style="margin-bottom:16px;">
                 <div class="form-group">
                     <label class="form-label">Prénom <span class="required-star">*</span></label>
@@ -108,6 +133,7 @@
                 </div>
             </div>
 
+            {# ── Email + Phone ── #}
             <div class="form-row" style="margin-bottom:16px;">
                 <div class="form-group">
                     <label class="form-label">Email <span class="required-star">*</span></label>
@@ -123,6 +149,7 @@
                 </div>
             </div>
 
+            {# ── Université (full width) ── #}
             <div class="form-group" style="margin-bottom:16px;">
                 <label class="form-label">Université</label>
                 <input type="text" name="universite" class="form-control"
@@ -130,6 +157,7 @@
                        placeholder="Votre université">
             </div>
 
+            {# ── Filière + Spécialisation ── #}
             <div class="form-row" style="margin-bottom:16px;">
                 <div class="form-group">
                     <label class="form-label">Filière</label>
@@ -145,6 +173,7 @@
                 </div>
             </div>
 
+            {# ── Genre + Adresse ── #}
             <div class="form-row" style="margin-bottom:24px;">
                 <div class="form-group">
                     <label class="form-label">Genre</label>
@@ -258,9 +287,17 @@
 </style>
 
 <script>
+// ── Avatar preview on file select ──
 document.getElementById('avatarInput').addEventListener('change', function() {
     const file = this.files[0];
     if (!file) return;
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+        alert('Format non supporté. Utilisez JPG, PNG ou WebP.');
+        this.value = '';
+        return;
+    }
 
     if (file.size > 3 * 1024 * 1024) {
         alert('Image trop volumineuse (max 3MB)');
@@ -270,29 +307,44 @@ document.getElementById('avatarInput').addEventListener('change', function() {
 
     const reader = new FileReader();
     reader.onload = function(e) {
-        const preview = document.getElementById('avatarPreview');
-        if (preview.tagName === 'IMG') {
-            preview.src = e.target.result;
-        } else {
-            const img = document.createElement('img');
-            img.id = 'avatarPreview';
-            img.src = e.target.result;
-            img.style.cssText = 'width:100px;height:100px;border-radius:50%;object-fit:cover;border:3px solid var(--primary-light);';
-            preview.replaceWith(img);
+        const container = document.getElementById('avatarPreviewContainer');
+        const placeholder = document.getElementById('avatarPlaceholder');
+        let preview = document.getElementById('avatarPreview');
+
+        if (!preview || preview.tagName !== 'IMG') {
+            if (placeholder) placeholder.style.display = 'none';
+            
+            preview = document.createElement('img');
+            preview.id = 'avatarPreview';
+            preview.style.cssText = 'width:100%; height:100%; object-fit:cover; display:block; border:none; border-radius:0;';
+            container.appendChild(preview);
         }
+
+        preview.src = e.target.result;
+        preview.style.display = 'block';
+        preview.onload = function() {
+            this.style.display = 'none';
+            this.offsetHeight;
+            this.style.display = 'block';
+        };
     };
     reader.readAsDataURL(file);
 });
 
+// ── Password validation ──
 document.getElementById('passwordForm').addEventListener('submit', function(e) {
     let valid = true;
     const setError = (id, msg) => {
-        document.getElementById(id).textContent = msg;
-        if (msg) valid = false;
+        const el = document.getElementById(id);
+        if (el) {
+            el.textContent = msg;
+            if (msg) valid = false;
+        }
     };
-    const current = document.getElementById('currentPwd').value;
-    const next    = document.getElementById('newPwd').value;
-    const confirm = document.getElementById('confirmPwd').value;
+    
+    const current = document.getElementById('currentPwd')?.value || '';
+    const next    = document.getElementById('newPwd')?.value || '';
+    const confirm = document.getElementById('confirmPwd')?.value || '';
 
     setError('err-current', !current ? 'Champ requis.' : '');
     setError('err-new',
@@ -302,6 +354,7 @@ document.getElementById('passwordForm').addEventListener('submit', function(e) {
         !/[0-9]/.test(next) ? 'Un chiffre requis.' : ''
     );
     setError('err-confirm', next !== confirm ? 'Les mots de passe ne correspondent pas.' : '');
+    
     if (!valid) e.preventDefault();
 });
 </script>

@@ -1,0 +1,11 @@
+# config/packages/scheb_2fa.yaml
+scheb_two_factor:
+    security_tokens:
+        - Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken
+
+    totp:
+        enabled: false
+        server_name: "CampusLink"
+        issuer: "CampusLink"
+        leeway: 1
+        template: User/2fa_check.html.twig
