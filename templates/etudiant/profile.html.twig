@@ -61,31 +61,20 @@
             <div style="display:flex; align-items:center; gap:24px;
                         padding-bottom:24px; border-bottom:1px solid var(--border);">
 
-                {# Avatar circle — clickable ── #}
+                            {# Avatar circle — clickable ── #}
                 <div style="position:relative; width:100px; height:100px; cursor:pointer; flex-shrink:0;"
                     onclick="document.getElementById('avatarInput').click()">
 
-                    {# Preview container — always same size #}
                     <div id="avatarPreviewContainer"
                         style="width:100px; height:100px; border-radius:50%; overflow:hidden;
                                 border:3px solid var(--primary-light); background:#e0e7ff;
                                 display:flex; align-items:center; justify-content:center;">
 
-                        {% if user.profilePicture and 'res.cloudinary.com' in user.profilePicture %}
-                            {% set avatarSrc = user.profilePicture|replace({
-                                '/upload/': '/upload/w_200,h_200,c_fill,g_face,r_max,q_auto,f_auto/'
-                            }) %}
-                            
-                            <img id="avatarPreview"
-                                src="{{ avatarSrc }}"
-                                style="width:100%; height:100%; object-fit:cover; display:block;"
-                                onerror="this.style.display='none'; document.getElementById('avatarPlaceholder').style.display='flex'">
-                        {% else %}
-                            <span id="avatarPlaceholder" style="font-size:48px;">👤</span>
-                        {% endif %}
+                        <img id="avatarPreview"
+                            src="{{ avatar_url(user.profilePicture, user.name) }}"
+                            alt="{{ user.name }}"
+                            style="width:100%; height:100%; object-fit:cover; display:block;">
                     </div>
-
-                   
                 </div>
 
                 {# User info ── #}

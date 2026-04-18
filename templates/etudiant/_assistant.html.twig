@@ -1,0 +1,106 @@
+{# templates/etudiant/components/_assistant.html.twig #}
+<div id="cl-assistant" style="position:fixed; bottom:24px; right:24px; z-index:1000; font-family:sans-serif;">
+
+  {# Toggle button #}
+  <button id="cl-toggle"
+          onclick="document.getElementById('cl-box').style.display = document.getElementById('cl-box').style.display === 'none' ? 'flex' : 'none'"
+          style="width:52px; height:52px; border-radius:50%; background:#4F46E5; border:none;
+                 cursor:pointer; color:white; font-size:22px; box-shadow:0 4px 12px rgba(79,70,229,.4);">
+    🎓
+  </button>
+
+  {# Chat box #}
+  <div id="cl-box" style="display:none; flex-direction:column; width:360px;
+       border-radius:16px; overflow:hidden; border:0.5px solid #e5e7eb;
+       background:#fff; position:absolute; bottom:62px; right:0;
+       box-shadow:0 8px 32px rgba(0,0,0,.12);">
+
+    {# Header #}
+    <div style="background:#4F46E5; padding:14px 18px; display:flex; align-items:center; gap:10px;">
+      <div style="width:32px; height:32px; border-radius:50%; background:rgba(255,255,255,.2);
+                  display:flex; align-items:center; justify-content:center; font-size:16px;">🎓</div>
+      <div>
+        <div style="color:#fff; font-size:14px; font-weight:600;">Assistant CampusLink</div>
+        <div style="color:rgba(255,255,255,.75); font-size:11px;">Votre guide sur la plateforme</div>
+      </div>
+    </div>
+
+    {# Messages #}
+    <div id="cl-msgs" style="height:300px; overflow-y:auto; padding:12px;
+         display:flex; flex-direction:column; gap:8px; background:#f9fafb;">
+      <div class="cl-bot-msg" style="background:#fff; border:0.5px solid #e5e7eb; border-radius:4px 12px 12px 12px;
+           padding:10px 13px; font-size:13px; max-width:90%; line-height:1.5;">
+        Bonjour ! Je suis votre assistant CampusLink 👋<br>
+        Je peux vous aider à trouver des services, réserver, payer ou créer une publication.
+        <div style="display:flex; flex-wrap:wrap; gap:5px; margin-top:8px;">
+          {% for chip in ['Comment réserver ?', 'Je cherche un cours de Java', 'Comment payer ?', 'Créer une publication'] %}
+            <button onclick="clAsk('{{ chip }}')"
+                    style="font-size:11px; padding:3px 9px; border-radius:20px; border:0.5px solid #4F46E5;
+                           color:#4F46E5; background:transparent; cursor:pointer;">{{ chip }}</button>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    {# Input #}
+    <div style="display:flex; gap:8px; padding:10px 12px; border-top:0.5px solid #e5e7eb; background:#fff;">
+      <input id="cl-inp" placeholder="Posez votre question..."
+             onkeydown="if(event.key==='Enter') clSend()"
+             style="flex:1; border:0.5px solid #d1d5db; border-radius:8px;
+                    padding:7px 11px; font-size:13px; outline:none;">
+      <button onclick="clSend()"
+              style="width:34px; height:34px; border-radius:8px; background:#4F46E5;
+                     border:none; cursor:pointer; color:#fff; font-size:14px;">➤</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function clAsk(text) {
+  document.getElementById('cl-inp').value = text;
+  clSend();
+}
+
+async function clSend() {
+  const inp = document.getElementById('cl-inp');
+  const msgs = document.getElementById('cl-msgs');
+  const text = inp.value.trim();
+  if (!text) return;
+  inp.value = '';
+
+  // User bubble
+  const uDiv = document.createElement('div');
+  uDiv.style.cssText = 'background:#4F46E5;color:#fff;border-radius:12px 4px 12px 12px;padding:10px 13px;font-size:13px;max-width:85%;line-height:1.5;align-self:flex-end;margin-left:auto';
+  uDiv.textContent = text;
+  msgs.appendChild(uDiv);
+
+  // Typing indicator
+  const typing = document.createElement('div');
+  typing.style.cssText = 'background:#fff;border:0.5px solid #e5e7eb;border-radius:4px 12px 12px 12px;padding:10px 13px;font-size:13px;max-width:85%;opacity:.6';
+  typing.textContent = '...';
+  msgs.appendChild(typing);
+  msgs.scrollTop = msgs.scrollHeight;
+
+  try {
+    const res = await fetch('{{ path('etudiant_assistant_chat') }}', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text })
+    });
+    const data = await res.json();
+    typing.remove();
+
+    const bDiv = document.createElement('div');
+    bDiv.style.cssText = 'background:#fff;border:0.5px solid #e5e7eb;border-radius:4px 12px 12px 12px;padding:10px 13px;font-size:13px;max-width:90%;line-height:1.5;white-space:pre-wrap';
+    bDiv.textContent = data.reply ?? 'Erreur.';
+    msgs.appendChild(bDiv);
+  } catch {
+    typing.remove();
+    const err = document.createElement('div');
+    err.style.cssText = 'color:#dc2626;font-size:12px;padding:6px';
+    err.textContent = 'Erreur de connexion.';
+    msgs.appendChild(err);
+  }
+  msgs.scrollTop = msgs.scrollHeight;
+}
+</script>

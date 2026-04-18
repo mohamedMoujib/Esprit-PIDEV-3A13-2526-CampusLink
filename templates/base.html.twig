@@ -683,8 +683,10 @@
 
     {% block body %}{% endblock %}
 </div>
-
-{% block javascripts %}
+{% if app.user and app.user.userType == 'ETUDIANT' %}
+    {% include 'etudiant/_assistant.html.twig' %}
+{% endif %}{% block javascripts %}
+<script src="https://unpkg.com/htmx.org@1.9.10"></script>
 {% endblock %}
 </body>
 </html>
