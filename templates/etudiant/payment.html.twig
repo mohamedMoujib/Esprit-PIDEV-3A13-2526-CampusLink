@@ -7,121 +7,351 @@
 <div class="container mt-5">
     <div class="form-card p-4">
 
-```
-    <h2 class="form-title mb-4">Coordination de Transaction</h2>
-
-    {% for msg in app.flashes('success') %}
-        <div class="alert alert-success">{{ msg }}</div>
-    {% endfor %}
-
-    {% if message is defined %}
-        <div class="alert alert-danger">{{ message }}</div>
-    {% endif %}
-
-    <form method="post" id="paymentForm">
-
-        <input type="hidden" name="_token" value="{{ csrf_token('payment_form') }}">
-        <input type="hidden" name="lat" id="lat">
-        <input type="hidden" name="lng" id="lng">
-        <input type="hidden" name="address" id="address">
-
-        <div class="mb-3">
-            <label class="form-label fw-bold">Nom Prestataire</label>
-            <input type="text" class="form-control"
-                   value="{{ reservation.service.user.name }}"
-                   readonly>
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <h2 class="form-title mb-0">Coordination de Transaction</h2>
+            <button type="button" id="chatToggleBtn" onclick="toggleChat()" title="Assistant IA">
+                <span id="chatBtnIcon">💬</span>
+                <span id="chatBtnLabel">Aide</span>
+            </button>
         </div>
 
-        <div class="mb-3">
-            <label class="form-label fw-bold">Montant convenu (DT)</label>
-            <input type="text" class="form-control"
-                   name="amount"
-                   value="{{ reservation.price }}"
-                   readonly>
-            <small class="text-muted">
-                Prix convenu entre les deux parties. Le paiement est effectué hors plateforme.
-            </small>
-        </div>
+        {% for msg in app.flashes('success') %}
+            <div class="alert alert-success">{{ msg }}</div>
+        {% endfor %}
 
-        <div class="mb-3">
-            <label class="form-label fw-bold">Méthode de paiement externe</label>
+        {% if message is defined %}
+            <div class="alert alert-danger">{{ message }}</div>
+        {% endif %}
 
-            <div class="p-3 border rounded bg-light d-flex gap-4">
-                <label>
-                    <input type="radio" name="payment_method" value="cash" checked>
-                    💵 Cash
-                </label>
-                <label>
-                    <input type="radio" name="payment_method" value="d17">
-                    📱 D17
-                </label>
+        <form method="post" id="paymentForm">
+
+            <input type="hidden" name="_token" value="{{ csrf_token('payment_form') }}">
+            <input type="hidden" name="lat" id="lat">
+            <input type="hidden" name="lng" id="lng">
+            <input type="hidden" name="address" id="address">
+
+            <div class="mb-3">
+                <label class="form-label fw-bold">Nom Prestataire</label>
+                <input type="text" class="form-control"
+                       value="{{ reservation.service.user.name }}"
+                       readonly>
             </div>
 
-            <small class="text-warning">
-                ⚠️ Le paiement est effectué en dehors de la plateforme.
-            </small>
-        </div>
-
-        <div class="mb-4">
-            <label class="form-label fw-bold">Lieu de rencontre</label>
-
-            <div class="d-flex align-items-center gap-3 mb-3">
-                <span class="fw-semibold">Utiliser votre localisation courante ?</span>
-                <button type="button"
-                        class="btn btn-primary btn-sm px-3"
-                        onclick="useCurrentLocation()">
-                    📍 Utiliser ma position
-                </button>
+            <div class="mb-3">
+                <label class="form-label fw-bold">Montant convenu (DT)</label>
+                <input type="text" class="form-control"
+                       name="amount"
+                       value="{{ reservation.price }}"
+                       readonly>
+                <small class="text-muted">
+                    Prix convenu entre les deux parties. Le paiement est effectué hors plateforme.
+                </small>
             </div>
 
-            <div id="map"
-                 style="height:450px; background:#e8e0d8; border:1px solid #ccc; border-radius:6px;">
+            <div class="mb-3">
+                <label class="form-label fw-bold">Méthode de paiement externe</label>
+
+                <div class="p-3 border rounded bg-light d-flex gap-4">
+                    <label>
+                        <input type="radio" name="payment_method" value="cash" checked>
+                        💵 Cash
+                    </label>
+                    <label>
+                        <input type="radio" name="payment_method" value="d17">
+                        📱 D17
+                    </label>
+                </div>
+
+                <small class="text-warning">
+                    ⚠️ Le paiement est effectué en dehors de la plateforme.
+                </small>
             </div>
 
-            <p id="selectedAddress" class="mt-2 text-primary"></p>
-        </div>
+            <div class="mb-4">
+                <label class="form-label fw-bold">Lieu de rencontre</label>
 
-        <button type="button" id="submitBtn" onclick="sendEmailAndSubmit()" class="btn btn-primary">
-            Valider l'engagement de transaction
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <span class="fw-semibold">Utiliser votre localisation courante ?</span>
+                    <button type="button"
+                            class="btn btn-primary btn-sm px-3"
+                            onclick="useCurrentLocation()">
+                        📍 Utiliser ma position
+                    </button>
+                </div>
+
+                <div id="map"
+                     style="height:450px; background:#e8e0d8; border:1px solid #ccc; border-radius:6px;">
+                </div>
+
+                <p id="selectedAddress" class="mt-2 text-primary"></p>
+            </div>
+
+            <button type="button" id="submitBtn" onclick="sendEmailAndSubmit()" class="btn btn-primary">
+                Valider l'engagement de transaction
+            </button>
+
+        </form>
+
+    </div>
+</div>
+
+{# ── CHATBOT PANEL ── #}
+<div id="chatPanel" class="chat-panel">
+    <div class="chat-header">
+        <div class="chat-header-left">
+            <div class="chat-avatar">✦</div>
+            <div>
+                <div class="chat-title">Assistant Coordination</div>
+                <div class="chat-subtitle">Propulsé par Groq</div>
+            </div>
+        </div>
+        <button class="chat-close" onclick="toggleChat()">✕</button>
+    </div>
+
+    <div class="chat-messages" id="chatMessages">
+        <div class="chat-msg assistant">
+            <div class="chat-bubble">
+                Bonjour ! Je suis votre assistant pour cette page de coordination. Je peux vous aider avec :
+                <ul class="mt-2 mb-0 ps-3">
+                    <li>Les méthodes de paiement (Cash, D17)</li>
+                    <li>Comment choisir un lieu de rencontre</li>
+                    <li>Le processus de validation</li>
+                    <li>Les factures générées</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="chat-suggestions" id="chatSuggestions">
+        <button onclick="askSuggestion(this)">Comment choisir le lieu ? 📍</button>
+        <button onclick="askSuggestion(this)">Différence Cash vs D17 ?</button>
+        <button onclick="askSuggestion(this)">Que se passe-t-il après validation ?</button>
+    </div>
+
+    <div class="chat-input-row">
+        <input type="text" id="chatInput" placeholder="Posez votre question..." onkeydown="if(event.key==='Enter') sendChat()">
+        <button id="chatSendBtn" onclick="sendChat()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
         </button>
-
-    </form>
-
+    </div>
 </div>
-```
 
-</div>
+<div id="chatOverlay" onclick="toggleChat()"></div>
+
+<style>
+/* ── Toggle Button ── */
+#chatToggleBtn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: linear-gradient(135deg, #1a56db, #0e3fa8);
+    color: #fff;
+    border: none;
+    border-radius: 50px;
+    padding: 9px 18px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(26,86,219,0.35);
+    transition: transform .18s, box-shadow .18s;
+}
+#chatToggleBtn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 7px 20px rgba(26,86,219,0.45);
+}
+
+/* ── Overlay ── */
+#chatOverlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.35);
+    z-index: 1040;
+    backdrop-filter: blur(2px);
+}
+#chatOverlay.active { display: block; }
+
+/* ── Panel ── */
+.chat-panel {
+    position: fixed;
+    top: 0;
+    right: -420px;
+    width: 400px;
+    height: 100dvh;
+    background: #ffffff;
+    box-shadow: -8px 0 40px rgba(0,0,0,.15);
+    z-index: 1050;
+    display: flex;
+    flex-direction: column;
+    transition: right .32s cubic-bezier(.4,0,.2,1);
+    font-family: 'Segoe UI', sans-serif;
+}
+.chat-panel.open { right: 0; }
+
+/* ── Header ── */
+.chat-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 20px;
+    background: linear-gradient(135deg, #1a56db, #0e3fa8);
+    color: #fff;
+    flex-shrink: 0;
+}
+.chat-header-left { display: flex; align-items: center; gap: 12px; }
+.chat-avatar {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.18);
+    display: grid; place-items: center;
+    font-size: 1.1rem;
+    border: 2px solid rgba(255,255,255,.4);
+}
+.chat-title { font-weight: 700; font-size: .95rem; }
+.chat-subtitle { font-size: .72rem; opacity: .8; margin-top: 1px; }
+.chat-close {
+    background: rgba(255,255,255,.15);
+    border: none; color: #fff;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    cursor: pointer; font-size: .85rem;
+    transition: background .15s;
+}
+.chat-close:hover { background: rgba(255,255,255,.3); }
+
+/* ── Messages ── */
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    scroll-behavior: smooth;
+}
+.chat-msg { display: flex; }
+.chat-msg.user { justify-content: flex-end; }
+.chat-bubble {
+    max-width: 82%;
+    padding: 11px 15px;
+    border-radius: 16px;
+    font-size: .875rem;
+    line-height: 1.55;
+}
+.chat-msg.assistant .chat-bubble {
+    background: #f1f5fe;
+    color: #1e2a45;
+    border-bottom-left-radius: 4px;
+    border-left: 3px solid #1a56db;
+}
+.chat-msg.user .chat-bubble {
+    background: linear-gradient(135deg, #1a56db, #0e3fa8);
+    color: #fff;
+    border-bottom-right-radius: 4px;
+}
+.chat-bubble ul { font-size: .84rem; }
+
+/* Typing indicator */
+.typing-dots span {
+    display: inline-block;
+    width: 7px; height: 7px;
+    background: #1a56db;
+    border-radius: 50%;
+    margin: 0 2px;
+    animation: bounce 1.2s infinite;
+}
+.typing-dots span:nth-child(2) { animation-delay: .2s; }
+.typing-dots span:nth-child(3) { animation-delay: .4s; }
+@keyframes bounce {
+    0%,60%,100% { transform: translateY(0); }
+    30% { transform: translateY(-7px); }
+}
+
+/* ── Suggestions ── */
+.chat-suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    padding: 0 16px 14px;
+}
+.chat-suggestions button {
+    background: #f1f5fe;
+    border: 1px solid #c7d7f9;
+    color: #1a56db;
+    border-radius: 20px;
+    padding: 6px 12px;
+    font-size: .78rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background .15s;
+}
+.chat-suggestions button:hover { background: #dde9ff; }
+
+/* ── Input ── */
+.chat-input-row {
+    display: flex;
+    gap: 10px;
+    padding: 14px 16px;
+    border-top: 1px solid #e8edf5;
+    flex-shrink: 0;
+    background: #fff;
+}
+#chatInput {
+    flex: 1;
+    border: 1.5px solid #c7d7f9;
+    border-radius: 24px;
+    padding: 10px 16px;
+    font-size: .875rem;
+    outline: none;
+    transition: border-color .2s;
+}
+#chatInput:focus { border-color: #1a56db; }
+#chatSendBtn {
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #1a56db, #0e3fa8);
+    border: none; color: #fff;
+    display: grid; place-items: center;
+    cursor: pointer;
+    transition: transform .15s, box-shadow .15s;
+    flex-shrink: 0;
+}
+#chatSendBtn:hover { transform: scale(1.08); box-shadow: 0 4px 12px rgba(26,86,219,.4); }
+#chatSendBtn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+@media (max-width: 480px) {
+    .chat-panel { width: 100vw; right: -100vw; }
+}
+</style>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
 
 <script>
+    // ── EmailJS ──
     emailjs.init("2OFu7I_yGcYweIs_z");
 
+    // ── Map ──
     let map = L.map('map').setView([36.8065, 10.1815], 13);
-
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap'
     }).addTo(map);
-
     let marker;
 
     async function setLocation(lat, lng) {
         if (marker) map.removeLayer(marker);
-
         marker = L.marker([lat, lng]).addTo(map);
         map.setView([lat, lng], 15);
-
         document.getElementById('lat').value = lat;
         document.getElementById('lng').value = lng;
-
         try {
             let response = await fetch(`https://api.opencagedata.com/geocode/v1/json?q=${lat}+${lng}&key=294699815f1b4034839f3e125ca32ca9&language=fr`);
             let data = await response.json();
-
             let address = data.results[0]?.formatted || `${lat}, ${lng}`;
-
             document.getElementById('address').value = address;
             document.getElementById('selectedAddress').innerText = "📍 " + address;
         } catch (e) {
@@ -130,38 +360,23 @@
     }
 
     map.on('click', function(e) {
-        let { lat, lng } = e.latlng;
-        setLocation(lat, lng);
+        setLocation(e.latlng.lat, e.latlng.lng);
     });
 
     function useCurrentLocation() {
-        if (!navigator.geolocation) {
-            alert("La géolocalisation n'est pas supportée.");
-            return;
-        }
-
+        if (!navigator.geolocation) { alert("Géolocalisation non supportée."); return; }
         navigator.geolocation.getCurrentPosition(
-            function(position) {
-                let lat = position.coords.latitude;
-                let lng = position.coords.longitude;
-                setLocation(lat, lng);
-            },
-            function(error) {
-                alert("Impossible d'obtenir votre position.");
-                console.error(error);
-            }
+            p => setLocation(p.coords.latitude, p.coords.longitude),
+            () => alert("Impossible d'obtenir votre position.")
         );
     }
 
+    // ── Payment Submit ──
     function sendEmailAndSubmit() {
         let address = document.getElementById('address').value;
         let lat = document.getElementById('lat').value;
         let lng = document.getElementById('lng').value;
-
-        if (!address) {
-            alert("Veuillez choisir un lieu ❌");
-            return;
-        }
+        if (!address) { alert("Veuillez choisir un lieu ❌"); return; }
 
         const btn = document.getElementById('submitBtn');
         btn.disabled = true;
@@ -179,17 +394,159 @@
             amount: "{{ reservation.price }}",
             to_email: "{{ reservation.service.user.email }}"
         })
-        .then(function(response) {
-            console.log("Email envoyé ✅", response);
+        .then(() => {
             btn.innerText = "Validation en cours...";
             document.getElementById('paymentForm').submit();
         })
-        .catch(function(error) {
-            console.error("Erreur détaillée ❌:", error);
-            alert("Erreur email: " + JSON.stringify(error));
+        .catch(err => {
+            alert("Erreur email: " + JSON.stringify(err));
             btn.disabled = false;
             btn.innerText = "Valider l'engagement de transaction";
         });
+    }
+
+    // ── CHATBOT ──
+
+    const PAGE_CONTEXT = `Tu es un assistant intégré dans une page de "Coordination de Transaction" d'une plateforme de mise en relation étudiants/prestataires de services.
+
+Contexte de la réservation en cours :
+- Service réservé : "{{ reservation.service.title }}"
+- Prestataire : {{ reservation.service.user.name }}
+- Montant convenu : {{ reservation.price }} DT (fixe, non modifiable)
+- Date de réservation : {{ reservation.date|date('d/m/Y H:i') }}
+
+Description EXACTE de la page (ne jamais inventer de fonctionnalités inexistantes) :
+
+1. MONTANT : Le montant est affiché en lecture seule. Il ne peut pas être modifié. Le paiement se fait HORS plateforme, directement entre l'étudiant et le prestataire.
+
+2. MÉTHODE DE PAIEMENT : L'utilisateur choisit entre deux options uniquement :
+   - 💵 Cash : paiement en espèces lors de la rencontre
+   - 📱 D17 : paiement via l'application mobile D17 (portefeuille électronique tunisien)
+   Il n'existe aucune autre méthode de paiement sur cette page.
+
+3. LIEU DE RENCONTRE : L'utilisateur doit obligatoirement choisir un lieu via l'une de ces deux méthodes UNIQUEMENT :
+   - Cliquer directement sur la carte OpenStreetMap pour poser un marqueur
+   - Cliquer sur le bouton "📍 Utiliser ma position" pour détecter automatiquement sa position GPS
+   Il n'existe PAS de champ texte pour saisir une adresse manuellement.
+   L'adresse correspondant au point sélectionné est détectée automatiquement via l'API OpenCage.
+
+4. VALIDATION : Le bouton "Valider l'engagement de transaction" effectue deux actions simultanément :
+   - Envoie un email de confirmation au prestataire ({{ reservation.service.user.email }}) avec les détails (service, lieu, montant, méthode)
+   - Crée deux factures en base de données : une pour l'étudiant, une pour le prestataire
+   Le lieu de rencontre est OBLIGATOIRE pour pouvoir valider.
+
+5. APRÈS VALIDATION : L'utilisateur est automatiquement redirigé vers la page "Mes Factures".
+
+Règles de réponse :
+- Réponds UNIQUEMENT en français
+- Ne mentionne jamais de fonctionnalités qui n'existent pas sur cette page
+- Sois concis et précis
+- Si la question ne concerne pas cette page, redirige poliment vers le sujet`;
+
+    let chatHistory = [];
+    let chatOpen = false;
+
+    function toggleChat() {
+        chatOpen = !chatOpen;
+        document.getElementById('chatPanel').classList.toggle('open', chatOpen);
+        document.getElementById('chatOverlay').classList.toggle('active', chatOpen);
+        document.getElementById('chatBtnIcon').textContent = chatOpen ? '✕' : '💬';
+        document.getElementById('chatBtnLabel').textContent = chatOpen ? 'Fermer' : 'Aide';
+        if (chatOpen) setTimeout(() => document.getElementById('chatInput').focus(), 350);
+    }
+
+    function askSuggestion(btn) {
+        document.getElementById('chatInput').value = btn.textContent.trim();
+        document.getElementById('chatSuggestions').style.display = 'none';
+        sendChat();
+    }
+
+    function appendMessage(role, html) {
+        const msgs = document.getElementById('chatMessages');
+        const div = document.createElement('div');
+        div.className = `chat-msg ${role}`;
+        div.innerHTML = `<div class="chat-bubble">${html}</div>`;
+        msgs.appendChild(div);
+        msgs.scrollTop = msgs.scrollHeight;
+        return div;
+    }
+
+    function showTyping() {
+        return appendMessage('assistant', '<div class="typing-dots"><span></span><span></span><span></span></div>');
+    }
+
+    async function sendChat() {
+    const input = document.getElementById('chatInput');
+    const sendBtn = document.getElementById('chatSendBtn');
+    const text = input.value.trim();
+    if (!text) return;
+
+    input.value = '';
+    sendBtn.disabled = true;
+
+    appendMessage('user', escapeHtml(text));
+    chatHistory.push({ role: 'user', content: text });
+
+    const typingEl = showTyping();
+
+    try {
+        const res = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                messages: [
+                    { role: 'system', content: PAGE_CONTEXT },
+                    ...chatHistory
+                ]
+            })
+        });
+
+        // 🔴 IMPORTANT FIX (prevents "<" error)
+        const raw = await res.text();
+
+        if (!res.ok) {
+            console.error("Server error:", raw);
+            throw new Error("Erreur serveur Symfony");
+        }
+
+        const data = JSON.parse(raw);
+
+        if (data.error) {
+            typingEl.remove();
+            appendMessage('assistant', `⚠️ Erreur API : ${data.error.message}`);
+            sendBtn.disabled = false;
+            return;
+        }
+
+        const reply = data.choices?.[0]?.message?.content
+            || "Désolé, je n'ai pas pu répondre.";
+
+        chatHistory.push({ role: 'assistant', content: reply });
+
+        typingEl.remove();
+        appendMessage('assistant', formatReply(reply));
+
+    } catch (err) {
+        typingEl.remove();
+        appendMessage('assistant', `⚠️ Erreur : ${err.message}`);
+        console.error(err);
+    }
+
+    sendBtn.disabled = false;
+    input.focus();
+}
+
+    function escapeHtml(str) {
+        return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function formatReply(text) {
+        return text
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/`(.*?)`/g, '<code>$1</code>')
+            .replace(/\n- /g, '<br>• ')
+            .replace(/\n/g, '<br>');
     }
 </script>
 
