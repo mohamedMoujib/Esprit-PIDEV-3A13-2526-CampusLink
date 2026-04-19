@@ -1,0 +1,163 @@
+{% extends 'base.html.twig' %}
+{% block title %}Tendances — Admin CampusLink{% endblock %}
+{% block stylesheets %}{{ include('admin/partials/bo_admin_styles.html.twig') }}{% endblock %}
+{% block body %}
+
+<div class="page-header">
+    <div>
+        <div class="page-title">📊 Tendances des catégories</div>
+        <div class="page-sub">Analyse des publications et prévisions (Hugging Face · cache 6 h)</div>
+    </div>
+    <a href="{{ path('admin_home') }}" class="btn btn-outline btn-sm">← Tableau de bord</a>
+</div>
+
+<p style="font-size:13px;color:var(--text-muted);margin:-8px 0 20px;">
+    Première analyse ou cold start Hugging Face : cela peut prendre jusqu’à 45 secondes.
+</p>
+
+<div class="stats-grid" style="margin-bottom:28px;">
+    <div class="stat-card">
+        <div class="stat-icon purple">🏆</div>
+        <div>
+            <div class="stat-label">Top catégorie</div>
+            <div class="stat-value" style="font-size:18px;">{{ topCategory }}</div>
+            {% if trending|length > 0 %}
+                <div style="font-size:13px;color:var(--primary);font-weight:700;margin-top:4px;">
+                    {{ (trending[0].score * 100)|round }} % score
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon blue">📈</div>
+        <div>
+            <div class="stat-label">Score moyen (normalisé)</div>
+            <div class="stat-value">{{ stats.avgScorePercent }} %</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon green">⬆️</div>
+        <div>
+            <div class="stat-label">Catégories en hausse</div>
+            <div class="stat-value">{{ hausseCount }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="table-card" style="margin-bottom:24px;">
+    <div class="table-header">
+        <div>
+            <div class="table-title">Évolution sur 4 jours</div>
+            <div class="table-count">Catégories en tendance (hausse)</div>
+        </div>
+    </div>
+    <div style="padding:20px;">
+        <canvas id="trendChart" height="180"></canvas>
+    </div>
+</div>
+
+<div class="table-card" style="margin-bottom:24px;">
+    <div class="table-header">
+        <div>
+            <div class="table-title">Détail par catégorie</div>
+            <div class="table-count">{{ trending|length }} ligne(s)</div>
+        </div>
+    </div>
+    {% if trending|length == 0 %}
+        <div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-title">Pas assez de données</div></div>
+    {% else %}
+    <div style="overflow-x:auto;">
+        <table>
+            <thead>
+                <tr>
+                    <th>Catégorie</th>
+                    <th>Score</th>
+                    <th>Tendance</th>
+                    <th>Publications associées</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for row in trending %}
+                {% set pct = (row.score * 100)|round %}
+                {% if row.trend == 'hausse' %}
+                    {% set barColor = '#16a34a' %}
+                    {% set badgeClass = 'badge-active' %}
+                    {% set trendLabel = '📈 Hausse' %}
+                {% elseif row.trend == 'stable' %}
+                    {% set barColor = '#d97706' %}
+                    {% set badgeClass = 'badge-pending' %}
+                    {% set trendLabel = '➡️ Stable' %}
+                {% else %}
+                    {% set barColor = '#dc2626' %}
+                    {% set badgeClass = 'badge-rejected' %}
+                    {% set trendLabel = '📉 Baisse' %}
+                {% endif %}
+                <tr>
+                    <td><strong>{{ row.category }}</strong></td>
+                    <td style="min-width:140px;">
+                        <div style="height:8px;background:var(--border);border-radius:4px;overflow:hidden;">
+                            <div style="width:{{ pct }}%;height:100%;background:{{ barColor }};"></div>
+                        </div>
+                        <span style="font-size:12px;color:var(--text-muted);">{{ pct }} %</span>
+                    </td>
+                    <td><span class="badge {{ badgeClass }}">{{ trendLabel }}</span></td>
+                    <td>{{ row.publicationCount|default(0) }}</td>
+                    <td>—</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>
+
+<div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:40px;">
+    <form method="post" action="{{ path('admin_trends_notify') }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('trends_notify') }}">
+        <button type="submit" class="btn btn-primary">📨 Notifier les prestataires concernés</button>
+    </form>
+    <form method="post" action="{{ path('admin_trends_refresh') }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('trends_refresh') }}">
+        <button type="submit" class="btn btn-outline">🔄 Actualiser les tendances (bypass cache)</button>
+    </form>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js" crossorigin="anonymous"></script>
+<script>
+(function () {
+    var weeklyData = {{ weeklyData|json_encode|raw }};
+    var labels   = weeklyData.labels   || [];
+    var datasets = weeklyData.datasets || [];
+    var ctx = document.getElementById('trendChart');
+    if (!ctx || typeof Chart === 'undefined') return;
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: datasets
+        },
+        options: {
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'bottom',
+                    labels: { usePointStyle: true, padding: 16, font: { size: 12 } }
+                },
+                title: {
+                    display: true,
+                    text: 'Catégories en tendance — publications (4 jours)',
+                    font: { size: 14, weight: '600' }
+                }
+            },
+            scales: {
+                y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { stepSize: 1 } },
+                x: { grid: { display: false } }
+            },
+            interaction: { mode: 'index', intersect: false },
+            hover: { mode: 'index', intersect: false }
+        }
+    });
+})();
+</script>
+{% endblock %}
