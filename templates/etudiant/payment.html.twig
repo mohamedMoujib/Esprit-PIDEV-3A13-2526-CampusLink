@@ -7,93 +7,98 @@
 <div class="container mt-5">
     <div class="form-card p-4">
 
-        <h2 class="form-title mb-4">Coordination de Transaction</h2>
+```
+    <h2 class="form-title mb-4">Coordination de Transaction</h2>
 
-        {% for msg in app.flashes('success') %}
-            <div class="alert alert-success">{{ msg }}</div>
-        {% endfor %}
+    {% for msg in app.flashes('success') %}
+        <div class="alert alert-success">{{ msg }}</div>
+    {% endfor %}
 
-        {% if message is defined %}
-            <div class="alert alert-danger">{{ message }}</div>
-        {% endif %}
+    {% if message is defined %}
+        <div class="alert alert-danger">{{ message }}</div>
+    {% endif %}
 
-        <form method="post">
+    <form method="post" id="paymentForm">
 
-            <input type="hidden" name="_token" value="{{ csrf_token('payment_form') }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('payment_form') }}">
+        <input type="hidden" name="lat" id="lat">
+        <input type="hidden" name="lng" id="lng">
+        <input type="hidden" name="address" id="address">
 
-            <input type="hidden" name="lat" id="lat">
-            <input type="hidden" name="lng" id="lng">
-            <input type="hidden" name="address" id="address">
+        <div class="mb-3">
+            <label class="form-label fw-bold">Nom Prestataire</label>
+            <input type="text" class="form-control"
+                   value="{{ reservation.service.user.name }}"
+                   readonly>
+        </div>
 
-            <div class="mb-3">
-                <label class="form-label fw-bold">Nom Prestataire</label>
-                <input type="text" class="form-control"
-                       value="{{ reservation.service.user.name }}"
-                       readonly>
+        <div class="mb-3">
+            <label class="form-label fw-bold">Montant convenu (DT)</label>
+            <input type="text" class="form-control"
+                   name="amount"
+                   value="{{ reservation.price }}"
+                   readonly>
+            <small class="text-muted">
+                Prix convenu entre les deux parties. Le paiement est effectué hors plateforme.
+            </small>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label fw-bold">Méthode de paiement externe</label>
+
+            <div class="p-3 border rounded bg-light d-flex gap-4">
+                <label>
+                    <input type="radio" name="payment_method" value="cash" checked>
+                    💵 Cash
+                </label>
+                <label>
+                    <input type="radio" name="payment_method" value="d17">
+                    📱 D17
+                </label>
             </div>
 
-            <div class="mb-3">
-                <label class="form-label fw-bold">Montant convenu (DT)</label>
-                <input type="text" class="form-control"
-                       name="amount"
-                       value="{{ reservation.price }}"
-                       readonly>
-                <small class="text-muted">
-                    Prix convenu entre les deux parties. Le paiement est effectué hors plateforme.
-                </small>
+            <small class="text-warning">
+                ⚠️ Le paiement est effectué en dehors de la plateforme.
+            </small>
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label fw-bold">Lieu de rencontre</label>
+
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <span class="fw-semibold">Utiliser votre localisation courante ?</span>
+                <button type="button"
+                        class="btn btn-primary btn-sm px-3"
+                        onclick="useCurrentLocation()">
+                    📍 Utiliser ma position
+                </button>
             </div>
 
-            <div class="mb-3">
-                <label class="form-label fw-bold">Méthode de paiement externe</label>
-
-                <div class="p-3 border rounded bg-light d-flex gap-4">
-                    <label>
-                        <input type="radio" name="payment_method" value="cash" checked>
-                        💵 Cash
-                    </label>
-                    <label>
-                        <input type="radio" name="payment_method" value="d17">
-                        📱 D17
-                    </label>
-                </div>
-
-                <small class="text-warning">
-                    ⚠️ Le paiement est effectué en dehors de la plateforme.
-                </small>
+            <div id="map"
+                 style="height:450px; background:#e8e0d8; border:1px solid #ccc; border-radius:6px;">
             </div>
 
-            <div class="mb-4">
-                <label class="form-label fw-bold">Lieu de rencontre</label>
+            <p id="selectedAddress" class="mt-2 text-primary"></p>
+        </div>
 
-                <div class="d-flex align-items-center gap-3 mb-3">
-                    <span class="fw-semibold">Utiliser votre localisation courante ?</span>
-                    <button type="button"
-                            class="btn btn-primary btn-sm px-3"
-                            onclick="useCurrentLocation()">
-                        📍 Utiliser ma position
-                    </button>
-                </div>
+        <button type="button" id="submitBtn" onclick="sendEmailAndSubmit()" class="btn btn-primary">
+            Valider l'engagement de transaction
+        </button>
 
-                <div id="map"
-                     style="height:450px; background:#e8e0d8; border:1px solid #ccc; border-radius:6px;">
-                </div>
+    </form>
 
-                <p id="selectedAddress" class="mt-2 text-primary"></p>
-            </div>
+</div>
+```
 
-            <button class="btn btn-primary">
-                Valider l'engagement de transaction
-            </button>
-
-        </form>
-
-    </div>
 </div>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
 
 <script>
+    emailjs.init("2OFu7I_yGcYweIs_z");
+
     let map = L.map('map').setView([36.8065, 10.1815], 13);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -139,7 +144,6 @@
             function(position) {
                 let lat = position.coords.latitude;
                 let lng = position.coords.longitude;
-
                 setLocation(lat, lng);
             },
             function(error) {
@@ -147,6 +151,45 @@
                 console.error(error);
             }
         );
+    }
+
+    function sendEmailAndSubmit() {
+        let address = document.getElementById('address').value;
+        let lat = document.getElementById('lat').value;
+        let lng = document.getElementById('lng').value;
+
+        if (!address) {
+            alert("Veuillez choisir un lieu ❌");
+            return;
+        }
+
+        const btn = document.getElementById('submitBtn');
+        btn.disabled = true;
+        btn.innerText = "Envoi en cours...";
+
+        emailjs.send("service_f889k9k", "template_ccyst7g", {
+            payment_id: "AUTO",
+            method: document.querySelector('input[name="payment_method"]:checked').value,
+            service: "{{ reservation.service.title }}",
+            student: "{{ app.user.name }}",
+            date: "{{ reservation.date|date('d/m/Y H:i') }}",
+            address: address,
+            lat: lat,
+            lng: lng,
+            amount: "{{ reservation.price }}",
+            to_email: "{{ reservation.service.user.email }}"
+        })
+        .then(function(response) {
+            console.log("Email envoyé ✅", response);
+            btn.innerText = "Validation en cours...";
+            document.getElementById('paymentForm').submit();
+        })
+        .catch(function(error) {
+            console.error("Erreur détaillée ❌:", error);
+            alert("Erreur email: " + JSON.stringify(error));
+            btn.disabled = false;
+            btn.innerText = "Valider l'engagement de transaction";
+        });
     }
 </script>
 

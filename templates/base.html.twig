@@ -31,7 +31,7 @@
 
         body {
             font-family: 'DM Sans', system-ui, sans-serif;
-            background: var(--bg);
+            background: var(--bg) !important;
             color: var(--text);
             min-height: 100vh;
             font-size: 15px;
@@ -690,5 +690,6 @@
 
 {% block javascripts %}
 {% endblock %}
+{{ importmap('app') }}
 </body>
 </html>

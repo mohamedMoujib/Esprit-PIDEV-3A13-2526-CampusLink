@@ -1,0 +1,24 @@
+{
+  "name": "esprit-pidev-3a13-2526-campuslink",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mohamedMoujib/Esprit-PIDEV-3A13-2526-CampusLink.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/mohamedMoujib/Esprit-PIDEV-3A13-2526-CampusLink/issues"
+  },
+  "homepage": "https://github.com/mohamedMoujib/Esprit-PIDEV-3A13-2526-CampusLink#readme"
+}

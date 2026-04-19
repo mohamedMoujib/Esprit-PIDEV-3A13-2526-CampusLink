@@ -5,39 +5,238 @@
 {% block body %}
 
 <style>
-.custom-table th,
-.custom-table td {
-    border: 1px solid #dddcfc; /* lines between rows & columns */
-    padding: 14px;
-    word-break: break-word; /* prevents long text overflow */
-}
+    :root {
+        --ink:    #1a1a2e;
+        --brand:  #5b54e8;
+        --soft:   #ededfd;
+        --muted:  #6b7280;
+        --danger: #e24b4a;
+        --white:  #ffffff;
+        --radius: 14px;
+        --shadow: 0 4px 24px rgba(91,84,232,0.10);
+    }
+    body {
+        background: white !important;
+    }
 
-.custom-table thead th {
-    color: #5b54e8;
-    font-weight: 600;
-    border-bottom: 2px solid #5b54e8;
-}
+    .page-title {
+        font-size: 2rem;
+        font-weight: 800;
+        color: var(--ink);
+        letter-spacing: -0.5px;
+    }
 
-.custom-table tbody tr:hover {
-    background-color: #f7f7ff;
-}
+    .stats-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        margin-bottom: 24px;
+    }
 
-.table-responsive {
-    border: 2px solid #5b54e8;
-    border-radius: 12px;
-    overflow-x: auto; /* horizontal scroll if needed */
-    margin: 0;
-}
+    .stat-card {
+        background: var(--white);
+        border-radius: var(--radius);
+        padding: 24px 20px;
+        box-shadow: var(--shadow);
+        border-top: 4px solid var(--brand);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        transition: transform .2s;
+    }
 
-.custom-table {
-    width: 100%;
-    table-layout: auto; /* adjusts column widths dynamically */
-    min-width: 600px; /* optional: prevents table from collapsing too much */
-}
+    .stat-card:hover { transform: translateY(-3px); }
+
+    .stat-icon {
+        width: 44px; height: 44px;
+        background: var(--soft);
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 20px;
+        margin-bottom: 12px;
+    }
+
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 800;
+        color: var(--brand);
+        line-height: 1;
+    }
+
+    .stat-label {
+        font-size: 13px;
+        color: var(--muted);
+        margin-top: 6px;
+        font-weight: 500;
+    }
+
+    .charts-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 16px;
+        margin-bottom: 28px;
+    }
+
+    .chart-card {
+        background: var(--white);
+        border-radius: var(--radius);
+        padding: 24px;
+        box-shadow: var(--shadow);
+    }
+
+    .chart-card h5 {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--ink);
+        margin-bottom: 18px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .filter-bar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+    .filter-bar input[type="date"] {
+        border: 2px solid #e0dffc;
+        border-radius: 10px;
+        padding: 10px 14px;
+        font-size: 15px;
+        outline: none;
+        transition: border-color .2s;
+    }
+
+    .filter-bar input[type="date"]:focus { border-color: var(--brand); }
+
+    .btn-filter {
+        background: var(--brand);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        padding: 10px 28px;
+        font-weight: 600;
+        font-size: 15px;
+        cursor: pointer;
+        transition: background .2s;
+    }
+
+    .btn-filter:hover { background: #4740d4; }
+
+    .btn-reset {
+        background: transparent;
+        color: var(--muted);
+        border: 2px solid #e0dffc;
+        border-radius: 10px;
+        padding: 10px 20px;
+        font-weight: 500;
+        font-size: 15px;
+        text-decoration: none;
+        transition: border-color .2s, color .2s;
+    }
+
+    .btn-reset:hover { border-color: var(--brand); color: var(--brand); }
+
+    .invoice-table-wrap {
+        background: var(--white);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+    }
+
+    .invoice-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14.5px;
+    }
+
+    .invoice-table thead th {
+        background: var(--soft);
+        color: var(--brand);
+        font-weight: 700;
+        padding: 14px 18px;
+        text-align: center;
+        border-bottom: 2px solid #dddcfc;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+    }
+
+    .invoice-table tbody td {
+        padding: 14px 18px;
+        text-align: center;
+        border-bottom: 1px solid #f0effc;
+        color: var(--ink);
+        vertical-align: middle;
+    }
+
+    .invoice-table tbody tr:last-child td { border-bottom: none; }
+    .invoice-table tbody tr:hover td { background: #fafaff; }
+
+    .badge-date {
+        background: var(--soft);
+        color: var(--brand);
+        border-radius: 8px;
+        padding: 4px 10px;
+        font-size: 13px;
+        font-weight: 600;
+        white-space: nowrap;
+        display: inline-block;
+    }
+
+    .badge-method {
+        border-radius: 20px;
+        padding: 4px 12px;
+        font-size: 12px;
+        font-weight: 600;
+        display: inline-block;
+    }
+
+    .badge-method.physical { background: #eef2ff; color: #5b54e8; }
+    .badge-method.virtual  { background: #fef3c7; color: #d97706; }
+
+    .btn-preview {
+        background: transparent;
+        border: 2px solid var(--brand);
+        color: var(--brand);
+        border-radius: 8px;
+        padding: 6px 14px;
+        font-size: 13px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all .2s;
+    }
+
+    .btn-preview:hover { background: var(--brand); color: white; }
+
+    .btn-delete {
+        background: var(--danger);
+        border: none;
+        color: white;
+        border-radius: 8px;
+        padding: 6px 14px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background .2s;
+    }
+
+    .btn-delete:hover { background: #c73b3a; }
+
+    .empty-row td { padding: 40px !important; color: var(--muted); font-size: 15px; }
+
+    @media (max-width: 768px) {
+        .stats-row, .charts-grid { grid-template-columns: 1fr; }
+    }
 </style>
 
 <div class="container mt-4" style="max-width: 1100px;">
-    <h2 class="mb-4" style="font-weight: 600; font-size: 28px;">Mes Factures</h2>
+
+    <h2 class="page-title mb-4">Mes Factures</h2>
 
     {% for label, messages in app.flashes %}
         {% for message in messages %}
@@ -45,81 +244,132 @@
         {% endfor %}
     {% endfor %}
 
-    <!-- Date Filter -->
-    <form method="get" class="d-flex gap-2 align-items-center mb-4">
-        <input
-            type="date"
-            name="date"
-            class="form-control form-control-lg"
-            style="max-width: 220px;"
-            value="{{ app.request.query.get('date') }}"
-        >
-        <button type="submit" class="btn btn-primary btn-lg px-5"
-                style="background-color: #5b54e8; border-color: #5b54e8;">
-            Filtrer
-        </button>
+    {# ── Stat Cards ── #}
+    <div class="stats-row">
+
+        <div class="stat-card">
+            <div class="stat-icon">🧾</div>
+            <div class="stat-number">{{ invoices|length }}</div>
+            <div class="stat-label">
+                {{ app.request.query.get('date') ? 'Factures ce jour' : 'Total factures' }}
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon">💰</div>
+            <div class="stat-number">
+                {{ totalAmount|number_format(2, '.', ' ') }}
+                <span style="font-size:1rem;">DT</span>
+            </div>
+            <div class="stat-label">Montant total</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon">📊</div>
+            <div class="stat-number">
+                {% if invoices|length > 0 %}
+                    {{ (totalAmount / invoices|length)|number_format(2, '.', ' ') }}
+                {% else %}
+                    0.00
+                {% endif %}
+                <span style="font-size:1rem;">DT</span>
+            </div>
+            <div class="stat-label">Moyenne par facture</div>
+        </div>
+
+    </div>
+
+    {# ── Charts ── #}
+    <div class="charts-grid">
+
+        <div class="chart-card">
+            <h5>📅 Factures par jour (historique complet)</h5>
+            {{ render_chart(barChart) }}
+        </div>
+
+        <div class="chart-card">
+            <h5>💳 Méthode de paiement</h5>
+            {{ render_chart(donutChart) }}
+        </div>
+
+    </div>
+
+    {# ── Filter ── #}
+    <form method="get" class="filter-bar">
+        <input type="date" name="date" value="{{ app.request.query.get('date') }}">
+        <button type="submit" class="btn-filter">Filtrer</button>
+        {% if app.request.query.get('date') %}
+            <a href="{{ path('invoice_index') }}" class="btn-reset">Réinitialiser</a>
+        {% endif %}
     </form>
 
-    <!-- TABLE -->
-    <div class="table-responsive">
-        <table class="table align-middle mb-0 text-center custom-table" style="font-size: 16px;">
-            
-            <thead style="background-color: #ededfd;">
+    {# ── Table ── #}
+    <div class="invoice-table-wrap">
+        <table class="invoice-table">
+            <thead>
                 <tr>
-                    <th style="width: 60px;">#</th>
-                    <th style="width: 180px;">Date</th>
+                    <th style="width:50px">#</th>
+                    <th style="width:160px">Date</th>
                     <th>Détails</th>
-                    <th style="width: 200px;">Actions</th>
+                    <th style="width:130px">Méthode</th>
+                    <th style="width:110px">Montant</th>
+                    <th style="width:180px">Actions</th>
                 </tr>
             </thead>
-
             <tbody>
                 {% if invoices|length > 0 %}
                     {% for invoice in invoices %}
                         <tr>
-                            <td class="text-muted fw-semibold">{{ loop.index }}</td>
-
-                            <td class="text-nowrap" style="font-size: 15px;">
-                                {{ invoice.issueDate ? invoice.issueDate|date('d/m/Y H:i') : 'N/A' }}
+                            <td style="color:var(--muted); font-weight:600;">{{ loop.index }}</td>
+                            <td>
+                                <span class="badge-date">
+                                    {{ invoice.issueDate ? invoice.issueDate|date('d/m/Y') : 'N/A' }}
+                                </span>
+                                <div style="font-size:12px; color:var(--muted); margin-top:3px;">
+                                    {{ invoice.issueDate ? invoice.issueDate|date('H:i') : '' }}
+                                </div>
                             </td>
-
-                            <td style="font-size: 15px; line-height: 1.6;">
+                            <td style="text-align:left; line-height:1.6;">
                                 {{ invoice.details ?: 'Aucun détail' }}
                             </td>
-
                             <td>
-                                <div class="d-flex gap-3 justify-content-center">
-                                    
+                                {% set method = invoice.payment ? invoice.payment.method : null %}
+                                {% if method == 'PHYSICAL' %}
+                                    <span class="badge-method physical">🤝 Physique</span>
+                                {% elseif method == 'VIRTUAL' %}
+                                    <span class="badge-method virtual">💻 Virtuelle</span>
+                                {% else %}
+                                    <span class="badge-method" style="background:#f3f4f6; color:#6b7280;">—</span>
+                                {% endif %}
+                            </td>
+                            <td style="font-weight:700; color:var(--brand);">
+                                {{ invoice.payment ? invoice.payment.amount|number_format(2, '.', ' ') ~ ' DT' : '—' }}
+                            </td>
+                            <td>
+                                <div style="display:flex; gap:8px; justify-content:center;">
                                     <a href="{{ path('invoice_preview', {'id': invoice.id}) }}"
-                                       class="btn btn-outline-primary btn-sm px-3"
-                                       style="border-color: #5b54e8; color: #5b54e8;">
-                                        Aperçu
-                                    </a>
-
+                                       class="btn-preview">Aperçu</a>
                                     <form method="post"
                                           action="{{ path('invoice_delete', {'id': invoice.id}) }}"
-                                          onsubmit="return confirm('Supprimer cette facture ?');">
-                                        <button class="btn btn-sm px-3"
-                                                style="background-color: #e24b4a; border-color: #e24b4a; color: white;">
-                                            Supprimer
-                                        </button>
+                                          onsubmit="return confirm('Supprimer cette facture ?');"
+                                          style="margin:0;">
+                                        <input type="hidden" name="_token"
+                                               value="{{ csrf_token('delete_invoice_' ~ invoice.id) }}">
+                                        <button class="btn-delete">Supprimer</button>
                                     </form>
-
                                 </div>
                             </td>
                         </tr>
                     {% endfor %}
                 {% else %}
-                    <tr>
-                        <td colspan="4" class="text-center text-muted" style="font-size: 16px; padding: 14px;">
-                            Aucune facture trouvée pour cette date.
-                        </td>
+                    <tr class="empty-row">
+                        <td colspan="6">Aucune facture trouvée pour cette date.</td>
                     </tr>
                 {% endif %}
             </tbody>
-
         </table>
     </div>
+
 </div>
 
 {% endblock %}
