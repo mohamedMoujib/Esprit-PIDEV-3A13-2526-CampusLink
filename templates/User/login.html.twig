@@ -77,7 +77,7 @@
 
         {# ── Forgot password ── #}
         <div style="text-align:right; margin-bottom:20px;">
-            <a href="#" style="font-size:13px; color:#5D5FEF; font-weight:500;">Mot de passe oublié ?</a>
+            <a href="{{ path('app_forgot_password') }}" style="font-size:13px; color:#5D5FEF; font-weight:500;">Mot de passe oublié ?</a>
         </div>
 
         {# ── Submit ── #}
@@ -99,17 +99,17 @@
         <div style="flex:1; height:1px; background:#E5E7EB;"></div>
     </div>
 
-    {# ── Google button ── #}
-    <button type="button"
-            style="width:100%; display:flex; align-items:center; justify-content:center; gap:10px;
-                   background:white; border:1.5px solid #dadce0; border-radius:8px;
-                   padding:11px 0; cursor:pointer; font-size:14px; color:#3c4043; font-family:inherit;
-                   font-weight:500; transition:background 0.15s;"
-            onmouseover="this.style.background='#f8f9fa'"
-            onmouseout="this.style.background='white'">
-        <span style="font-size:18px; font-weight:bold; color:#4285F4; font-family:Georgia,serif;">G</span>
-        Se connecter avec Google
-    </button>
+    <a href="{{ path('app_google_connect', { userType: '' }) }}"
+   id="google-btn"
+   style="width:100%; display:flex; align-items:center; justify-content:center; gap:10px;
+          background:white; border:1.5px solid #dadce0; border-radius:8px;
+          padding:11px 0; cursor:pointer; font-size:14px; color:#3c4043; font-family:inherit;
+          font-weight:500; transition:background 0.15s; text-decoration:none;"
+   onmouseover="this.style.background='#f8f9fa'"
+   onmouseout="this.style.background='white'">
+    <span style="font-size:18px; font-weight:bold; color:#4285F4; font-family:Georgia,serif;">G</span>
+    Se connecter avec Google
+</a>
 
 </div>
 </div>
@@ -172,5 +172,19 @@ document.querySelector('form').addEventListener('submit', function(e) {
 
     if (!valid) e.preventDefault();
 });
+    // Update the Google button href whenever the role select changes
+    const roleSelect = document.querySelector('select[name="userType"]');
+    const googleBtn  = document.getElementById('google-btn');
+
+    function updateGoogleHref() {
+        const role = roleSelect ? roleSelect.value : 'ETUDIANT';
+        const base = "{{ path('app_google_connect') }}";
+        googleBtn.href = base + '?userType=' + role;
+    }
+
+    if (roleSelect) {
+        roleSelect.addEventListener('change', updateGoogleHref);
+        updateGoogleHref(); // set on page load
+    }
 </script>
 {% endblock %}

@@ -16,6 +16,9 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Knp\Component\Pager\PaginatorInterface; 
+use Symfony\Component\Mailer\MailerInterface;
+
 
 #[Route('/admin')]
 class AdminDashboardController extends AbstractController
@@ -32,6 +35,7 @@ class AdminDashboardController extends AbstractController
         private EntityManagerInterface $em,
         private ModerationTrustService $moderationTrust,
         private PublicationRepository $publicationRepository,
+        private MailerInterface $mailer,
     ) {}
 
     #[Route('', name: 'admin_home', methods: ['GET'])]
@@ -99,49 +103,57 @@ class AdminDashboardController extends AbstractController
     }
 
     #[Route('/dashboard', name: 'admin_dashboard')]
-    public function index(Request $request): Response
+    public function index(Request $request, PaginatorInterface $paginator): Response
     {
-        // â”€â”€ Filter by type â”€â”€
+        // ── Filtres ──
         $filter = strtoupper($request->query->get('filter', 'ALL'));
         $search = trim($request->query->get('q', ''));
+       
+        // ── Requête Doctrine ──
+        $qb = $this->userRepository->createQueryBuilder('u')
+            ->where('u.userType IN (:types)')
+            ->setParameter('types', ['ETUDIANT', 'PRESTATAIRE'])
+            ->orderBy('u.createdAt', 'DESC');
 
-        // â”€â”€ Load users â”€â”€
-        $users = match($filter) {
-            'ETUDIANT'    => $this->userRepository->findByType('ETUDIANT'),
-            'PRESTATAIRE' => $this->userRepository->findByType('PRESTATAIRE'),
-            default       => array_merge(
-                $this->userRepository->findByType('ETUDIANT'),
-                $this->userRepository->findByType('PRESTATAIRE'),
-            ),
-        };
-
-        // â”€â”€ Search filter â”€â”€
-        if ($search !== '') {
-            $users = array_filter($users, fn($u) =>
-                str_contains(strtolower($u->getName()), strtolower($search)) ||
-                str_contains(strtolower($u->getEmail()), strtolower($search))
-            );
+        if ($filter === 'ETUDIANT') {
+            $qb->andWhere('u.userType = :type')->setParameter('type', 'ETUDIANT');
+        } elseif ($filter === 'PRESTATAIRE') {
+            $qb->andWhere('u.userType = :type')->setParameter('type', 'PRESTATAIRE');
         }
 
-        // â”€â”€ Statistics â”€â”€
-        $allUsers      = array_merge(
-            $this->userRepository->findByType('ETUDIANT'),
-            $this->userRepository->findByType('PRESTATAIRE'),
-        );
+        if ($search !== '') {
+            $qb->andWhere('LOWER(u.name) LIKE :search OR LOWER(u.email) LIKE :search')
+            ->setParameter('search', '%' . strtolower($search) . '%');
+        }
+
+        // ── Pagination ──
+        $pagination = $paginator->paginate($qb, $request->query->getInt('page', 1), 5);
+
+        // ── Statistiques ──
+        $allUsers = $this->userRepository->findBy(['userType' => ['ETUDIANT', 'PRESTATAIRE']]);
         $stats = [
-            'total'       => count($allUsers),
-            'etudiants'   => count($this->userRepository->findByType('ETUDIANT')),
-            'prestataires'=> count($this->userRepository->findByType('PRESTATAIRE')),
-            'active'      => count($this->userRepository->findActiveByType('ETUDIANT')) +
-                             count($this->userRepository->findActiveByType('PRESTATAIRE')),
-            'inactive'    => count(array_filter($allUsers, fn($u) => $u->getStatus() === 'INACTIVE')),
+            'total'        => count($allUsers),
+            'etudiants'    => count($this->userRepository->findBy(['userType' => 'ETUDIANT'])),
+            'prestataires' => count($this->userRepository->findBy(['userType' => 'PRESTATAIRE'])),
+            'active'       => count($this->userRepository->findBy(['userType' => ['ETUDIANT', 'PRESTATAIRE'], 'status' => 'ACTIVE'])),
+            'inactive'     => count($this->userRepository->findBy(['userType' => ['ETUDIANT', 'PRESTATAIRE'], 'status' => 'INACTIVE'])),
         ];
 
+        // ── 🔥 HTMX : Si requête AJAX, retourne seulement le fragment #}
+        if ($request->headers->get('HX-Request')) {
+    return $this->render('admin/partials/_users_tbody.html.twig', [
+        'pagination' => $pagination,
+        'filter'     => $filter,
+        'search'     => $search,
+    ]);
+}
+
+        // ── Requête normale : page complète ──
         return $this->render('admin/pages/users.html.twig', [
-            'users'        => array_values($users),
-            'stats'        => $stats,
-            'filter'       => $filter,
-            'search'       => $search,
+            'pagination' => $pagination,
+            'stats'      => $stats,
+            'filter'     => $filter,
+            'search'     => $search,
         ]);
     }
 
@@ -173,16 +185,34 @@ class AdminDashboardController extends AbstractController
 
     // â”€â”€ Ban â”€â”€
     #[Route('/user/{id}/ban', name: 'admin_user_ban', methods: ['POST'])]
-    public function ban(int $id): Response
-    {
-        $jsonRequest = Request::create('/api/users/' . $id, 'PUT',
-            content: json_encode(['status' => 'BANNED'])
-        );
-        $jsonRequest->headers->set('Content-Type', 'application/json');
-        $this->userController->update($id, $jsonRequest);
-        $this->addFlash('success', 'Utilisateur banni !');
-        return $this->redirectToRoute('admin_dashboard');
+public function ban(int $id): Response
+{
+    $user = $this->userRepository->find($id);
+
+    $jsonRequest = Request::create('/api/users/' . $id, 'PUT',
+        content: json_encode(['status' => 'BANNED'])
+    );
+    $jsonRequest->headers->set('Content-Type', 'application/json');
+    $this->userController->update($id, $jsonRequest);
+
+    if ($user) {
+        $emailMessage = (new \Symfony\Component\Mime\Email())
+            ->from('no-reply@campuslink.tn')
+            ->to($user->getEmail())
+            ->subject('Compte banni — CampusLink')
+            ->html("
+                <div style='font-family:sans-serif; max-width:400px; margin:auto;'>
+                    <h2>🎓 CampusLink</h2>
+                    <p>Votre compte a été banni de la plateforme.</p>
+                </div>
+            ");
+
+        $this->mailer->send($emailMessage);
     }
+
+    $this->addFlash('success', 'Utilisateur banni !');
+    return $this->redirectToRoute('admin_dashboard');
+}
 
     #[Route('/categories', name: 'admin_categories', methods: ['GET', 'POST'])]
     public function categories(Request $req): Response

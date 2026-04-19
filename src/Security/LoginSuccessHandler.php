@@ -13,14 +13,20 @@ class LoginSuccessHandler implements AuthenticationSuccessHandlerInterface
     public function __construct(private RouterInterface $router) {}
 
     public function onAuthenticationSuccess(Request $request, TokenInterface $token): RedirectResponse
-    {
-        $user = $token->getUser();
+{
+    $user = $token->getUser();
 
-        return match ($user->getUserType()) {
-            'ADMIN'       => new RedirectResponse($this->router->generate('admin_dashboard')),
-            'PRESTATAIRE' => new RedirectResponse($this->router->generate('prestataire_reservations')),
-            'ETUDIANT'    => new RedirectResponse($this->router->generate('etudiant_reservations')),
-            default       => new RedirectResponse($this->router->generate('app_login')),
-        };
+    if ($user->getUserType() === 'ADMIN') {
+        // Clear stale 2FA state and send to setup
+        $request->getSession()->remove('2fa_secret');
+        $request->getSession()->remove('2fa_verified');
+        return new RedirectResponse($this->router->generate('app_2fa_setup'));
     }
+
+    return match ($user->getUserType()) {
+        'PRESTATAIRE' => new RedirectResponse($this->router->generate('prestataire_reservations')),
+        'ETUDIANT'    => new RedirectResponse($this->router->generate('etudiant_reservations')),
+        default       => new RedirectResponse($this->router->generate('app_login')),
+    };
+}
 }

@@ -208,15 +208,17 @@
                     Commentaire <span class="required">*</span>
                     <span class="char-counter" id="editCounter">0 / {{ maxCommentLength }}</span>
                 </label>
-                <textarea
-                    name="comment"
-                    id="editComment"
-                    class="comment-area"
-                    maxlength="{{ maxCommentLength }}"
-                    autocomplete="off"
-                    required
-                ></textarea>
-                <div id="ai-suggestion-overlay-edit" class="ai-suggestion-overlay"></div>
+                <div class="textarea-wrapper">
+                    <textarea
+                        name="comment"
+                        id="editComment"
+                        class="comment-area"
+                        maxlength="{{ maxCommentLength }}"
+                        autocomplete="off"
+                        required
+                    ></textarea>
+                    <div id="ai-suggestion-overlay-edit" class="ai-suggestion-overlay"></div>
+                </div>
                 <small class="hint">💡 L'IA vous suggère du texte en temps réel. Appuyez sur <kbd>Tab</kbd> ou <kbd>→</kbd> pour accepter.</small>
             </div>
 

@@ -169,7 +169,7 @@ class UserController extends AbstractController
      * $isUpdate = true  → all fields optional, only validate what's present
      * $isUpdate = false → required fields enforced
      */
-    private function validateUserData(array $data, bool $isUpdate): array
+    public function validateUserData(array $data, bool $isUpdate): array
     {
         $errors = [];
 
@@ -271,7 +271,7 @@ class UserController extends AbstractController
      * Maps request data onto the User entity.
      * Safe to call on both create and update.
      */
-    private function hydrate(User $user, array $data): void
+    public function hydrate(User $user, array $data): void
     {
         isset($data['name'])           && $user->setName(trim($data['name']));
         isset($data['email'])          && $user->setEmail(strtolower(trim($data['email'])));

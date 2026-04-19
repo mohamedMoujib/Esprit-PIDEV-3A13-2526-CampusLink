@@ -315,6 +315,24 @@ class StudentReviewsController extends AbstractController
         $newRating = (int) $request->request->get('rating');
         $comment   = trim($request->request->get('comment'));
 
+        // ========== MODÉRATION IA GROQ (MODIFICATION) ==========
+        // Vérification rapide des gros mots évidents
+        if ($this->moderationService->hasObviousBadWords($comment)) {
+            $this->addFlash('error', '❌ Votre commentaire contient un langage inapproprié. Veuillez reformuler de manière respectueuse.');
+            return $this->redirectToRoute('student_reviews_index');
+        }
+        
+        // Analyse IA complète
+        $moderationResult = $this->moderationService->analyzeComment($comment);
+        
+        if (!$moderationResult['is_appropriate']) {
+            $reason = $moderationResult['reason'] ?? 'Contenu inapproprié détecté';
+            $this->addFlash('error', "❌ Votre modification a été rejetée : $reason");
+            $this->addFlash('info', '💡 Conseil : Exprimez votre avis de manière constructive et respectueuse.');
+            return $this->redirectToRoute('student_reviews_index');
+        }
+        // ========================================
+
         $review->setRating($newRating)
                ->setComment($comment);
         $this->em->flush();
