@@ -55,7 +55,7 @@
                 <tr>
                     <td><strong>{{ s.title|length > 26 ? s.title|slice(0,26) ~ '…' : s.title }}</strong></td>
                     <td style="color:var(--text-muted);font-size:13px;">{{ s.user ? s.user.name : '—' }}</td>
-                    <td style="font-weight:700;color:var(--primary);white-space:nowrap;">{{ s.price }} €</td>
+                    <td style="font-weight:700;color:var(--primary);white-space:nowrap;">{{ s.price }} DT</td>
                     <td>
                         {% if s.status == 'EN_ATTENTE' %}<span class="badge badge-pending">En attente</span>
                         {% elseif s.status == 'CONFIRMEE' %}<span class="badge badge-active">Confirmé</span>
@@ -165,7 +165,7 @@
                     </div>
                 </td>
                 <td style="font-size:13px;">{{ row.service.user ? row.service.user.name : '—' }}</td>
-                <td style="font-weight:700;color:var(--primary);white-space:nowrap;">{{ row.service.price }} €</td>
+                <td style="font-weight:700;color:var(--primary);white-space:nowrap;">{{ row.service.price }} DT</td>
                 <td>
                     <ul style="margin:0;padding-left:16px;">
                         {% for issue in row.issues %}

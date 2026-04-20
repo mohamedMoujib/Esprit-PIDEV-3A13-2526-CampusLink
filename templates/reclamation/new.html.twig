@@ -1,0 +1,36 @@
+{% extends "base.html.twig" %}
+
+{% block body %}
+
+<div style="max-width:500px;margin:40px auto;background:white;padding:30px;border-radius:15px;box-shadow:0 5px 20px rgba(0,0,0,0.1);">
+
+    <h2 style="text-align:center;color:#2563eb;">⚠️ Réclamation</h2>
+
+    <p style="text-align:center;color:#666;">
+        Contre : <strong>{{ cible.name }}</strong>
+    </p>
+
+    <form method="post" style="display:flex;flex-direction:column;gap:15px;">
+
+        <select name="type" required style="padding:10px;border-radius:10px;">
+            <option value="">Type de réclamation</option>
+            <option value="TECHNIQUE">Technique</option>
+            <option value="RESERVATION">Réservation</option>
+            <option value="COMPORTEMENT">Comportement</option>
+        </select>
+
+        <input name="sujet" placeholder="Sujet" required
+               style="padding:10px;border-radius:10px;">
+
+        <textarea name="description" placeholder="Décrire le problème..."
+                  required style="padding:10px;border-radius:10px;height:120px;"></textarea>
+
+        <button style="background:#2563eb;color:white;padding:12px;border:none;border-radius:10px;">
+            Envoyer la réclamation
+        </button>
+
+    </form>
+
+</div>
+
+{% endblock %}

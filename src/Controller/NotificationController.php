@@ -58,4 +58,6 @@ class NotificationController extends AbstractController
 
         return $this->json(['success' => true]);
     }
+
+    
 }

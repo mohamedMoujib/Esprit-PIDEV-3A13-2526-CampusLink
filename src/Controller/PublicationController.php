@@ -105,9 +105,14 @@ class PublicationController extends AbstractController
                 return $this->redirectToRoute('publication_create');
             }
 
+            $type = $req->request->get('type_publication', 'DEMANDE_SERVICE');
+            if (!\in_array($type, ['DEMANDE_SERVICE', 'VENTE_OBJET'], true)) {
+                $type = 'DEMANDE_SERVICE';
+            }
+
             $pub = new Publication();
             $pub->setUser($user)
-                ->setTypePublication('DEMANDE_SERVICE')
+                ->setTypePublication($type)
                 ->setTitre($titre)
                 ->setMessage($message)
                 ->setLocalisation($req->request->get('localisation') ? trim((string) $req->request->get('localisation')) : null)

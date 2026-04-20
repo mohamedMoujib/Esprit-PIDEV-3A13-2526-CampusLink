@@ -1,0 +1,119 @@
+{% extends "base.html.twig" %}
+
+{% block body %}
+
+<div style="padding:30px;background:#f5f7fb;min-height:100vh;">
+
+    <h2>📊 Analyse intelligente des revenus</h2>
+
+    <canvas id="chart" height="100"></canvas>
+
+    <!-- BOUTON IA -->
+    <div style="margin-top:30px;">
+        <button onclick="lancerIA()" class="btn-ai">
+            🤖 Générer analyse intelligente
+        </button>
+    </div>
+
+    <!-- RESULTAT IA -->
+    <div id="aiBox" style="margin-top:20px;"></div>
+
+    <!-- PRÉVISION -->
+    <div class="prediction">
+        🔮 Revenus estimés du mois :
+        <strong>{{ prediction|number_format(2) }} DT</strong>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+const data = {{ stats|json_encode|raw }};
+
+const labels = Object.keys(data);
+const values = Object.values(data);
+
+new Chart(document.getElementById('chart'), {
+    type: 'bar',
+    data: {
+        labels: labels,
+        datasets: [{
+            label: 'Revenus (DT)',
+            data: values,
+            backgroundColor: '#5D5FEF'
+        }]
+    }
+});
+
+// 🤖 IA
+function lancerIA(){
+
+    let jourFaible = '';
+    let valeurMin = Infinity;
+
+    let jourFort = '';
+    let valeurMax = 0;
+
+    for (const [jour, valeur] of Object.entries(data)) {
+
+        if (valeur < valeurMin) {
+            valeurMin = valeur;
+            jourFaible = jour;
+        }
+
+        if (valeur > valeurMax) {
+            valeurMax = valeur;
+            jourFort = jour;
+        }
+    }
+
+    let html = `
+    <div class="ai-box">
+
+        <h3>📊 Analyse intelligente</h3>
+
+        <p>📉 Revenus faibles le <b>${jourFaible}</b></p>
+        <p>📈 Revenus élevés le <b>${jourFort}</b></p>
+
+        <h4>💡 Recommandations :</h4>
+
+        <ul>
+            <li>Augmentez vos disponibilités le ${jourFaible}</li>
+            <li>Proposez une promotion ce jour</li>
+            <li>Augmentez vos prix le ${jourFort}</li>
+        </ul>
+
+    </div>
+    `;
+
+    document.getElementById('aiBox').innerHTML = html;
+}
+</script>
+
+<style>
+.btn-ai{
+    background:#10b981;
+    color:white;
+    padding:10px 15px;
+    border:none;
+    border-radius:10px;
+    cursor:pointer;
+}
+
+.ai-box{
+    background:white;
+    padding:20px;
+    border-radius:12px;
+    box-shadow:0 4px 10px rgba(0,0,0,0.05);
+}
+
+.prediction{
+    margin-top:20px;
+    background:#fff;
+    padding:15px;
+    border-radius:10px;
+}
+</style>
+
+{% endblock %}

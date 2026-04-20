@@ -588,6 +588,11 @@
            class="{% if app.request.attributes.get('_route') == 'admin_dashboard' %}active{% endif %}">
             <span class="nav-icon">👥</span> Utilisateurs
         </a>
+
+              <a href="{{ path('admin_reservations') }}"
+           class="{% if app.request.attributes.get('_route') == 'admin_reservations' %}active{% endif %}">
+            <span class="nav-icon">🎟️</span> Reservation
+        </a>
         <a href="{{ path('admin_reviews_index') }}"
            class="{% if 'admin_reviews' in app.request.attributes.get('_route') %}active{% endif %}">
             <span class="nav-icon">⭐</span> Avis
@@ -642,13 +647,16 @@
         class="{% if app.request.attributes.get('_route') == 'etudiant_profile' %}active{% endif %}">
             <span class="nav-icon">👤</span> Mon profil
         </a>
+        <a href="{{ path('invoice_index') }}"
+        class="{% if app.request.attributes.get('_route') == 'invoice_index' %}active{% endif %}">
+        <span class="nav-icon">💳</span> Mes factures
+        </a>
     {% endif %}
 </nav>
 {% endif %}
 
     <div class="header-right">
         {% if app.user %}
-            <span class="header-more">···</span>
             <div class="user-info">
                 <div class="user-name">{{ app.user.name }}</div>
                 <div class="user-email">{{ app.user.email }}</div>

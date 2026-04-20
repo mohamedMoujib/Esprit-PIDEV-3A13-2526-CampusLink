@@ -1,181 +1,371 @@
 {% extends "base.html.twig" %}
 
-{% block body %}
+{% block stylesheets %}
+{{ parent() }}
+<style>
+/* ===== STATS ===== */
+.stats-container {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
 
+.stat-card {
+    flex: 1;
+    min-width: 140px;
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    position: relative;
+    transition: transform 0.2s;
+    cursor: default;
+}
+
+.stat-card::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 4px;
+    border-radius: 12px 12px 0 0;
+}
+
+.stat-card.total::before    { background: #5D5FEF; }
+.stat-card.pending::before  { background: #F59E0B; }
+.stat-card.confirmed::before{ background: #10B981; }
+.stat-card.cancelled::before{ background: #EF4444; }
+.stat-card.revenue::before  { background: #3B82F6; }
+
+.stat-card h2 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+    color: #1F2937;
+}
+
+.stat-card p {
+    margin-top: 6px;
+    color: #6B7280;
+    font-size: 13px;
+}
+
+.stat-card:hover        { transform: translateY(-4px); }
+.stat-card.clickable    { cursor: pointer; }
+
+/* ===== RESERVATION CARD ===== */
+.reservation-card {
+    background: white;
+    padding: 20px 24px;
+    border-radius: 12px;
+    margin-bottom: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.reservation-card h3 {
+    margin: 0 0 4px;
+    font-size: 17px;
+    color: #111827;
+}
+
+.reservation-card p {
+    margin: 2px 0;
+    color: #6B7280;
+    font-size: 14px;
+}
+
+.reservation-card strong {
+    color: #5D5FEF;
+    font-size: 16px;
+}
+
+/* ===== ACTIONS ===== */
+.actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+}
+
+.buttons {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+/* ===== BADGES ===== */
+.badge {
+    display: inline-block;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.badge.confirmed { background: #D1FAE5; color: #059669; }
+.badge.pending   { background: #FEF3C7; color: #D97706; }
+.badge.cancelled { background: #FEE2E2; color: #DC2626; }
+
+/* ===== BUTTONS ===== */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 7px 14px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: opacity 0.2s, transform 0.1s;
+    white-space: nowrap;
+}
+
+.btn:hover          { opacity: 0.88; transform: translateY(-1px); }
+.btn.success        { background: #10B981; color: white; }
+.btn.danger         { background: #EF4444; color: white; }
+.btn.gray           { background: #E5E7EB; color: #374151; }
+.btn.message        { background: #5D5FEF; color: white; }
+.btn.reclamation    { background: #FEF3C7; color: #92400E; }
+.btn-outline-primary {
+    background: transparent;
+    border: 1.5px solid #5D5FEF;
+    color: #5D5FEF;
+    padding: 8px 18px;
+    border-radius: 10px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: background 0.2s, color 0.2s;
+}
+.btn-outline-primary:hover { background: #5D5FEF; color: white; }
+
+/* ===== PAGINATION ===== */
+.pagination-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    margin-top: 28px;
+    flex-wrap: wrap;
+}
+
+.page-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 36px;
+    padding: 0 10px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    border: 1px solid #E5E7EB;
+    background: white;
+    color: #374151;
+    transition: all 0.2s;
+}
+
+.page-link:hover          { background: #EEF2FF; border-color: #5D5FEF; color: #5D5FEF; }
+.page-link.active         { background: #5D5FEF; color: white; border-color: #5D5FEF; }
+.page-link.disabled       { pointer-events: none; opacity: 0.4; }
+.page-dots                { color: #9CA3AF; font-size: 16px; padding: 0 4px; line-height: 36px; }
+
+/* ===== MODAL ===== */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.45);
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-box {
+    background: white;
+    padding: 30px;
+    border-radius: 16px;
+    width: 360px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+}
+
+.modal-box h3 { margin: 0 0 10px; font-size: 20px; }
+.modal-box p  { color: #6B7280; margin-bottom: 20px; }
+.modal-actions { display: flex; gap: 10px; justify-content: center; }
+</style>
+{% endblock %}
+
+{% block body %}
 <div style="padding:30px;background:#f5f7fb;min-height:100vh;">
 
-<h2 style="margin-bottom:20px;">Réservations reçues</h2>
-
-<!-- STATS -->
-<div class="stats-container">
-
-    <div class="stat-card total">
-        <h2>{{ total }}</h2>
-        <p>Total</p>
+    {# ── HEADER ── #}
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+        <h2 style="margin:0;color:#111827;">Réservations reçues</h2>
+        <a href="{{ path('prestataire_calendar') }}" class="btn-outline-primary">
+            📅 Calendrier
+        </a>
     </div>
 
-    <div class="stat-card pending">
-        <h2>{{ pending }}</h2>
-        <p>En attente</p>
+    {# ── STATS ── #}
+    <div class="stats-container">
+
+        <div class="stat-card total">
+            <h2>{{ total }}</h2>
+            <p>Total</p>
+        </div>
+
+        <div class="stat-card pending">
+            <h2>{{ pending }}</h2>
+            <p>En attente</p>
+        </div>
+
+        <div class="stat-card confirmed">
+            <h2>{{ confirmed }}</h2>
+            <p>Confirmées</p>
+        </div>
+
+        <div class="stat-card cancelled">
+            <h2>{{ cancelled }}</h2>
+            <p>Annulées</p>
+        </div>
+
+        <a href="{{ path('prestataire_revenue') }}" style="flex:1;text-decoration:none;">
+            <div class="stat-card revenue clickable" style="height:100%;">
+                <h2>{{ revenue }} DT</h2>
+                <p>Revenus</p>
+            </div>
+        </a>
+
     </div>
 
-    <div class="stat-card confirmed">
-        <h2>{{ confirmed }}</h2>
-        <p>Confirmées</p>
-    </div>
+    {# ── RESERVATION LIST ── #}
+    {% for r in reservations %}
+    <div class="reservation-card">
 
-    <div class="stat-card revenue">
-        <h2>{{ revenue }} DT</h2>
-        <p>Revenus</p>
-    </div>
+        {# LEFT #}
+        <div>
+            <h3>{{ r.service.title }}</h3>
+            <p class="text-muted">par {{ r.user.name }}</p>
+            <p>📅 {{ r.date|date('d M Y H:i') }}</p>
+            <strong>{{ r.price }} DT</strong>
+        </div>
 
-</div>
+        {# RIGHT #}
+        <div class="actions">
 
-<!-- LIST -->
-{% for r in reservations %}
-
-<div style="
-background:white;
-padding:20px;
-border-radius:12px;
-margin-bottom:15px;
-display:flex;
-justify-content:space-between;
-align-items:center;
-box-shadow:0 4px 20px rgba(0,0,0,0.05);
-">
-
-    <div>
-        <h3>{{ r.service.title }}</h3>
-        <p style="color:#666;">par {{ r.user.name }}</p>
-        <p style="color:#999;">📅 {{ r.date|date('d M Y H:i') }}</p>
-        <strong style="color:#5D5FEF;">{{ r.price }} DT</strong>
-    </div>
-
-    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:10px;">
-
-        {% if r.status == 'CONFIRMED' %}
-            <span style="background:#D1FAE5;color:#059669;padding:5px 10px;border-radius:20px;">✔ Confirmée</span>
-        {% elseif r.status == 'PENDING' %}
-            <span style="background:#FEF3C7;color:#D97706;padding:5px 10px;border-radius:20px;">⏳ En attente</span>
-        {% else %}
-            <span style="background:#FEE2E2;color:#DC2626;padding:5px 10px;border-radius:20px;">❌ Annulée</span>
-        {% endif %}
-
-        <div style="display:flex;gap:8px;">
-
-
-            {% if r.status == 'PENDING' %}
-            <form method="post" action="{{ path('reservation_confirm', {id: r.id}) }}">
-                <button style="background:green;color:white;border:none;padding:6px 12px;border-radius:8px;">✔</button>
-            </form>
+            {# Status badge #}
+            {% if r.status == 'CONFIRMED' %}
+                <span class="badge confirmed">✔ Confirmée</span>
+            {% elseif r.status == 'PENDING' %}
+                <span class="badge pending">⏳ En attente</span>
+            {% else %}
+                <span class="badge cancelled">❌ Annulée</span>
             {% endif %}
 
-            <form method="post" action="{{ path('reservation_cancel', {id: r.id}) }}">
-                <button style="background:#EF4444;color:white;border:none;padding:6px 12px;border-radius:8px;">Annuler</button>
-            </form>
+            {# Action buttons #}
+            <div class="buttons">
 
-            <button onclick="openDeleteModal({{ r.id }})" style="background:#eee;border:none;padding:8px;border-radius:8px;">
-                🗑
-            </button>
+                {% if r.status == 'PENDING' %}
+                <form method="post" action="{{ path('reservation_confirm', {id: r.id}) }}">
+                    <button type="submit" class="btn success" title="Confirmer">✔</button>
+                </form>
+                {% endif %}
+
+                <form method="post" action="{{ path('reservation_cancel', {id: r.id}) }}">
+                    <button type="submit" class="btn danger">Annuler</button>
+                </form>
+
+                <button type="button" onclick="openDeleteModal({{ r.id }})" class="btn gray" title="Supprimer">🗑</button>
+
+            </div>
+
+            <a href="{{ path('messages', { user: r.user.id }) }}" class="btn message">💬 Messagerie</a>
+            <a href="{{ path('reclamation_new', {id: r.user.id}) }}" class="btn reclamation">⚠️ Signaler</a>
 
         </div>
 
     </div>
+    {% else %}
+        <div style="text-align:center;padding:60px 0;color:#9CA3AF;">
+            <p style="font-size:40px;margin-bottom:10px;">📭</p>
+            <p>Aucune réservation pour le moment.</p>
+        </div>
+    {% endfor %}
+
+    {# ── PAGINATION ── #}
+    {% if totalPages > 1 %}
+    <nav class="pagination-wrapper" aria-label="Pagination">
+
+        {# Previous #}
+        <a href="{{ path('prestataire_reservations', {page: currentPage - 1}) }}"
+           class="page-link {{ currentPage == 1 ? 'disabled' : '' }}"
+           aria-label="Page précédente">
+            ‹ Préc
+        </a>
+
+        {% for i in 1..totalPages %}
+            {% if i == 1 or i == totalPages or (i >= currentPage - 2 and i <= currentPage + 2) %}
+
+                <a href="{{ path('prestataire_reservations', {page: i}) }}"
+                   class="page-link {{ i == currentPage ? 'active' : '' }}"
+                   aria-current="{{ i == currentPage ? 'page' : 'false' }}">
+                    {{ i }}
+                </a>
+
+            {% elseif i == currentPage - 3 or i == currentPage + 3 %}
+                <span class="page-dots">…</span>
+            {% endif %}
+        {% endfor %}
+
+        {# Next #}
+        <a href="{{ path('prestataire_reservations', {page: currentPage + 1}) }}"
+           class="page-link {{ currentPage == totalPages ? 'disabled' : '' }}"
+           aria-label="Page suivante">
+            Suiv ›
+        </a>
+
+    </nav>
+    {% endif %}
 
 </div>
 
-{% else %}
-<p>Aucune réservation</p>
-{% endfor %}
-
-</div>
-
-<!-- MODAL -->
-<div id="deleteModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);justify-content:center;align-items:center;">
-
-    <div style="background:white;padding:25px;border-radius:12px;width:350px;text-align:center;">
-
+{# ── DELETE MODAL ── #}
+<div id="deleteModal" class="modal-overlay">
+    <div class="modal-box">
         <h3>Confirmation</h3>
-        <p>Voulez-vous supprimer cette réservation ?</p>
-
-        <form id="deleteForm" method="post">
-            <button type="button" onclick="closeModal()" style="padding:8px 15px;border-radius:8px;background:#eee;">Annuler</button>
-            <button style="background:#EF4444;color:white;padding:8px 15px;border-radius:8px;border:none;">
-                Supprimer
-            </button>
-        </form>
-
+        <p>Voulez-vous vraiment supprimer cette réservation&nbsp;?</p>
+        <div class="modal-actions">
+            <button type="button" onclick="closeModal()" class="btn gray">Annuler</button>
+            <form id="deleteForm" method="post">
+                <button type="submit" class="btn danger">Supprimer</button>
+            </form>
+        </div>
     </div>
-
 </div>
 
 <script>
-function openDeleteModal(id){
-    document.getElementById('deleteModal').style.display='flex';
-    document.getElementById('deleteForm').action='/prestataire/reservations/'+id+'/delete';
+function openDeleteModal(id) {
+    document.getElementById('deleteModal').style.display = 'flex';
+    document.getElementById('deleteForm').action = '/prestataire/reservations/' + id + '/delete';
 }
-
-function closeModal(){
-    document.getElementById('deleteModal').style.display='none';
+function closeModal() {
+    document.getElementById('deleteModal').style.display = 'none';
 }
+// Close modal when clicking the overlay
+document.getElementById('deleteModal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+});
 </script>
-
-
-<style>
-   .stats-container {
-    display:flex;
-    gap:15px;
-    margin-bottom:20px;
-    flex-wrap:wrap;
-}
-
-/* CARD */
-.stat-card {
-    flex:1;
-    min-width:160px;
-    background:linear-gradient(135deg,#ffffff,#f8f9ff);
-    padding:20px;
-    border-radius:14px;
-    text-align:center;
-    box-shadow:0 6px 18px rgba(0,0,0,0.08);
-    position:relative;
-    transition:0.3s;
-    overflow:hidden;
-}
-
-/* barre colorée */
-.stat-card::before {
-    content:"";
-    position:absolute;
-    top:0;
-    left:0;
-    width:100%;
-    height:5px;
-}
-
-/* couleurs */
-.total::before { background:#5D5FEF; }
-.pending::before { background:orange; }
-.confirmed::before { background:green; }
-.revenue::before { background:#5D5FEF; }
-
-/* texte */
-.stat-card h2 {
-    margin:0;
-    font-size:28px;
-    font-weight:bold;
-}
-
-.stat-card p {
-    margin-top:6px;
-    font-size:14px;
-    color:#666;
-}
-
-/* hover effet */
-.stat-card:hover {
-    transform:translateY(-6px);
-    box-shadow:0 12px 25px rgba(0,0,0,0.15);
-}
 {% endblock %}

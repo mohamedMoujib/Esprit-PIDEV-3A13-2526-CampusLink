@@ -19,7 +19,12 @@ class PrestataireProfileController extends AbstractController
     public function index(Request $request): Response
     {
         /** @var \App\Entity\User $user */
-        $user = $this->getUser();
+        $user      = $this->getUser();
+        $uploadDir = $this->getParameter('kernel.project_dir') . '/public/uploads/profiles/';
+
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0777, true);
+        }
 
         if ($request->isMethod('POST')) {
             $action = $request->request->get('action');
@@ -28,7 +33,38 @@ class PrestataireProfileController extends AbstractController
                 $prenom = trim($request->request->get('prenom', ''));
                 $nom    = trim($request->request->get('nom', ''));
 
-                $jsonData = json_encode([
+                // ── Handle profile picture ──
+                $newPictureName = null;
+                $profilePicture = $request->files->get('profilePicture');
+
+                if ($profilePicture) {
+                    $allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+
+                    if (!in_array($profilePicture->getMimeType(), $allowed)) {
+                        $this->addFlash('error', 'Format non supporté. Utilisez JPG, PNG ou WebP.');
+                        return $this->redirectToRoute('prestataire_profile');
+                    }
+
+                    if ($profilePicture->getSize() > 3 * 1024 * 1024) {
+                        $this->addFlash('error', 'Image trop volumineuse (max 3MB).');
+                        return $this->redirectToRoute('prestataire_profile');
+                    }
+
+                    // Delete old picture
+                    if ($user->getProfilePicture()) {
+                        $oldPath = $uploadDir . $user->getProfilePicture();
+                        if (file_exists($oldPath)) {
+                            unlink($oldPath);
+                        }
+                    }
+
+                    // Save new picture
+                    $newPictureName = 'avatar_' . $user->getId() . '_' . time() . '.' . $profilePicture->guessExtension();
+                    $profilePicture->move($uploadDir, $newPictureName);
+                }
+
+                // ── Build payload ──
+                $payload = [
                     'name'           => $prenom . ' ' . $nom,
                     'email'          => trim($request->request->get('email', '')),
                     'phone'          => $request->request->get('phone') ?: null,
@@ -37,9 +73,17 @@ class PrestataireProfileController extends AbstractController
                     'universite'     => $request->request->get('universite') ?: null,
                     'filiere'        => $request->request->get('filiere') ?: null,
                     'specialization' => $request->request->get('specialization') ?: null,
-                ]);
+                ];
 
-                $jsonRequest = Request::create('/api/users/' . $user->getId(), 'PUT', content: $jsonData);
+                if ($newPictureName) {
+                    $payload['profilePicture'] = $newPictureName;
+                }
+
+                $jsonRequest = Request::create(
+                    '/api/users/' . $user->getId(),
+                    'PUT',
+                    content: json_encode($payload)
+                );
                 $jsonRequest->headers->set('Content-Type', 'application/json');
 
                 $response   = $this->userController->update($user->getId(), $jsonRequest);
@@ -69,8 +113,11 @@ class PrestataireProfileController extends AbstractController
                 } elseif ($new !== $confirm) {
                     $this->addFlash('error', 'Les mots de passe ne correspondent pas.');
                 } else {
-                    $jsonData    = json_encode(['password' => $new]);
-                    $jsonRequest = Request::create('/api/users/' . $user->getId(), 'PUT', content: $jsonData);
+                    $jsonRequest = Request::create(
+                        '/api/users/' . $user->getId(),
+                        'PUT',
+                        content: json_encode(['password' => $new])
+                    );
                     $jsonRequest->headers->set('Content-Type', 'application/json');
 
                     $response   = $this->userController->update($user->getId(), $jsonRequest);
@@ -95,10 +142,10 @@ class PrestataireProfileController extends AbstractController
         $nameParts = explode(' ', $user->getName(), 2);
 
         return $this->render('Prestataire/profile.html.twig', [
-            'user'      => $user,
-            'prenom'    => $nameParts[0] ?? '',
-            'nom'       => $nameParts[1] ?? '',
-            'save_route'=> 'prestataire_profile',
+            'user'       => $user,
+            'prenom'     => $nameParts[0] ?? '',
+            'nom'        => $nameParts[1] ?? '',
+            'save_route' => 'prestataire_profile',
         ]);
     }
 }

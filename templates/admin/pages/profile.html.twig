@@ -25,26 +25,72 @@
     ══════════════════════════════════════ #}
     <div class="form-panel" style="margin-bottom:24px;">
 
-        {# ── Avatar row ── #}
+                {# ── Avatar row ── #}
         <div style="display:flex; align-items:center; gap:24px; padding-bottom:24px; border-bottom:1px solid var(--border);">
+
+            {# Avatar display #}
             <div style="position:relative;">
                 {% if admin.profilePicture %}
-                    <img src="/uploads/profiles/{{ admin.profilePicture }}"
-                         style="width:100px; height:100px; border-radius:50%; object-fit:cover; border:3px solid var(--primary-light);">
+                    <img id="avatarPreview"
+                        src="/uploads/profiles/{{ admin.profilePicture }}"
+                        style="width:100px; height:100px; border-radius:50%; object-fit:cover; border:3px solid var(--primary-light);">
                 {% else %}
-                    <div style="width:100px; height:100px; border-radius:50%; background:#e0e7ff;
+                    <div id="avatarDefault"
+                        style="width:100px; height:100px; border-radius:50%; background:#e0e7ff;
                                 display:flex; align-items:center; justify-content:center; font-size:48px;">
                         👨‍💼
                     </div>
                 {% endif %}
             </div>
+
+            {# Info + upload button #}
             <div>
                 <div style="font-size:20px; font-weight:800; color:var(--text);">{{ admin.name }}</div>
                 <div style="font-size:13px; color:var(--text-muted); margin-top:2px;">{{ admin.email }}</div>
                 <span class="badge" style="margin-top:8px; background:#fee2e2; color:#dc2626; border:1px solid #fca5a5;">
                     👑 Administrateur
                 </span>
+
+                {# ── Upload form ── #}
+                <form method="post"
+                    action="{{ path('admin_profile') }}"
+                    enctype="multipart/form-data"
+                    data-turbo="false"
+                    style="margin-top:12px;">
+                    <input type="hidden" name="action" value="upload_photo">
+
+                    {# Hidden file input #}
+                    <input type="file"
+                        name="profile_picture"
+                        id="photoInput"
+                        accept="image/jpeg,image/png,image/gif,image/webp"
+                        style="display:none;"
+                        onchange="previewAndSubmit(this)">
+
+                    {# Trigger button #}
+                    <button type="button"
+                            onclick="document.getElementById('photoInput').click()"
+                            class="btn btn-ghost btn-sm">
+                        📷 Changer la photo
+                    </button>
+
+                    {% if admin.profilePicture %}
+                        <button type="submit"
+                                name="action"
+                                value="remove_photo"
+                                class="btn btn-sm btn-danger-outline"
+                                onclick="return confirm('Supprimer la photo ?')"
+                                style="margin-left:6px;">
+                            🗑 Supprimer
+                        </button>
+                    {% endif %}
+
+                    <div style="font-size:11px; color:var(--text-muted); margin-top:6px;">
+                        JPG, PNG, GIF, WEBP — max 5MB
+                    </div>
+                </form>
             </div>
+
         </div>
 
         {# ── Personal Info Form ── #}
@@ -263,5 +309,40 @@ document.getElementById('passwordForm').addEventListener('submit', function(e) {
 
     if (!valid) e.preventDefault();
 });
+function previewAndSubmit(input) {
+    if (!input.files || !input.files[0]) return;
+
+    const file = input.files[0];
+
+    // Client-side size check
+    if (file.size > 5 * 1024 * 1024) {
+        alert('Image trop volumineuse (max 5MB)');
+        input.value = '';
+        return;
+    }
+
+    // Preview before submit
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        // Show preview
+        const existing = document.getElementById('avatarPreview');
+        const defaultDiv = document.getElementById('avatarDefault');
+
+        if (existing) {
+            existing.src = e.target.result;
+        } else if (defaultDiv) {
+            // Replace default div with img
+            const img = document.createElement('img');
+            img.id = 'avatarPreview';
+            img.src = e.target.result;
+            img.style.cssText = 'width:100px;height:100px;border-radius:50%;object-fit:cover;border:3px solid var(--primary-light);';
+            defaultDiv.replaceWith(img);
+        }
+
+        // Auto submit the form
+        input.closest('form').submit();
+    };
+    reader.readAsDataURL(file);
+}
 </script>
 {% endblock %}

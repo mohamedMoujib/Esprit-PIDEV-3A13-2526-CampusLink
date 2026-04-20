@@ -62,7 +62,7 @@
                 <div class="info-box"><span class="info-box-icon">📅</span><div><div class="info-box-title">Réservations</div><div class="info-box-text">{{ service.reservations is defined ? service.reservations|length : 0 }}</div></div></div>
             </div>
 
-            <div style="font-size:28px;font-weight:800;color:var(--primary);">{{ service.price|number_format(2, ',', ' ') }} €</div>
+            <div style="font-size:28px;font-weight:800;color:var(--primary);">{{ service.price|number_format(2, ',', ' ') }} DT</div>
 
             {% if service.description %}
             <div>

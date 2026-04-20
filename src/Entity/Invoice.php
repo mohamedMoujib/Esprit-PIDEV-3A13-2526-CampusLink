@@ -19,8 +19,6 @@ class Invoice
         return $this->id;
     }
 
-    // ❌ REMOVE setId()
-
     #[ORM\ManyToOne(targetEntity: Payment::class, inversedBy: 'invoices')]
     #[ORM\JoinColumn(name: 'payment_id', nullable: false, onDelete: "CASCADE")]
     private ?Payment $payment = null;
