@@ -73,6 +73,33 @@ class ReviewRepository extends ServiceEntityRepository
             ->orderBy('r.id', 'DESC');
     }
 
+    public function getAverageRatingByService(int $serviceId): ?float
+    {
+        $avg = $this->createQueryBuilder('r')
+            ->select('AVG(r.rating)')
+            ->join('r.reservation', 'res')
+            ->join('res.service', 'srv')
+            ->where('srv.id = :serviceId')
+            ->andWhere('r.rating IS NOT NULL')
+            ->setParameter('serviceId', $serviceId)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return $avg !== null ? (float) $avg : null;
+    }
+
+    public function countByService(int $serviceId): int
+    {
+        return (int) $this->createQueryBuilder('r')
+            ->select('COUNT(r.id)')
+            ->join('r.reservation', 'res')
+            ->join('res.service', 'srv')
+            ->where('srv.id = :serviceId')
+            ->setParameter('serviceId', $serviceId)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
     // ===================== READ ALL (ADMIN) =====================
 
     public function findAllWithDetails(): array

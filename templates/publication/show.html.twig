@@ -1,8 +1,9 @@
 {% extends 'base.html.twig' %}
+{% import '_macros/upload_image.html.twig' as upload_img %}
 {% block title %}{{ publication.titre }} — CampusLink{% endblock %}
 {% block body %}
 
-{% set imageSrc = publication.imageUrl ? (publication.imageUrl starts with 'http' ? publication.imageUrl : asset(publication.imageUrl)) : null %}
+{% set imageSrc = publication.imageUrl ? upload_img.src(publication.imageUrl, 'optimized') : null %}
 {% set price = publication.typePublication == 'VENTE_OBJET' ? publication.prixVente : publication.proposedPrice %}
 
 <div class="page-header">
@@ -70,6 +71,23 @@
                 <div style="font-size:15px;font-weight:800;margin-bottom:8px;color:#111827;">Description complète</div>
                 <div style="font-size:14px;color:#374151;line-height:1.75;white-space:pre-line;">{{ publication.message }}</div>
             </div>
+
+            {% if publication.id %}
+            <div class="info-box" style="align-items:flex-start;">
+                <span class="info-box-icon">📱</span>
+                <div style="flex:1;min-width:0;">
+                    <div class="info-box-title">QR code — partager cette publication</div>
+                    <div style="margin-top:12px;padding:16px;background:#fff;border:1px solid var(--border);border-radius:12px;display:inline-block;text-align:center;">
+                        <img src="{{ path('app_qr_publication', {id: publication.id}) }}"
+                             alt="QR code : lien vers cette publication"
+                             width="200"
+                             height="200"
+                             style="display:block;width:200px;height:200px;object-fit:contain;border-radius:8px;">
+                    </div>
+                    <div class="info-box-text" style="margin-top:10px;font-size:12px;">Scannez le code pour ouvrir la page de cette publication (connexion requise).</div>
+                </div>
+            </div>
+            {% endif %}
 
             <div style="font-size:12px;color:#9ca3af;">
                 Créée le {{ publication.createdAt ? publication.createdAt|date('d/m/Y à H:i') : '—' }}

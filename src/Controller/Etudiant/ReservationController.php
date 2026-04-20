@@ -5,6 +5,7 @@ namespace App\Controller\Etudiant;
 use App\Entity\Reservation;
 use App\Repository\ReservationRepository;
 use App\Repository\ServiceRepository;
+use App\Service\NotificationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -58,19 +59,39 @@ class ReservationController extends AbstractController
     }
 
     #[Route('/new', name: 'etudiant_reservation_new', methods: ['POST'])]
-    public function new(Request $request, EntityManagerInterface $em, ServiceRepository $serviceRepo): Response
-    {
+    public function new(
+        Request $request,
+        EntityManagerInterface $em,
+        ServiceRepository $serviceRepo,
+        NotificationService $notif,
+    ): Response {
+        $this->denyAccessUnlessGranted('ROLE_ETUDIANT');
+
+        /** @var \App\Entity\User $user */
+        $user = $this->getUser();
         $service = $serviceRepo->find($request->request->get('service_id'));
+        if (!$service) {
+            $this->addFlash('error', 'Service introuvable.');
+            return $this->redirectToRoute('etudiant_reservations');
+        }
 
         $reservation = new Reservation();
-        $reservation->setUser($this->getUser());
+        $reservation->setUser($user);
         $reservation->setService($service);
-        $reservation->setDate(new \DateTime($request->request->get('date')));
+        $reservation->setDate(new \DateTime((string) $request->request->get('date')));
         $reservation->setPrice($service->getPrice());
         $reservation->setStatus('PENDING');
 
         $em->persist($reservation);
         $em->flush();
+
+        $prestataire = $service->getUser();
+        if ($prestataire) {
+            $notif->notifyInApp($prestataire, '📅 Nouvelle réservation',
+                "{$user->getName()} a réservé votre service \"{$service->getTitle()}\" pour le {$reservation->getDate()->format('d/m/Y à H:i')}");
+        }
+        $notif->notifyInApp($user, '✅ Réservation confirmée',
+            "Votre réservation pour \"{$service->getTitle()}\" a bien été enregistrée.");
 
         return $this->redirectToRoute('etudiant_reservations');
     }

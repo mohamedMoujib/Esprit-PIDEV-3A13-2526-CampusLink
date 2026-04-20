@@ -12,13 +12,12 @@ use Endroid\QrCode\Builder\Builder;
 use Endroid\QrCode\Encoding\Encoding;
 use Endroid\QrCode\ErrorCorrectionLevel;
 use Endroid\QrCode\RoundBlockSizeMode;
-use Endroid\QrCode\Writer\SvgWriter; 
-use Endroid\QrCode\QrCode;       
+use Endroid\QrCode\Writer\SvgWriter;
 
 class TwoFactorController extends AbstractController
 {
-      #[Route('/2fa/setup', name: 'app_2fa_setup')]
-    public function setup(Request $request): Response
+    #[Route('/2fa/setup', name: 'app_2fa_setup')]
+    public function setup(Request $request, \Endroid\QrCode\Builder\BuilderInterface $svgCustomQrCodeBuilder): Response
     {
         $session = $request->getSession();
 
@@ -37,15 +36,14 @@ class TwoFactorController extends AbstractController
         $totp->setLabel($user->getEmail());
         $totp->setIssuer('CampusLink');
 
-        // ── v3 QR generation ──
-        $qrCode = new QrCode($totp->getProvisioningUri());
-        $qrCode->setSize(200);
-        $qrCode->setMargin(10);
+        // ── v6 QR generation via injected builder ──
+        $result = $svgCustomQrCodeBuilder->build(
+            data: $totp->getProvisioningUri(),
+            size: 200,
+            margin: 10
+        );
 
-        $writer = new SvgWriter(); 
-        $result = $writer->write($qrCode);
-
-        $qrDataUri = 'data:image/svg+xml;base64,' . base64_encode($result->getString());
+        $qrDataUri = $result->getDataUri();
 
         return $this->render('User/2fa_setup.html.twig', [
             'qrDataUri' => $qrDataUri,
@@ -87,11 +85,12 @@ class TwoFactorController extends AbstractController
 
         return $this->render('User/2fa_check.html.twig');
     }
+
     #[Route('/2fa/reset', name: 'app_2fa_reset')]
-public function reset(Request $request): Response
-{
-    $request->getSession()->remove('2fa_secret');
-    $request->getSession()->remove('2fa_verified');
-    return $this->redirectToRoute('app_2fa_setup');
-}
+    public function reset(Request $request): Response
+    {
+        $request->getSession()->remove('2fa_secret');
+        $request->getSession()->remove('2fa_verified');
+        return $this->redirectToRoute('app_2fa_setup');
+    }
 }

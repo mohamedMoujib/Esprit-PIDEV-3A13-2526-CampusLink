@@ -27,3 +27,17 @@ services:
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
+
+    App\Service\AiAssistantService:
+        bind:
+            $n8nBaseUrl: '%env(default::string:N8N_BASE_URL)%'
+            $openRouterApiKey: '%env(default::string:HUGGINGFACE_API_KEY)%'
+
+    App\Service\TrendPredictionService:
+        arguments:
+            $huggingFaceApiKey: '%env(default::string:HUGGINGFACE_API_KEY)%'
+
+    App\Controller\Api\ShareController:
+        bind:
+            $telegramBotToken: '%env(TELEGRAM_BOT_TOKEN)%'
+            $telegramChatId: '%env(TELEGRAM_CHAT_ID)%'

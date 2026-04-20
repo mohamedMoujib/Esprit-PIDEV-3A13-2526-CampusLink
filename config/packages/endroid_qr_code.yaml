@@ -1,0 +1,14 @@
+# Endroid QrCodeBundle — PNG default + optional SVG preset for inline use
+# Routes: config/routes/endroid_qr_code.yaml (prefix /qr-code)
+endroid_qr_code:
+    default:
+        writer: Endroid\QrCode\Writer\PngWriter
+        size: 300
+        margin: 10
+        error_correction_level: high
+
+    svg_custom:
+        writer: Endroid\QrCode\Writer\SvgWriter
+        size: 200
+        margin: 10
+        error_correction_level: low

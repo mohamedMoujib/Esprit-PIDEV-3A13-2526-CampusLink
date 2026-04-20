@@ -1,8 +1,9 @@
 {% extends 'base.html.twig' %}
+{% import '_macros/upload_image.html.twig' as upload_img %}
 {% block title %}{{ service.title }} — CampusLink{% endblock %}
 {% block body %}
 
-{% set imageSrc = service.image ? (service.image starts with 'http' ? service.image : asset(service.image)) : null %}
+{% set imageSrc = service.image ? upload_img.src(service.image, 'optimized') : null %}
 {% set showStatusOnlyForOwner = app.user and service.user == app.user and app.user.userType == 'PRESTATAIRE' %}
 
 <div class="page-header">
@@ -52,6 +53,10 @@
                         <span class="badge badge-inactive">Terminé</span>
                     {% endif %}
                 {% endif %}
+
+                {% if service.moderationStatus == 'UNDER_REVIEW' %}
+                    <span class="badge badge-rejected">Sous revue</span>
+                {% endif %}
             </div>
 
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;">
@@ -70,6 +75,117 @@
                 <div style="font-size:14px;color:#374151;line-height:1.75;white-space:pre-line;">{{ service.description }}</div>
             </div>
             {% endif %}
+
+            {% if service.id %}
+            {% set serviceUrl = url('service_show', {id: service.id}) %}
+            {% set shareText = service.title ~ ' — ' ~ (service.description|default('Découvrez ce service sur CampusLink')|slice(0, 120)) %}
+
+            <div class="info-box" style="align-items:flex-start;">
+                <span class="info-box-icon">📱</span>
+                <div style="flex:1;min-width:0;">
+                    <div class="info-box-title">QR code — partager ce service</div>
+                    <div style="margin-top:12px;padding:16px;background:#fff;border:1px solid var(--border);border-radius:12px;display:inline-block;text-align:center;">
+                        <img src="{{ path('app_qr_service', {id: service.id}) }}"
+                             alt="QR code : lien vers ce service"
+                             width="200"
+                             height="200"
+                             style="display:block;width:200px;height:200px;object-fit:contain;border-radius:8px;">
+                    </div>
+                    <div class="info-box-text" style="margin-top:10px;font-size:12px;">Scannez le code pour ouvrir la page de ce service (connexion requise).</div>
+                </div>
+            </div>
+
+            <div style="margin-top:14px;">
+                <div style="font-size:15px;font-weight:800;margin-bottom:12px;color:#111827;">🔗 Partager</div>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                    {# Telegram — API call #}
+                    <button type="button"
+                            id="share-telegram-btn"
+                            onclick="shareOnTelegram({{ service.id }})"
+                            class="share-btn share-btn-telegram"
+                            title="Partager sur Telegram">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+                        </svg>
+                        <span id="telegram-btn-text">Telegram</span>
+                    </button>
+                </div>
+            </div>
+
+            <style>
+            .share-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                padding: 10px 18px;
+                border-radius: 10px;
+                font-size: 13px;
+                font-weight: 700;
+                text-decoration: none;
+                border: 1px solid transparent;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                line-height: 1;
+                font-family: inherit;
+            }
+            .share-btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            }
+            .share-btn:active { transform: translateY(0); }
+            .share-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+            .share-btn-telegram {
+                background: #229ed9;
+                color: #fff;
+            }
+            .share-btn-telegram:hover { background: #1a8bbf; }
+            .share-btn-telegram.sent {
+                background: #16a34a;
+                color: #fff;
+            }
+            </style>
+
+            <script>
+            function shareOnTelegram(serviceId) {
+                var btn  = document.getElementById('share-telegram-btn');
+                var txt  = document.getElementById('telegram-btn-text');
+
+                btn.disabled = true;
+                txt.textContent = 'Envoi…';
+
+                fetch('/api/share/service/' + serviceId, {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    if (data.success) {
+                        txt.textContent = '✅ Envoyé !';
+                        btn.classList.add('sent');
+                        setTimeout(function() {
+                            txt.textContent = 'Telegram';
+                            btn.classList.remove('sent');
+                            btn.disabled = false;
+                        }, 3000);
+                    } else {
+                        txt.textContent = '❌ Erreur';
+                        btn.disabled = false;
+                        setTimeout(function() { txt.textContent = 'Telegram'; }, 3000);
+                        console.error('Telegram share error:', data.error);
+                    }
+                })
+                .catch(function(err) {
+                    txt.textContent = '❌ Erreur';
+                    btn.disabled = false;
+                    setTimeout(function() { txt.textContent = 'Telegram'; }, 3000);
+                    console.error(err);
+                });
+            }
+            </script>
+            {% endif %}
+
+
         </div>
     </div>
 </div>

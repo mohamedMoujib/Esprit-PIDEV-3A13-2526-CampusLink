@@ -41,6 +41,8 @@
                     </span>
                 </div>
 
+                {% include '_partials/service_card_rating.html.twig' %}
+
                 {% if service.description %}
                     <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px; line-height: 1.4;">
                         {{ service.description[:100] }}{% if service.description|length > 100 %}...{% endif %}

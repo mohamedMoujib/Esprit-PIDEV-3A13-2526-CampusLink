@@ -1,0 +1,33 @@
+{% set info = serviceRatings[service.id]|default({ avg: null, count: 0 }) %}
+{% set count = info.count %}
+{% set avg = info.avg %}
+<div class="service-card-rating" style="display:flex;flex-direction:column;gap:6px;margin-top:2px;">
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;">
+        <span style="display:inline-flex;align-items:center;gap:0;line-height:1;" aria-hidden="true">
+            {% if count == 0 %}
+                {% for i in 1..5 %}
+                    <span style="color: #d1d5db; font-size: 14px;">☆</span>
+                {% endfor %}
+            {% else %}
+                {% set note5 = avg is not null ? (avg + 5) / 2 : 0 %}
+                {% set rounded = avg is not null ? (((note5 * 2)|round) / 2) : 0 %}
+                {% for i in 1..5 %}
+                    {% if rounded >= i %}
+                        <span style="color: #f59e0b; font-size: 14px;">★</span>
+                    {% elseif rounded >= i - 0.5 %}
+                        <span style="position:relative;display:inline-block;font-size:14px;line-height:1;width:0.85em;height:1em;vertical-align:middle;">
+                            <span style="color:#d1d5db;">★</span>
+                            <span style="position:absolute;left:0;top:0;width:50%;height:100%;overflow:hidden;color:#f59e0b;">★</span>
+                        </span>
+                    {% else %}
+                        <span style="color: #d1d5db; font-size: 14px;">☆</span>
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+        </span>
+        <span style="font-size:12px;color:#6b7280;">({{ count }} avis)</span>
+    </div>
+    <div>
+        <a href="{{ path(reviews_index_route) }}" class="service-reviews-link" style="font-size:13px;color:#5D5FEF;text-decoration:none;">⭐ Voir les avis</a>
+    </div>
+</div>

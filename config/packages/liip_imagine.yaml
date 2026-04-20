@@ -1,0 +1,34 @@
+# LiipImagineBundle — on-the-fly resized / WebP variants under public/media/cache
+# https://github.com/liip/LiipImagineBundle/blob/master/Resources/doc/configuration.rst
+liip_imagine:
+    resolvers:
+        default:
+            web_path:
+                web_root: '%kernel.project_dir%/public'
+                cache_prefix: 'media/cache'
+
+    loaders:
+        default:
+            filesystem:
+                data_root: '%kernel.project_dir%/public'
+
+    twig:
+        mode: lazy
+
+    # Serves WebP when the client supports it (originals stay under uploads/)
+    webp:
+        generate: true
+        quality: 82
+
+    filter_sets:
+        # Lists, cards, small previews
+        thumbnail:
+            quality: 78
+            filters:
+                thumbnail: { size: [400, 300], mode: outbound }
+
+        # Detail pages — max edge 1200px, keeps aspect ratio
+        optimized:
+            quality: 82
+            filters:
+                scale: { dim: [1200, 1200] }

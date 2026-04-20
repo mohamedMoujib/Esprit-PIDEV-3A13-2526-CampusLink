@@ -45,4 +45,20 @@ class NotificationRepository extends ServiceEntityRepository
             ->getQuery()
             ->getOneOrNullResult();
     }
+
+    public function hasRecentWithTitleContaining(User $user, string $needle, \DateTimeInterface $since): bool
+    {
+        $count = (int) $this->createQueryBuilder('n')
+            ->select('COUNT(n.id)')
+            ->where('n.user = :u')
+            ->andWhere('n.title LIKE :needle')
+            ->andWhere('n.createdAt >= :since')
+            ->setParameter('u', $user)
+            ->setParameter('needle', '%' . $needle . '%')
+            ->setParameter('since', $since)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return $count > 0;
+    }
 }

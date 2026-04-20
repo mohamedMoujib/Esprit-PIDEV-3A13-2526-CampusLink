@@ -11,6 +11,7 @@ use App\Entity\User;
 use App\Repository\PublicationRepository;
 use App\Repository\UserRepository;
 use App\Service\ModerationTrustService;
+use App\Service\UploadedImageOptimizer;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -36,6 +37,7 @@ class AdminDashboardController extends AbstractController
         private ModerationTrustService $moderationTrust,
         private PublicationRepository $publicationRepository,
         private MailerInterface $mailer,
+        private UploadedImageOptimizer $uploadedImageOptimizer,
     ) {}
 
     #[Route('', name: 'admin_home', methods: ['GET'])]
@@ -613,7 +615,9 @@ public function ban(int $id): Response
         }
         $filename = bin2hex(random_bytes(16)) . '.' . $file->guessExtension();
         $file->move($uploadDir, $filename);
-        $service->setImage('uploads/' . $filename);
+        $relative = 'uploads/' . $filename;
+        $service->setImage($relative);
+        $this->uploadedImageOptimizer->optimizeRelativePath($relative);
         return null;
     }
 
@@ -633,7 +637,9 @@ public function ban(int $id): Response
         }
         $filename = bin2hex(random_bytes(16)) . '.' . $file->guessExtension();
         $file->move($uploadDir, $filename);
-        $pub->setImageUrl('uploads/' . $filename);
+        $relative = 'uploads/' . $filename;
+        $pub->setImageUrl($relative);
+        $this->uploadedImageOptimizer->optimizeRelativePath($relative);
         return null;
     }
 

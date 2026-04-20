@@ -23,6 +23,7 @@ class SecurityController extends AbstractController
 
     ) {}
 
+        // ✅ Inject AuthenticationUtils here
     #[Route('/login', name: 'app_login')]
     public function login(AuthenticationUtils $authenticationUtils): Response
     {

@@ -155,6 +155,34 @@ class ServiceRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * Prestataires ayant au moins un service confirmé dans la catégorie (nom exact).
+     *
+     * @return User[]
+     */
+    public function findPrestatairesWithConfirmedServiceInCategoryName(string $categoryName): array
+    {
+        $services = $this->createQueryBuilder('s')
+            ->join('s.user', 'u')->addSelect('u')
+            ->join('s.category', 'c')->addSelect('c')
+            ->andWhere('s.status = :st')
+            ->andWhere('c.name = :cat')
+            ->setParameter('st', 'CONFIRMEE')
+            ->setParameter('cat', $categoryName)
+            ->getQuery()
+            ->getResult();
+
+        $byId = [];
+        foreach ($services as $service) {
+            $u = $service->getUser();
+            if ($u) {
+                $byId[$u->getId()] = $u;
+            }
+        }
+
+        return array_values($byId);
+    }
+
     private function createBaseQueryBuilder()
     {
         return $this->createQueryBuilder('s')

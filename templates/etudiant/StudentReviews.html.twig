@@ -208,18 +208,15 @@
                     Commentaire <span class="required">*</span>
                     <span class="char-counter" id="editCounter">0 / {{ maxCommentLength }}</span>
                 </label>
-                <div class="textarea-wrapper">
-                    <textarea
-                        name="comment"
-                        id="editComment"
-                        class="comment-area"
-                        maxlength="{{ maxCommentLength }}"
-                        autocomplete="off"
-                        required
-                    ></textarea>
-                    <div id="ai-suggestion-overlay-edit" class="ai-suggestion-overlay"></div>
-                </div>
-                <small class="hint">💡 L'IA vous suggère du texte en temps réel. Appuyez sur <kbd>Tab</kbd> ou <kbd>→</kbd> pour accepter.</small>
+                <textarea
+                    name="comment"
+                    id="editComment"
+                    class="comment-area"
+                    maxlength="{{ maxCommentLength }}"
+                    autocomplete="off"
+                    required
+                ></textarea>
+                <small class="hint">Modifiez votre commentaire</small>
             </div>
 
             <div style="display:flex; gap:10px;">
@@ -432,20 +429,14 @@ class AISuggestionEngine {
 
 // Attendre que le DOM soit chargé
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Initialisation des moteurs de suggestion...');
+    console.log('Initialisation du moteur de suggestion pour ajout...');
     
-    // Initialiser les moteurs de suggestion
+    // Initialiser uniquement le moteur de suggestion pour l'ajout
     const addSuggestionEngine = new AISuggestionEngine(
         'review_form_comment',
         'ai-suggestion-overlay',
         'review_form_rating',
         'reservationSelect'
-    );
-
-    const editSuggestionEngine = new AISuggestionEngine(
-        'editComment',
-        'ai-suggestion-overlay-edit',
-        'editRatingInput'
     );
 });
 
@@ -471,11 +462,16 @@ function initCounter(textareaId, counterId) {
     };
 
     textarea.addEventListener('input', updateCounter);
+    textarea.addEventListener('keyup', updateCounter);
+    textarea.addEventListener('change', updateCounter);
     updateCounter(); // Initialiser au chargement
 }
 
-initCounter('review_form_comment', 'addCounter');
-initCounter('editComment', 'editCounter');
+// Initialiser au chargement de la page
+document.addEventListener('DOMContentLoaded', function() {
+    initCounter('review_form_comment', 'addCounter');
+    initCounter('editComment', 'editCounter');
+});
 
 // ===================== STAR RATING =====================
 function initStars(containerId, inputId) {
@@ -490,6 +486,11 @@ function initStars(containerId, inputId) {
         star.addEventListener('click', () => {
             input.value = star.dataset.value;
             highlight(stars, parseInt(star.dataset.value));
+            
+            // Déclencher l'événement change pour l'autocomplétion
+            input.dispatchEvent(new Event('change'));
+            input.dispatchEvent(new Event('input'));
+            console.log('Rating mis à jour:', star.dataset.value);
         });
     });
 }
@@ -509,18 +510,31 @@ initStars('editStarRating', 'editRatingInput');
 // ===================== EDIT MODAL =====================
 function openEditForm(id, rating, comment) {
     document.getElementById('editForm').action = '/student/reviews/edit/' + id;
-    document.getElementById('editComment').value = comment;
-    document.getElementById('editRatingInput').value = rating;
+    const editTextarea = document.getElementById('editComment');
+    const editRatingInput = document.getElementById('editRatingInput');
+    
+    editTextarea.value = comment;
+    editRatingInput.value = rating;
 
+    // Mettre à jour le compteur
     const counter = document.getElementById('editCounter');
     if (counter) {
         counter.textContent = comment.length + ' / ' + MAX_LENGTH;
         counter.style.color = comment.length < MIN_LENGTH ? '#f0a500' : '#27ae60';
     }
 
+    // Mettre à jour les étoiles
     const stars = document.querySelectorAll('#editStarRating .star-btn');
     highlight(stars, rating);
+    
+    // Ouvrir le modal
     document.getElementById('editModal').classList.add('open');
+    
+    // Réinitialiser le compteur
+    setTimeout(() => {
+        initCounter('editComment', 'editCounter');
+        editTextarea.focus();
+    }, 150);
 }
 
 document.getElementById('editModal').addEventListener('click', function (e) {
