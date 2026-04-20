@@ -26,3 +26,13 @@ services:
     App\Service\AiAssistantService:
         bind:
             $n8nBaseUrl: '%env(default::string:N8N_BASE_URL)%'
+            $openRouterApiKey: '%env(default::string:HUGGINGFACE_API_KEY)%'
+
+    App\Service\TrendPredictionService:
+        arguments:
+            $huggingFaceApiKey: '%env(default::HUGGINGFACEHUB_API_TOKEN)%'
+
+    App\Controller\Api\ShareController:
+        bind:
+            $telegramBotToken: '%env(TELEGRAM_BOT_TOKEN)%'
+            $telegramChatId: '%env(TELEGRAM_CHAT_ID)%'

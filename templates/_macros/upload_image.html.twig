@@ -1,0 +1,7 @@
+{# Local uploads live under public/ (e.g. uploads/...). We use asset() so images work even when
+   ext-gd is missing — Liip Imagine needs GD/Imagick to serve /media/cache/resolve/... URLs.
+   File size is already reduced on upload (UploadedImageOptimizer).
+   Optional second arg (filter_name) kept for template compatibility; ignored here. #}
+{% macro src(path, filter_name) %}
+    {%- if path and path starts with 'http' -%}{{ path }}{%- elseif path -%}{{ asset(path) }}{%- endif -%}
+{% endmacro %}

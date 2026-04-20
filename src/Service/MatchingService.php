@@ -2,6 +2,7 @@
 
 namespace App\Service;
 
+use App\Repository\NotificationRepository;
 use App\Repository\PublicationRepository;
 use App\Repository\ServiceRepository;
 
@@ -13,6 +14,7 @@ class MatchingService
         private readonly PublicationRepository $pubRepo,
         private readonly ServiceRepository $svcRepo,
         private readonly NotificationService $notif,
+        private readonly NotificationRepository $notifRepo,  // ← ajout anti-spam
     ) {}
 
     public function analyseRecentPublications(): int
@@ -21,17 +23,37 @@ class MatchingService
         $svcs = $this->svcRepo->findActiveServices();
         $total = 0;
 
+        $antiSpamSince = new \DateTime('-24 hours');
+
         foreach ($pubs as $pub) {
             foreach ($svcs as $svc) {
                 $score = $this->score($pub, $svc);
-                if ($score >= self::THRESHOLD && $svc->getUser() !== null) {
-                    $this->notif->notifyInApp(
-                        $svc->getUser(),
-                        '🎯 Nouvelle demande compatible!',
-                        sprintf('"%s" correspond à votre service "%s" – Score: %d%%', $pub->getTitre(), $svc->getTitle(), (int) $score)
-                    );
-                    $total++;
+                if ($score < self::THRESHOLD || $svc->getUser() === null) {
+                    continue;
                 }
+
+                // Éviter les doublons : ne pas renvoyer si déjà notifié dans les 24 dernières heures
+                $alreadyNotified = $this->notifRepo->hasRecentWithTitleContaining(
+                    $svc->getUser(),
+                    '🎯 Nouvelle demande compatible',
+                    $antiSpamSince
+                );
+
+                if ($alreadyNotified) {
+                    continue;
+                }
+
+                $this->notif->notifyInApp(
+                    $svc->getUser(),
+                    '🎯 Nouvelle demande compatible!',
+                    sprintf(
+                        '"%s" correspond à votre service "%s" – Score: %d%%',
+                        $pub->getTitre(),
+                        $svc->getTitle(),
+                        (int) $score
+                    )
+                );
+                $total++;
             }
         }
 

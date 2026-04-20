@@ -1,4 +1,5 @@
 {% extends 'base.html.twig' %}
+{% import '_macros/upload_image.html.twig' as upload_img %}
 {% block title %}Publications — CampusLink{% endblock %}
 {% block body %}
 
@@ -69,7 +70,7 @@
     {% for pub in publications %}
     {% set imageSrc = null %}
     {% if pub.imageUrl %}
-        {% set imageSrc = pub.imageUrl starts with 'http' ? pub.imageUrl : asset(pub.imageUrl) %}
+        {% set imageSrc = upload_img.src(pub.imageUrl, 'thumbnail') %}
     {% endif %}
     {% set price = pub.typePublication == 'VENTE_OBJET' ? pub.prixVente : pub.proposedPrice %}
     <div class="card" style="display:flex;flex-direction:column;overflow:hidden;transition:box-shadow 0.15s;"

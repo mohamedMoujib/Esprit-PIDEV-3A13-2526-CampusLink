@@ -1,0 +1,4 @@
+# Smoke tests PHPUnit : utiliser le nom de base défini dans DATABASE_URL (sans suffixe _test).
+doctrine:
+    dbal:
+        dbname_suffix: ''
