@@ -84,17 +84,18 @@ class TrendPredictionService
 
         $labelsStr = implode(', ', $labels);
 
-        // ✅ IMPROVED PROMPT
-        $prompt = "Analyse des tendances.\n\n"
-            . "Publications:\n{$text}\n\n"
-            . "Catégories: {$labelsStr}\n\n"
+        // ✅ IMPROVED PROMPT with exact category names
+        $prompt = "Analyse les tendances des publications.\n\n"
+            . "Publications récentes:\n{$text}\n\n"
+            . "Catégories disponibles: {$labelsStr}\n\n"
             . "Instructions:\n"
-            . "- Score entre 0.0 et 1.0 pour chaque catégorie\n"
-            . "- 1.0 = très populaire\n"
-            . "- 0.0 = absent\n"
-            . "- Si absente → score 0.0–0.2\n"
-            . "- Retourne UNIQUEMENT du JSON valide\n\n"
-            . "{\"results\": [{\"category\": \"nom_exact\", \"score\": 0.85}]}";
+            . "- Analyse les publications et attribue un score de popularité entre 0.0 et 1.0 pour CHAQUE catégorie listée\n"
+            . "- 1.0 = très populaire (beaucoup de publications similaires)\n"
+            . "- 0.0 = absent (aucune publication similaire)\n"
+            . "- Utilise EXACTEMENT les noms de catégories fournis\n"
+            . "- Retourne UNIQUEMENT du JSON valide sans texte avant ni après\n\n"
+            . "Format de réponse attendu:\n"
+            . "{\"results\": [{\"category\": \"Cours particuliers\", \"score\": 0.85}, {\"category\": \"Révisions\", \"score\": 0.60}]}";
 
         try {
             $response = $this->client->request('POST', self::OPENROUTER_URL, [
@@ -109,7 +110,7 @@ class TrendPredictionService
                     'messages' => [
                         [
                             'role' => 'system',
-                            'content' => 'Return ONLY valid JSON. No text.'
+                            'content' => 'Tu es un assistant d\'analyse de tendances. Tu DOIS retourner UNIQUEMENT du JSON valide, sans aucun texte avant ou après. Utilise TOUJOURS les noms de catégories exacts fournis.'
                         ],
                         [
                             'role' => 'user',
@@ -117,7 +118,7 @@ class TrendPredictionService
                         ]
                     ],
                     'temperature' => 0.1,
-                    'max_tokens' => 300,
+                    'max_tokens' => 500,
                 ],
                 'timeout' => 45,
             ]);
@@ -125,12 +126,21 @@ class TrendPredictionService
             $data = $response->toArray(false);
             $content = $data['choices'][0]['message']['content'] ?? '';
 
-            // Clean JSON
-            $content = preg_replace('/```json\s*|\s*```/', '', $content);
-            $parsed = json_decode(trim($content), true);
+            // Clean JSON - remove markdown code blocks and any extra text
+            $content = preg_replace('/```json\s*|```/i', '', $content);
+            $content = trim($content);
+            
+            // Try to extract JSON if there's extra text
+            if (!str_starts_with($content, '{')) {
+                if (preg_match('/\{[\s\S]*\}/', $content, $matches)) {
+                    $content = $matches[0];
+                }
+            }
+            
+            $parsed = json_decode($content, true);
 
-            if (!isset($parsed['results'])) {
-                $this->logger->error('Invalid JSON: ' . $content);
+            if (!isset($parsed['results']) || !is_array($parsed['results'])) {
+                $this->logger->error('Invalid JSON response', ['content' => $content]);
                 return [];
             }
 
@@ -142,14 +152,25 @@ class TrendPredictionService
 
                 if (!$category) continue;
 
-                [$trend, $emoji] = $this->mapScoreToTrend($score);
+                // Normalize category name to match database
+                $normalizedCategory = null;
+                foreach ($labels as $label) {
+                    if (stripos($label, $category) !== false || stripos($category, $label) !== false) {
+                        $normalizedCategory = $label;
+                        break;
+                    }
+                }
+                
+                if ($normalizedCategory) {
+                    [$trend, $emoji] = $this->mapScoreToTrend($score);
 
-                $rows[] = [
-                    'category' => $category,
-                    'score' => $score,
-                    'trend' => $trend,
-                    'emoji' => $emoji,
-                ];
+                    $rows[] = [
+                        'category' => $normalizedCategory,
+                        'score' => $score,
+                        'trend' => $trend,
+                        'emoji' => $emoji,
+                    ];
+                }
             }
 
             usort($rows, fn($a, $b) => $b['score'] <=> $a['score']);

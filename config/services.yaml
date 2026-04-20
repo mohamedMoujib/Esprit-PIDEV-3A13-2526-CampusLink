@@ -30,7 +30,7 @@ services:
 
     App\Service\TrendPredictionService:
         arguments:
-            $huggingFaceApiKey: '%env(default::HUGGINGFACEHUB_API_TOKEN)%'
+            $huggingFaceApiKey: '%env(default::string:HUGGINGFACE_API_KEY)%'
 
     App\Controller\Api\ShareController:
         bind:
