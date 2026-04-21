@@ -1,4 +1,5 @@
 {% extends 'base.html.twig' %}
+{% import '_macros/upload_image.html.twig' as upload_img %}
 {% block title %}{{ service is defined ? 'Modifier le service' : 'Créer un nouveau service' }} — CampusLink{% endblock %}
 {% block body %}
 
@@ -40,6 +41,7 @@
                 <span class="form-hint" id="descCount">
                     {{ service is defined ? service.description|length : 0 }}/1000 caractères
                 </span>
+                <div id="voiceAnchor"></div>
             </div>
 
             <div class="form-group">
@@ -79,7 +81,7 @@
 
                 <div class="upload-zone" id="uploadZone" onclick="document.getElementById('imageFile').click()">
                     {% if service is defined and service.image %}
-                        <img id="imgPreview" src="{{ asset(service.image) }}" alt="">
+                        <img id="imgPreview" src="{{ upload_img.src(service.image, 'optimized') }}" alt="">
                         <div style="display:flex;gap:8px;margin-top:4px;" onclick="event.stopPropagation()">
                             <label for="imageFile" class="btn btn-primary btn-sm" style="cursor:pointer;">📷 Changer</label>
                             <button type="button" id="removeImg" class="btn btn-danger-outline btn-sm">🗑️ Supprimer</button>
@@ -169,6 +171,16 @@
 
 </div>
 
+<style>
+@keyframes pulse-ring {
+    0%   { box-shadow: 0 0 0 0 rgba(220,38,38,0.4); }
+    70%  { box-shadow: 0 0 0 8px rgba(220,38,38,0); }
+    100% { box-shadow: 0 0 0 0 rgba(220,38,38,0); }
+}
+.voice-btn.listening { animation: pulse-ring 1.2s infinite; border-color: #dc2626 !important; color: #dc2626 !important; }
+.voice-transcript-interim { font-style: italic; color: #6b7280; font-size: 13px; margin-top: 4px; }
+</style>
+<script src="{{ asset('js/voice-recorder.js') }}"></script>
 <script>
 const desc  = document.getElementById('description');
 const count = document.getElementById('descCount');
@@ -206,25 +218,53 @@ if(removeBtn) {
 let aiData = {};
 async function generateServiceAI() {
     const idea = document.getElementById('aiIdea').value.trim();
-    if(!idea) { alert('Décrivez votre service d\'abord.'); return; }
+    if(!idea) { alert('📝 Décrivez votre service d\'abord.'); return; }
+
+    // Validate required fields before AI generation
+    const categoryId = document.getElementById('category_id')?.value || null;
+    const price = document.getElementById('price')?.value || 0;
+
+    if(!categoryId) {
+        alert('📂 Veuillez sélectionner une catégorie dans le formulaire à gauche avant de générer avec l\'IA.');
+        document.getElementById('category_id')?.focus();
+        return;
+    }
+    if(!price || parseFloat(price) <= 0) {
+        alert('💰 Veuillez entrer un prix dans le formulaire à gauche avant de générer avec l\'IA.');
+        document.getElementById('price')?.focus();
+        return;
+    }
 
     document.getElementById('aiLoading').style.display = 'block';
     document.getElementById('aiResult').style.display  = 'none';
     document.getElementById('aiError').style.display   = 'none';
 
     try {
-        const resp = await fetch('/api/ai/generate-service', {
+        const resp = await fetch('/api/ai/generate-and-save-service', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ idea })
+            body: JSON.stringify({ idea, category_id: categoryId, price: parseFloat(price) || 0 })
         });
         document.getElementById('aiLoading').style.display = 'none';
-        if(resp.ok) {
+        if (resp.ok) {
             aiData = await resp.json();
             document.getElementById('aiGenTitle').textContent = aiData.title || '';
             document.getElementById('aiGenDesc').textContent  = aiData.description || '';
             document.getElementById('aiResult').style.display = 'block';
-        } else { throw new Error(); }
+
+            // If saved to DB, show success and offer redirect
+            if (aiData.saved && aiData.id) {
+                document.getElementById('aiGenTitle').textContent = '✅ ' + (aiData.title || 'Service créé');
+                document.getElementById('aiGenDesc').textContent  = (aiData.description || '') + '\n\n🎉 Service enregistré dans la base de données !';
+            }
+        } else {
+            if (resp.status === 503) {
+                document.getElementById('aiErrorMsg').textContent = '⚠️ L\'assistant IA n\'est pas disponible pour le moment.';
+            } else {
+                document.getElementById('aiErrorMsg').textContent = '❌ Impossible de contacter l\'IA. Réessayez plus tard.';
+            }
+            document.getElementById('aiError').style.display = 'block';
+        }
     } catch {
         document.getElementById('aiLoading').style.display = 'none';
         document.getElementById('aiErrorMsg').textContent  = '❌ Impossible de contacter l\'IA. Réessayez plus tard.';
@@ -233,10 +273,22 @@ async function generateServiceAI() {
 }
 
 function applyServiceAI() {
+    // If the service was already saved to DB, redirect to it
+    if (aiData.saved && aiData.id) {
+        window.location.href = '/services/' + aiData.id;
+        return;
+    }
+    // Otherwise just fill the form (fallback)
     if(aiData.title)       { document.getElementById('title').value = aiData.title; }
     if(aiData.description) { desc.value = aiData.description; updateCount(); }
     document.getElementById('aiResult').style.display = 'none';
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof window.VoiceRecorder === 'undefined') return;
+    var vr = new VoiceRecorder('#description', { buttonLabel: '🎤 Dicter la description' });
+    vr.renderButton('#voiceAnchor');
+});
 </script>
 
 {% endblock %}

@@ -1,0 +1,37 @@
+{% extends 'base.html.twig' %}
+{% block title %}Avis — Admin CampusLink{% endblock %}
+{% block stylesheets %}{{ include('admin/partials/bo_admin_styles.html.twig') }}{% endblock %}
+{% block body %}
+<div class="page-header"><div><div class="page-title">⭐ Gestion des avis</div><div class="page-sub">Suivi des notes, commentaires et signalements</div></div></div>
+
+<div class="table-card">
+    <div class="table-header"><div><div class="table-title">Liste des avis</div><div class="table-count">{{ reviews|length }} avis</div></div></div>
+    {% if reviews|length == 0 %}
+        <div class="empty-state"><div class="empty-state-icon">⭐</div><div class="empty-state-title">Aucun avis disponible</div></div>
+    {% else %}
+    <div style="overflow-x:auto;">
+        <table>
+            <thead><tr><th>Étudiant</th><th>Prestataire</th><th>Note</th><th>Commentaire</th><th>Signalement</th></tr></thead>
+            <tbody>
+            {% for review in reviews %}
+                <tr>
+                    <td>{{ review.student ? review.student.name : '—' }}</td>
+                    <td>{{ review.prestataire ? review.prestataire.name : '—' }}</td>
+                    <td><strong>{{ review.rating ?? '—' }}</strong></td>
+                    <td>{{ review.comment ?: '—' }}</td>
+                    <td>
+                        {% if review.isReported %}
+                            <span class="badge badge-rejected">Signalé</span>
+                            <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">{{ review.reportReason ?: 'Motif non précisé' }}</div>
+                        {% else %}
+                            <span class="badge badge-active">RAS</span>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

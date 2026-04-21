@@ -424,3 +424,46 @@ body {
     .stats-grid { grid-template-columns: 1fr; }
     .modal-box  { width: 95vw; }
 }
+
+/* ============= LOADING SPINNER ============= */
+#loadingSpinner {
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* ============= FILTER BUTTONS ACTIVE STATE ============= */
+.filter-btn.active {
+    background: #5D5FEF;
+    color: white;
+    border-color: #5D5FEF;
+}
+
+/* ============= BUTTONS ============= */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background: var(--primary);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: var(--primary-dk);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(93, 95, 239, 0.3);
+}

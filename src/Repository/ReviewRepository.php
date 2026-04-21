@@ -30,6 +30,19 @@ class ReviewRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    public function createStudentQueryBuilder(int $studentId): \Doctrine\ORM\QueryBuilder
+    {
+        return $this->createQueryBuilder('r')
+            ->leftJoin('r.student', 's')
+            ->leftJoin('r.prestataire', 'p')
+            ->leftJoin('r.reservation', 'res')
+            ->leftJoin('res.service', 'srv')
+            ->addSelect('s', 'p', 'res', 'srv')
+            ->where('s.id = :studentId')
+            ->setParameter('studentId', $studentId)
+            ->orderBy('r.id', 'DESC');
+    }
+
     // ===================== READ BY TUTOR =====================
 
     public function findByTutorWithDetails(int $tutorId): array
@@ -47,6 +60,46 @@ class ReviewRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    public function createTutorQueryBuilder(int $tutorId): \Doctrine\ORM\QueryBuilder
+    {
+        return $this->createQueryBuilder('r')
+            ->leftJoin('r.student', 's')
+            ->leftJoin('r.prestataire', 'p')
+            ->leftJoin('r.reservation', 'res')
+            ->leftJoin('res.service', 'srv')
+            ->addSelect('s', 'p', 'res', 'srv')
+            ->where('p.id = :tutorId')
+            ->setParameter('tutorId', $tutorId)
+            ->orderBy('r.id', 'DESC');
+    }
+
+    public function getAverageRatingByService(int $serviceId): ?float
+    {
+        $avg = $this->createQueryBuilder('r')
+            ->select('AVG(r.rating)')
+            ->join('r.reservation', 'res')
+            ->join('res.service', 'srv')
+            ->where('srv.id = :serviceId')
+            ->andWhere('r.rating IS NOT NULL')
+            ->setParameter('serviceId', $serviceId)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return $avg !== null ? (float) $avg : null;
+    }
+
+    public function countByService(int $serviceId): int
+    {
+        return (int) $this->createQueryBuilder('r')
+            ->select('COUNT(r.id)')
+            ->join('r.reservation', 'res')
+            ->join('res.service', 'srv')
+            ->where('srv.id = :serviceId')
+            ->setParameter('serviceId', $serviceId)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
     // ===================== READ ALL (ADMIN) =====================
 
     public function findAllWithDetails(): array
@@ -61,6 +114,18 @@ class ReviewRepository extends ServiceEntityRepository
             ->addOrderBy('r.id', 'DESC')
             ->getQuery()
             ->getResult();
+    }
+
+    public function createAdminQueryBuilder(): \Doctrine\ORM\QueryBuilder
+    {
+        return $this->createQueryBuilder('r')
+            ->leftJoin('r.student', 's')
+            ->leftJoin('r.prestataire', 'p')
+            ->leftJoin('r.reservation', 'res')
+            ->leftJoin('res.service', 'srv')
+            ->addSelect('s', 'p', 'res', 'srv')
+            ->orderBy('r.isReported', 'DESC')
+            ->addOrderBy('r.id', 'DESC');
     }
 
     // ===================== CHECK EXISTENCE =====================

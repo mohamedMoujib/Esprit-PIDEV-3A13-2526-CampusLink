@@ -117,7 +117,6 @@ class UserRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
 
-        // Reshape into ['ETUDIANT' => 42, 'PRESTATAIRE' => 17, ...]
         $counts = [];
         foreach ($results as $row) {
             $counts[$row['userType']] = (int) $row['total'];

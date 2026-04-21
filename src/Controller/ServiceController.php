@@ -6,7 +6,9 @@ use App\Entity\Categorie;
 use App\Entity\Service;
 use App\Entity\User;
 use App\Repository\DemandeRepository;
+use App\Repository\ReviewRepository;
 use App\Repository\ServiceRepository;
+use App\Service\UploadedImageOptimizer;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -21,8 +23,12 @@ class ServiceController extends AbstractController
     private const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
     private const MAX_SIZE_BYTES = 5 * 1024 * 1024;
 
+    public function __construct(
+        private readonly UploadedImageOptimizer $uploadedImageOptimizer,
+    ) {}
+
     #[Route('/mes', name: 'service_mine', methods: ['GET'])]
-    public function mine(Request $req, ServiceRepository $repo, EntityManagerInterface $em): Response
+    public function mine(Request $req, ServiceRepository $repo, EntityManagerInterface $em, ReviewRepository $reviewRepo): Response
     {
         /** @var User $user */
         $user = $this->getUser();
@@ -51,11 +57,13 @@ class ServiceController extends AbstractController
         return $this->render('service/index.html.twig', [
             'services' => $services,
             'categories' => $em->getRepository(Categorie::class)->findAll(),
+            'serviceRatings' => $this->buildServiceRatings($services, $reviewRepo),
+            'reviews_index_route' => 'tutor_reviews_index',
         ]);
     }
 
     #[Route('', name: 'service_catalog', methods: ['GET'])]
-    public function catalog(Request $req, ServiceRepository $repo, EntityManagerInterface $em): Response
+    public function catalog(Request $req, ServiceRepository $repo, EntityManagerInterface $em, ReviewRepository $reviewRepo): Response
     {
         /** @var User $user */
         $user = $this->getUser();
@@ -79,6 +87,8 @@ class ServiceController extends AbstractController
         return $this->render('service/catalog.html.twig', [
             'services' => $services,
             'categories' => $em->getRepository(Categorie::class)->findAll(),
+            'serviceRatings' => $this->buildServiceRatings($services, $reviewRepo),
+            'reviews_index_route' => 'tutor_reviews_index',
         ]);
     }
 
@@ -220,6 +230,27 @@ class ServiceController extends AbstractController
         ]);
     }
 
+    /**
+     * @param iterable<Service> $services
+     * @return array<int, array{avg: ?float, count: int}>
+     */
+    private function buildServiceRatings(iterable $services, ReviewRepository $reviewRepo): array
+    {
+        $serviceRatings = [];
+        foreach ($services as $service) {
+            $id = $service->getId();
+            if ($id === null) {
+                continue;
+            }
+            $serviceRatings[$id] = [
+                'avg' => $reviewRepo->getAverageRatingByService($id),
+                'count' => $reviewRepo->countByService($id),
+            ];
+        }
+
+        return $serviceRatings;
+    }
+
     private function denyAccessUnlessOwner(Service $service): void
     {
         /** @var User $user */
@@ -258,7 +289,9 @@ class ServiceController extends AbstractController
 
         $name = bin2hex(random_bytes(16)) . '.' . $img->guessExtension();
         $img->move($uploadDir, $name);
-        $service->setImage('uploads/' . $name);
+        $relative = 'uploads/' . $name;
+        $service->setImage($relative);
+        $this->uploadedImageOptimizer->optimizeRelativePath($relative);
 
         return null;
     }

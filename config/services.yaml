@@ -4,11 +4,16 @@
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
-
+     groq_api_key: '%env(GROQ_API_KEY)%'
+     gemini_api_key: '%env(GEMINI_API_KEY)%'
 services:
     _defaults:
-        autowire: true
-        autoconfigure: true
+        autowire: true      # Automatically injects dependencies in your services.
+        autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+        bind:
+            $geminiKey: '%gemini_api_key%'
+            $groqApiKey: '%groq_api_key%'
+            $n8nBaseUrl: '%env(default::string:N8N_BASE_URL)%'
 
     App\:
         resource: '../src/'
@@ -20,9 +25,19 @@ services:
     App\Service\AiAssistantService:
         bind:
             $n8nBaseUrl: '%env(default::string:N8N_BASE_URL)%'
+            $openRouterApiKey: '%env(default::string:HUGGINGFACE_API_KEY)%'
 
     App\Service\SmsService:
         arguments:
             $twilioSid:    '%env(TWILIO_SID)%'
             $twilioToken:  '%env(TWILIO_TOKEN)%'
             $twilioPhone:  '%env(TWILIO_PHONE)%'
+
+    App\Service\TrendPredictionService:
+        arguments:
+            $huggingFaceApiKey: '%env(default::string:HUGGINGFACE_API_KEY)%'
+
+    App\Controller\Api\ShareController:
+        bind:
+            $telegramBotToken: '%env(TELEGRAM_BOT_TOKEN)%'
+            $telegramChatId: '%env(TELEGRAM_CHAT_ID)%'

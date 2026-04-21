@@ -1,0 +1,218 @@
+{# Widget personnalisé pour système -5 à +5 avec le bundle StarRating #}
+{% block star_rating_widget %}
+<div class="dual-star-rating-container">
+    {# Champ hidden pour stocker la valeur finale #}
+    <input type="hidden" {{ block('widget_attributes') }} value="{{ value|default(0) }}" id="{{ id }}" />
+    
+    <div class="dual-star-rating">
+        {# Section étoiles négatives #}
+        <div class="star-section negative-section">
+            <div class="star-label">Négatif</div>
+            <div class="stars-wrapper" data-type="negative" data-target="{{ id }}">
+                {% for i in 5..1 %}
+                    <button type="button" class="star-btn negative-star" data-value="-{{ i }}" title="-{{ i }} étoiles">
+                        ★
+                    </button>
+                {% endfor %}
+            </div>
+        </div>
+        
+        {# Séparateur #}
+        <div class="star-separator">|</div>
+        
+        {# Section étoiles positives #}
+        <div class="star-section positive-section">
+            <div class="star-label">Positif</div>
+            <div class="stars-wrapper" data-type="positive" data-target="{{ id }}">
+                {% for i in 1..5 %}
+                    <button type="button" class="star-btn positive-star" data-value="{{ i }}" title="+{{ i }} étoiles">
+                        ★
+                    </button>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    {# Affichage de la note sélectionnée #}
+    <div class="rating-display" id="{{ id }}_display">
+        <span class="rating-value">Aucune note sélectionnée</span>
+    </div>
+</div>
+
+<style>
+.dual-star-rating-container {
+    margin: 10px 0;
+}
+
+.dual-star-rating {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 2px solid #e9ecef;
+}
+
+.star-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.star-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #6c757d;
+    text-align: center;
+}
+
+.stars-wrapper {
+    display: flex;
+    gap: 4px;
+}
+
+.star-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 28px;
+    color: #ddd;
+    transition: all 0.2s ease;
+    padding: 2px;
+    line-height: 1;
+}
+
+.star-btn:hover {
+    transform: scale(1.15);
+}
+
+.negative-star.active {
+    color: #e74c3c;
+    text-shadow: 0 0 8px rgba(231, 76, 60, 0.5);
+}
+
+.positive-star.active {
+    color: #f0a500;
+    text-shadow: 0 0 8px rgba(240, 165, 0, 0.5);
+}
+
+.star-separator {
+    font-size: 32px;
+    color: #dee2e6;
+    font-weight: 300;
+}
+
+.rating-display {
+    margin-top: 10px;
+    padding: 8px 12px;
+    background: white;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+    text-align: center;
+}
+
+.rating-value {
+    font-size: 13px;
+    font-weight: 600;
+    color: #495057;
+}
+
+.rating-value.negative {
+    color: #e74c3c;
+}
+
+.rating-value.positive {
+    color: #f0a500;
+}
+</style>
+
+<script>
+(function() {
+    const hiddenInput = document.getElementById('{{ id }}');
+    const display = document.getElementById('{{ id }}_display');
+    const displayValue = display.querySelector('.rating-value');
+    const allStars = document.querySelectorAll('.stars-wrapper[data-target="{{ id }}"] .star-btn');
+    
+    let currentRating = {{ value|default(0) }};
+    
+    // Initialiser l'affichage si une valeur existe
+    if (currentRating !== 0) {
+        updateDisplay(currentRating);
+        highlightStars(currentRating);
+    }
+    
+    // Gérer les clics sur les étoiles
+    allStars.forEach(star => {
+        star.addEventListener('click', function(e) {
+            e.preventDefault();
+            const value = parseInt(this.dataset.value);
+            currentRating = value;
+            hiddenInput.value = value;
+            
+            // Déclencher un événement change pour notifier les autres scripts
+            hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
+            hiddenInput.dispatchEvent(new Event('input', { bubbles: true }));
+            
+            // Réinitialiser toutes les étoiles
+            allStars.forEach(s => s.classList.remove('active'));
+            
+            // Activer les étoiles appropriées
+            highlightStars(value);
+            updateDisplay(value);
+        });
+        
+        // Effet hover
+        star.addEventListener('mouseenter', function() {
+            const value = parseInt(this.dataset.value);
+            highlightStars(value, true);
+        });
+    });
+    
+    // Restaurer l'état au survol
+    document.querySelectorAll('.stars-wrapper[data-target="{{ id }}"]').forEach(wrapper => {
+        wrapper.addEventListener('mouseleave', function() {
+            highlightStars(currentRating);
+        });
+    });
+    
+    function highlightStars(rating, isHover = false) {
+        allStars.forEach(star => {
+            const starValue = parseInt(star.dataset.value);
+            
+            if (!isHover) {
+                star.classList.remove('active');
+            }
+            
+            if (rating < 0) {
+                // Étoiles négatives : activer de -5 à rating
+                if (starValue < 0 && starValue >= rating) {
+                    star.classList.add('active');
+                }
+            } else if (rating > 0) {
+                // Étoiles positives : activer de 1 à rating
+                if (starValue > 0 && starValue <= rating) {
+                    star.classList.add('active');
+                }
+            }
+        });
+    }
+    
+    function updateDisplay(rating) {
+        displayValue.classList.remove('negative', 'positive');
+        
+        if (rating === 0) {
+            displayValue.textContent = 'Aucune note sélectionnée';
+        } else if (rating < 0) {
+            displayValue.textContent = `Note : ${rating}/5 ⭐`;
+            displayValue.classList.add('negative');
+        } else {
+            displayValue.textContent = `Note : +${rating}/5 ⭐`;
+            displayValue.classList.add('positive');
+        }
+    }
+})();
+</script>
+{% endblock %}

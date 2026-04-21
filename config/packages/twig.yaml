@@ -1,5 +1,9 @@
 twig:
     file_name_pattern: '*.twig'
+    form_themes:
+        - 'form/dual_star_rating_widget.html.twig'
+    paths:
+        '%kernel.project_dir%/vendor/boruta/star-rating-bundle/Resources/views': BorutaStarRatingBundle
 
 when@test:
     twig:

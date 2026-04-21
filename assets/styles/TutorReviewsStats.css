@@ -1,0 +1,457 @@
+/* ============= ROOT ============= */
+:root {
+    --primary: #5D5FEF;
+    --bg: #f3f4f6;
+    --card-bg: #ffffff;
+    --text: #111827;
+    --text-muted: #6b7280;
+    --border: #e5e7eb;
+    --positive: #10b981;
+    --negative: #ef4444;
+    --neutral: #94a3b8;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    background: var(--bg);
+    font-family: 'Segoe UI', 'Inter', sans-serif;
+    color: var(--text);
+}
+
+.page-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 40px 20px;
+}
+
+.page-title {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.btn-secondary {
+    background: white;
+    color: var(--text);
+    border: 2px solid var(--border);
+}
+
+.btn-secondary:hover {
+    background: var(--bg);
+}
+
+/* ============= BADGES ============= */
+.badge-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 20px;
+    color: white;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.progress-bar {
+    background: #e5e7eb;
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    transition: width 0.3s;
+    border-radius: 4px;
+}
+
+/* ============= STATS GRID ============= */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.stats-card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.stats-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+}
+
+.stats-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.stats-label {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+/* ============= CHARTS ============= */
+.charts-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 20px;
+    margin-bottom: 25px;
+}
+
+.chart-card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.chart-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 20px;
+}
+
+/* ============= BAR CHART ============= */
+.bar-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.bar-item {
+    display: grid;
+    grid-template-columns: 60px 1fr 40px;
+    align-items: center;
+    gap: 10px;
+}
+
+.bar-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.bar-container {
+    background: #f3f4f6;
+    height: 24px;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.bar-fill {
+    height: 100%;
+    transition: width 0.5s ease;
+    border-radius: 6px;
+}
+
+.bar-positive { background: linear-gradient(90deg, #10b981, #059669); }
+.bar-negative { background: linear-gradient(90deg, #ef4444, #dc2626); }
+.bar-neutral { background: linear-gradient(90deg, #94a3b8, #64748b); }
+
+.bar-value {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-align: right;
+}
+
+/* ============= PIE CHART ============= */
+.pie-chart-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    gap: 30px;
+    flex-wrap: wrap;
+}
+
+.pie-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.pie-stat-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.pie-stat-color {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+}
+
+.pie-stat-label {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.pie-stat-value {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.pie-visual {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ============= LINE CHART ============= */
+.trend-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background: #f9fafb;
+    border-radius: 12px;
+    margin-bottom: 25px;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.trend-info {
+    flex: 1;
+}
+
+.trend-label {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+}
+
+.trend-comparison {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.trend-badge {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 15px 25px;
+    border-radius: 12px;
+    font-weight: 700;
+}
+
+.trend-up {
+    background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+    color: #166534;
+}
+
+.trend-down {
+    background: linear-gradient(135deg, #fee2e2, #fecaca);
+    color: #991b1b;
+}
+
+.trend-stable {
+    background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+    color: #6b7280;
+}
+
+.progression-chart {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-around;
+    gap: 15px;
+    height: 300px;
+    padding: 20px 0;
+    background: #f9fafb;
+    border-radius: 12px;
+    padding: 30px 20px 20px;
+}
+
+.progression-bar {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+}
+
+.progression-value {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    min-height: 20px;
+}
+
+.progression-fill-container {
+    width: 100%;
+    height: 200px;
+    display: flex;
+    align-items: flex-end;
+    position: relative;
+}
+
+.progression-fill {
+    width: 100%;
+    border-radius: 8px 8px 0 0;
+    transition: height 0.5s ease;
+    position: relative;
+    min-height: 10px;
+}
+
+.fill-positive {
+    background: linear-gradient(180deg, #10b981, #059669);
+}
+
+.fill-negative {
+    background: linear-gradient(180deg, #ef4444, #dc2626);
+}
+
+.progression-fill:hover .progression-tooltip {
+    opacity: 1;
+    visibility: visible;
+}
+
+.progression-tooltip {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.9);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s;
+    margin-bottom: 5px;
+    text-align: center;
+    line-height: 1.4;
+    z-index: 10;
+}
+
+.progression-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-align: center;
+    max-width: 100%;
+    word-wrap: break-word;
+}
+
+/* ============= SERVICE LIST ============= */
+.service-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.service-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    background: #f9fafb;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.service-item:hover {
+    background: #f3f4f6;
+    transform: translateX(5px);
+}
+
+.service-info {
+    flex: 1;
+}
+
+.service-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+}
+
+.service-meta {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.service-rating {
+    font-size: 18px;
+}
+
+.stars-positive {
+    color: #fbbf24;
+}
+
+/* ============= ALERT CARD ============= */
+.alert-card {
+    background: #fef3c7;
+    border: 1px solid #fcd34d;
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+    margin-top: 25px;
+}
+
+.alert-icon {
+    font-size: 28px;
+}
+
+.alert-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #92400e;
+    margin-bottom: 5px;
+}
+
+.alert-text {
+    font-size: 14px;
+    color: #b45309;
+}
+
+/* ============= RESPONSIVE ============= */
+@media (max-width: 768px) {
+    .charts-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .pie-chart-container {
+        flex-direction: column;
+    }
+    
+    .line-chart {
+        height: 200px;
+        gap: 8px;
+    }
+}

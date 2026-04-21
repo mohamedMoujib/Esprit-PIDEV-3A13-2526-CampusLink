@@ -339,3 +339,20 @@ body {
     .modal-box  { width: 95vw; }
     .filter-section { flex-direction: column; }
 }
+
+/* ============= LOADING SPINNER ============= */
+#loadingSpinner {
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* ============= FILTER BUTTONS ACTIVE STATE ============= */
+.filter-btn.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}

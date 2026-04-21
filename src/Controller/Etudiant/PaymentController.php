@@ -23,15 +23,14 @@ class PaymentController extends AbstractController
         $user = $this->getUser();
         /** @var User $user */
 
-        // 🔐 SECURITY
         if ($reservation->getUser() !== $user) {
             throw $this->createAccessDeniedException();
         }
 
         if ($request->isMethod('POST')) {
 
-            $lat     = $request->request->get('lat');
-            $lng     = $request->request->get('lng');
+            $lat = $request->request->get('lat');
+            $lng = $request->request->get('lng');
             $address = $request->request->get('address');
 
             if (!$lat || !$lng || !$address) {
@@ -44,7 +43,6 @@ class PaymentController extends AbstractController
             $amount = $reservation->getPrice();
             $method = $request->request->get('payment_method') === 'd17' ? 'VIRTUAL' : 'PHYSICAL';
 
-            // ✅ CREATE PAYMENT
             $payment = new Payment();
             $payment->setReservation($reservation);
             $payment->setAmount($amount);
@@ -55,26 +53,40 @@ class PaymentController extends AbstractController
 
             $em->persist($payment);
 
-            // ✅ CREATE INVOICE
-            $studentName     = $user->getName();
-            $serviceName     = $reservation->getService()->getTitle();
+            $studentName = $user->getName();
+            $serviceName = $reservation->getService()->getTitle();
             $reservationDate = $reservation->getDate()->format('d/m/Y à H\hi');
 
-            $details = "L'utilisateur " . $studentName
-                . " a réservé le service \"" . $serviceName . "\""
+            $detailsStudent = "Vous avez réservé le service \"" . $serviceName . "\""
                 . " le " . $reservationDate
                 . " au lieu : " . $address . ".";
 
-            $invoice = new Invoice();
-            $invoice->setPayment($payment);
-            $invoice->setIssueDate(new \DateTime());
-            $invoice->setDetails($details);
+            $invoiceStudent = new Invoice();
+            $invoiceStudent->setPayment($payment);
+            $invoiceStudent->setUser($user);
+            $invoiceStudent->setIssueDate(new \DateTime());
+            $invoiceStudent->setDetails($detailsStudent);
 
-            $em->persist($invoice);
+            $em->persist($invoiceStudent);
+
+            $provider = $reservation->getService()->getUser();
+
+            $detailsProvider = "Votre service \"" . $serviceName . "\" a été réservé par "
+                . $studentName
+                . " le " . $reservationDate
+                . " au lieu : " . $address . ".";
+
+            $invoiceProvider = new Invoice();
+            $invoiceProvider->setPayment($payment);
+            $invoiceProvider->setUser($provider);
+            $invoiceProvider->setIssueDate(new \DateTime());
+            $invoiceProvider->setDetails($detailsProvider);
+
+            $em->persist($invoiceProvider);
 
             $em->flush();
 
-            $this->addFlash('success', "Paiement effectué ✅ — Facture générée");
+            $this->addFlash('success', "Paiement effectué ✅ — Factures générées");
 
             return $this->redirectToRoute('invoice_index');
         }

@@ -1,0 +1,15 @@
+knp_snappy:
+    pdf:
+        enabled: true
+        # Pour Windows, utiliser wkhtmltopdf.exe avec guillemets pour les espaces
+        # Télécharger depuis: https://wkhtmltopdf.org/downloads.html
+        binary: '"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe"'
+        options:
+            encoding: 'UTF-8'
+            enable-local-file-access: true
+            no-outline: true
+            margin-top: 10
+            margin-right: 10
+            margin-bottom: 10
+            margin-left: 10
+            page-size: 'A4'

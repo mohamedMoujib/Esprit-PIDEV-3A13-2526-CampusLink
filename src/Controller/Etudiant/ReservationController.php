@@ -6,6 +6,7 @@ use App\Entity\Reservation;
 use App\Repository\ReservationRepository;
 use App\Repository\ServiceRepository;
 use App\Service\SmsService;
+use App\Service\NotificationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Knp\Component\Pager\PaginatorInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -73,14 +74,15 @@ class ReservationController extends AbstractController
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // NEW — crée la réservation + SMS au prestataire
+    // NEW — crée la réservation + SMS/notification au prestataire
     // ─────────────────────────────────────────────────────────────────────────
     #[Route('/new', name: 'etudiant_reservation_new', methods: ['POST'])]
     public function new(
         Request                $request,
         EntityManagerInterface $em,
         ServiceRepository      $serviceRepo,
-        SmsService             $sms
+        SmsService             $sms,
+        NotificationService    $notif,
     ): Response {
         $this->denyAccessUnlessGranted('ROLE_ETUDIANT');
 
@@ -123,6 +125,14 @@ class ReservationController extends AbstractController
             }
         }
 
+        // ── Notifications in-app ──
+        if ($prestataire) {
+            $notif->notifyInApp($prestataire, '📅 Nouvelle réservation',
+                "{$etudiant->getName()} a réservé votre service \"{$service->getTitle()}\" pour le {$reservation->getDate()->format('d/m/Y à H:i')}");
+        }
+        $notif->notifyInApp($etudiant, '✅ Réservation confirmée',
+            "Votre réservation pour \"{$service->getTitle()}\" a bien été enregistrée.");
+
         $this->addFlash('success', 'Réservation créée avec succès.');
         return $this->redirectToRoute('etudiant_reservations');
     }
@@ -164,57 +174,55 @@ class ReservationController extends AbstractController
     // ─────────────────────────────────────────────────────────────────────────
     // CANCEL — annule + SMS au prestataire
     // ─────────────────────────────────────────────────────────────────────────
-#[Route('/{id}/cancel', name: 'etudiant_reservation_cancel', methods: ['POST'])]
-public function cancel(
-    Reservation $reservation,
-    EntityManagerInterface $em,
-    SmsService $sms
-): Response {
+    #[Route('/{id}/cancel', name: 'etudiant_reservation_cancel', methods: ['POST'])]
+    public function cancel(
+        Reservation $reservation,
+        EntityManagerInterface $em,
+        SmsService $sms
+    ): Response {
 
-    $this->denyAccessUnlessGranted('ROLE_ETUDIANT');
+        $this->denyAccessUnlessGranted('ROLE_ETUDIANT');
 
-    if ($reservation->getUser() !== $this->getUser()) {
-        throw $this->createAccessDeniedException();
-    }
+        if ($reservation->getUser() !== $this->getUser()) {
+            throw $this->createAccessDeniedException();
+        }
 
-    if ($reservation->getStatus() === 'CONFIRMED') {
-        $this->addFlash('error', "Impossible d'annuler une réservation déjà confirmée.");
-        return $this->redirectToRoute('etudiant_reservations');
-    }
+        if ($reservation->getStatus() === 'CONFIRMED') {
+            $this->addFlash('error', "Impossible d'annuler une réservation déjà confirmée.");
+            return $this->redirectToRoute('etudiant_reservations');
+        }
 
-    $etudiant = $this->getUser();
-    $prestataire = $reservation->getService()->getUser();
+        $etudiant = $this->getUser();
+        $prestataire = $reservation->getService()->getUser();
 
-    // 🔥 string safe
-    $nomEtudiant = $etudiant->getName();
+        $nomEtudiant = $etudiant->getName();
 
-    // 🔥 SMS seulement si PENDING
-    if ($reservation->getStatus() === 'PENDING') {
+        // SMS seulement si PENDING
+        if ($reservation->getStatus() === 'PENDING') {
 
-        if ($prestataire && $prestataire->getPhone()) {
+            if ($prestataire && $prestataire->getPhone()) {
 
-            $message = "❌ Annulation\n" .
-                $nomEtudiant .
-                " a annulé la réservation \"" .
-                $reservation->getService()->getTitle() .
-                "\" avant votre confirmation.";
+                $message = "❌ Annulation\n" .
+                    $nomEtudiant .
+                    " a annulé la réservation \"" .
+                    $reservation->getService()->getTitle() .
+                    "\" avant votre confirmation.";
 
-            try {
-                $sms->sendSms($prestataire->getPhone(), $message);
-            } catch (\Exception $e) {
-                // ignore erreur SMS
+                try {
+                    $sms->sendSms($prestataire->getPhone(), $message);
+                } catch (\Exception $e) {
+                    // ignore erreur SMS
+                }
             }
         }
+
+        $reservation->setStatus('CANCELLED');
+        $em->flush();
+
+        $this->addFlash('success', 'Réservation annulée.');
+
+        return $this->redirectToRoute('etudiant_reservations');
     }
-
-    // 🔥 annulation
-    $reservation->setStatus('CANCELLED');
-    $em->flush();
-
-    $this->addFlash('success', 'Réservation annulée.');
-
-    return $this->redirectToRoute('etudiant_reservations');
-}
 
     // ─────────────────────────────────────────────────────────────────────────
     // DELETE
