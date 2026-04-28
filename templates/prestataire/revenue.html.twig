@@ -6,17 +6,28 @@
 
     <h2>📊 Analyse intelligente des revenus</h2>
 
+    <!-- CHART -->
     <canvas id="chart" height="100"></canvas>
 
     <!-- BOUTON IA -->
     <div style="margin-top:30px;">
-        <button onclick="lancerIA()" class="btn-ai">
-            🤖 Générer analyse intelligente
-        </button>
+        <a href="{{ path('prestataire_revenue') }}" class="btn-ai">
+            🤖 Générer analyse IA
+        </a>
     </div>
 
-    <!-- RESULTAT IA -->
-    <div id="aiBox" style="margin-top:20px;"></div>
+    <!-- IA RESULT -->
+    <div class="ai-box">
+        <h3>🤖 Analyse IA</h3>
+
+        <p>
+            {% if aiResult is defined %}
+                {{ aiResult }}
+            {% else %}
+                Cliquez sur le bouton pour générer une analyse
+            {% endif %}
+        </p>
+    </div>
 
     <!-- PRÉVISION -->
     <div class="prediction">
@@ -26,6 +37,7 @@
 
 </div>
 
+<!-- CHART JS -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
@@ -43,69 +55,41 @@ new Chart(document.getElementById('chart'), {
             data: values,
             backgroundColor: '#5D5FEF'
         }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { display: false }
+        }
     }
 });
-
-// 🤖 IA
-function lancerIA(){
-
-    let jourFaible = '';
-    let valeurMin = Infinity;
-
-    let jourFort = '';
-    let valeurMax = 0;
-
-    for (const [jour, valeur] of Object.entries(data)) {
-
-        if (valeur < valeurMin) {
-            valeurMin = valeur;
-            jourFaible = jour;
-        }
-
-        if (valeur > valeurMax) {
-            valeurMax = valeur;
-            jourFort = jour;
-        }
-    }
-
-    let html = `
-    <div class="ai-box">
-
-        <h3>📊 Analyse intelligente</h3>
-
-        <p>📉 Revenus faibles le <b>${jourFaible}</b></p>
-        <p>📈 Revenus élevés le <b>${jourFort}</b></p>
-
-        <h4>💡 Recommandations :</h4>
-
-        <ul>
-            <li>Augmentez vos disponibilités le ${jourFaible}</li>
-            <li>Proposez une promotion ce jour</li>
-            <li>Augmentez vos prix le ${jourFort}</li>
-        </ul>
-
-    </div>
-    `;
-
-    document.getElementById('aiBox').innerHTML = html;
-}
 </script>
 
+<!-- STYLE -->
 <style>
+
 .btn-ai{
+    display:inline-block;
     background:#10b981;
     color:white;
-    padding:10px 15px;
-    border:none;
+    padding:12px 18px;
     border-radius:10px;
-    cursor:pointer;
+    text-decoration:none;
+    font-weight:bold;
+    transition:0.3s;
+}
+
+.btn-ai:hover{
+    background:#059669;
 }
 
 .ai-box{
     background:white;
     padding:20px;
     border-radius:12px;
-    box-shadow:0 4px 10px rgba(0,0,0,0.05);
+    margin-top:20px;
+    box-shadow:0 4px 10px rgba(0,0,0,0.08);
+    line-height:1.6;
 }
 
 .prediction{
@@ -113,7 +97,9 @@ function lancerIA(){
     background:#fff;
     padding:15px;
     border-radius:10px;
+    box-shadow:0 4px 10px rgba(0,0,0,0.05);
 }
+
 </style>
 
 {% endblock %}

@@ -9,6 +9,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Request;
+use App\Service\AiService;
 
 #[Route('/prestataire/reservations')]
 class ReservationController extends AbstractController
@@ -149,52 +150,67 @@ class ReservationController extends AbstractController
     // REVENUE
     // ─────────────────────────────────────────────────────────────────────────
     #[Route('/revenue', name: 'prestataire_revenue')]
-    public function revenue(ReservationRepository $repo): Response
-    {
-        $this->denyAccessUnlessGranted('ROLE_PRESTATAIRE');
+public function revenue(ReservationRepository $repo, AiService $ai): Response
+{
+    $this->denyAccessUnlessGranted('ROLE_PRESTATAIRE');
 
-        $user = $this->getUser();
+    $user = $this->getUser();
 
-        $reservations = $repo->createQueryBuilder('r')
-            ->join('r.service', 's')
-            ->where('s.user = :user')
-            ->andWhere('r.status = :status')
-            ->setParameter('user', $user)
-            ->setParameter('status', 'CONFIRMED')
-            ->getQuery()
-            ->getResult();
+    // 🔥 récupérer réservations confirmées
+    $reservations = $repo->createQueryBuilder('r')
+        ->join('r.service', 's')
+        ->where('s.user = :user')
+        ->andWhere('r.status = :status')
+        ->setParameter('user', $user)
+        ->setParameter('status', 'CONFIRMED')
+        ->getQuery()
+        ->getResult();
 
-        $joursFR = [
-            'Monday'    => 'Lundi',
-            'Tuesday'   => 'Mardi',
-            'Wednesday' => 'Mercredi',
-            'Thursday'  => 'Jeudi',
-            'Friday'    => 'Vendredi',
-            'Saturday'  => 'Samedi',
-            'Sunday'    => 'Dimanche',
-        ];
+    // 🔥 traduction jours
+    $joursFR = [
+        'Monday'    => 'Lundi',
+        'Tuesday'   => 'Mardi',
+        'Wednesday' => 'Mercredi',
+        'Thursday'  => 'Jeudi',
+        'Friday'    => 'Vendredi',
+        'Saturday'  => 'Samedi',
+        'Sunday'    => 'Dimanche',
+    ];
 
-        $stats        = [];
-        $totalRevenue = 0.0;
+    $stats        = [];
+    $totalRevenue = 0.0;
 
-        foreach ($reservations as $r) {
-            $dayEN = $r->getDate()->format('l');
-            $dayFR = $joursFR[$dayEN] ?? $dayEN;
+    // 🔥 calcul stats
+    foreach ($reservations as $r) {
+        $dayEN = $r->getDate()->format('l');
+        $dayFR = $joursFR[$dayEN] ?? $dayEN;
 
-            $stats[$dayFR] = ($stats[$dayFR] ?? 0) + (float) $r->getPrice();
-            $totalRevenue  += (float) $r->getPrice();
-        }
-
-        $joursCount = count($stats) ?: 1;
-        $moyenne    = $totalRevenue / $joursCount;
-        $prediction = $moyenne * 30;
-
-        return $this->render('prestataire/revenue.html.twig', [
-            'stats'      => $stats,
-            'moyenne'    => $moyenne,
-            'prediction' => $prediction,
-        ]);
+        $stats[$dayFR] = ($stats[$dayFR] ?? 0) + (float) $r->getPrice();
+        $totalRevenue  += (float) $r->getPrice();
     }
+
+    // 🔥 calcul moyenne + prediction
+    $joursCount = count($stats) ?: 1;
+    $moyenne    = $totalRevenue / $joursCount;
+    $prediction = $moyenne * 30;
+
+    // 🤖 IA (sécurisée)
+    $aiResult = "Analyse indisponible";
+
+    try {
+        $aiResult = $ai->analyseRevenue($stats);
+    } catch (\Exception $e) {
+        $aiResult = "Erreur IA : vérifiez votre API Key";
+    }
+
+    // 🔥 render
+    return $this->render('prestataire/revenue.html.twig', [
+        'stats'      => $stats,
+        'moyenne'    => $moyenne,
+        'prediction' => $prediction,
+        'aiResult'   => $aiResult, // ✅ CORRECTION ICI
+    ]);
+}
 
 
 

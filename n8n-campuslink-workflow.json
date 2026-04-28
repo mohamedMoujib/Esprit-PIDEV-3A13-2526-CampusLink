@@ -12,7 +12,10 @@
       "name": "Webhook Publication",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [240, 0]
+      "position": [
+        240,
+        0
+      ]
     },
     {
       "parameters": {
@@ -25,7 +28,10 @@
       "name": "Webhook Service",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [240, 300]
+      "position": [
+        240,
+        300
+      ]
     },
     {
       "parameters": {
@@ -38,7 +44,10 @@
       "name": "Webhook Chatbot",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [240, 600]
+      "position": [
+        240,
+        600
+      ]
     },
     {
       "parameters": {
@@ -49,7 +58,7 @@
           "parameters": [
             {
               "name": "Authorization",
-              "value": "Bearer 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"
+              "value": "Bearer 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"
             },
             {
               "name": "HTTP-Referer",
@@ -72,7 +81,10 @@
       "name": "OpenRouter Publication",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [500, 0]
+      "position": [
+        500,
+        0
+      ]
     },
     {
       "parameters": {
@@ -83,7 +95,7 @@
           "parameters": [
             {
               "name": "Authorization",
-              "value": "Bearer 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"
+              "value": "Bearer sk-or-v1-3d55e7a29e502945c6813ec961f2fde691828c4b9480b38f561b2481f0b9e91fS"
             },
             {
               "name": "HTTP-Referer",
@@ -106,7 +118,10 @@
       "name": "OpenRouter Service",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [500, 300]
+      "position": [
+        500,
+        300
+      ]
     },
     {
       "parameters": {
@@ -117,7 +132,7 @@
           "parameters": [
             {
               "name": "Authorization",
-              "value": "Bearer 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"
+              "value": "Bearer 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"
             },
             {
               "name": "HTTP-Referer",
@@ -140,7 +155,10 @@
       "name": "OpenRouter Chatbot",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [500, 600]
+      "position": [
+        500,
+        600
+      ]
     },
     {
       "parameters": {
@@ -150,7 +168,10 @@
       "name": "Parse Publication",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [760, 0]
+      "position": [
+        760,
+        0
+      ]
     },
     {
       "parameters": {
@@ -160,7 +181,10 @@
       "name": "Parse Service",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [760, 300]
+      "position": [
+        760,
+        300
+      ]
     },
     {
       "parameters": {
@@ -170,7 +194,10 @@
       "name": "Parse Chatbot",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [760, 600]
+      "position": [
+        760,
+        600
+      ]
     },
     {
       "parameters": {
@@ -181,7 +208,10 @@
       "name": "MySQL Save Publication",
       "type": "n8n-nodes-base.mySql",
       "typeVersion": 2,
-      "position": [1020, 0],
+      "position": [
+        1020,
+        0
+      ],
       "credentials": {
         "mySql": {
           "id": "1",
@@ -198,7 +228,10 @@
       "name": "MySQL Save Service",
       "type": "n8n-nodes-base.mySql",
       "typeVersion": 2,
-      "position": [1020, 300],
+      "position": [
+        1020,
+        300
+      ],
       "credentials": {
         "mySql": {
           "id": "1",
@@ -214,7 +247,10 @@
       "name": "Response Publication",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1280, 0]
+      "position": [
+        1280,
+        0
+      ]
     },
     {
       "parameters": {
@@ -224,58 +260,121 @@
       "name": "Response Service",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1280, 300]
+      "position": [
+        1280,
+        300
+      ]
     }
   ],
   "connections": {
     "Webhook Publication": {
       "main": [
-        [{ "node": "OpenRouter Publication", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "OpenRouter Publication",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "OpenRouter Publication": {
       "main": [
-        [{ "node": "Parse Publication", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Parse Publication",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Parse Publication": {
       "main": [
-        [{ "node": "MySQL Save Publication", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "MySQL Save Publication",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "MySQL Save Publication": {
       "main": [
-        [{ "node": "Response Publication", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Response Publication",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Webhook Service": {
       "main": [
-        [{ "node": "OpenRouter Service", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "OpenRouter Service",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "OpenRouter Service": {
       "main": [
-        [{ "node": "Parse Service", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Parse Service",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Parse Service": {
       "main": [
-        [{ "node": "MySQL Save Service", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "MySQL Save Service",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "MySQL Save Service": {
       "main": [
-        [{ "node": "Response Service", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Response Service",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Webhook Chatbot": {
       "main": [
-        [{ "node": "OpenRouter Chatbot", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "OpenRouter Chatbot",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "OpenRouter Chatbot": {
       "main": [
-        [{ "node": "Parse Chatbot", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Parse Chatbot",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     }
   },

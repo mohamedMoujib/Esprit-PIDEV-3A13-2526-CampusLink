@@ -25,6 +25,7 @@
             💬 {{ selectedUser.name ?? selectedUser.email }}
         </div>
 
+        <!-- MESSAGES -->
         <div class="messages" id="messagesBox">
 
             {% for m in messages %}
@@ -34,18 +35,23 @@
 
                     <div class="msg-bubble">
 
+                        <!-- AUDIO -->
                         {% if m.content starts with '[AUDIO]' %}
-                            <audio controls>
-                                <source src="/uploads/audio/{{ m.content|replace({'[AUDIO]':''}) }}">
+                            <audio controls style="width:200px;">
+                                <source src="{{ asset('uploads/audio/' ~ m.content|replace({'[AUDIO]':''})) }}">
                             </audio>
+
+                        <!-- TEXT -->
                         {% else %}
                             {{ m.content }}
                         {% endif %}
 
+                        <!-- TIME -->
                         <div class="msg-time">
                             {{ m.createdAt|date('H:i') }}
                         </div>
 
+                        <!-- PROGRAMMÉ -->
                         {% if m.scheduledAt and not m.isSent %}
                             <div class="scheduled">
                                 🕒 Programmé {{ m.scheduledAt|date('d/m H:i') }}
@@ -66,13 +72,22 @@
                   action="{{ path('message_send', {id: selectedUser.id}) }}"
                   class="input-row">
 
+                <!-- EMOJI -->
                 <button type="button" onclick="toggleEmoji()">😊</button>
+
+                <!-- SPEECH -->
                 <button type="button" onclick="startVoice()">🎤</button>
 
+                <!-- AUDIO -->
+                <button type="button" onclick="startRecording()">🎙️</button>
+
+                <!-- INPUT -->
                 <input id="messageInput" name="content" placeholder="Écrire un message..." required>
 
+                <!-- DATE -->
                 <input type="datetime-local" name="scheduledAt">
 
+                <!-- SEND -->
                 <button type="submit">➤</button>
 
             </form>
@@ -91,31 +106,41 @@
 
 </div>
 
-<!-- JS -->
-<script src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1/index.js"></script>
+<!-- EMOJI MODULE -->
+<script type="module">
+import 'https://cdn.jsdelivr.net/npm/emoji-picker-element@1/index.js';
+</script>
 
 <script>
 
-// auto scroll
+// AUTO SCROLL
 let box = document.getElementById("messagesBox");
 if(box) box.scrollTop = box.scrollHeight;
 
-// emoji
+// ======================
+// 😊 EMOJI
+// ======================
 function toggleEmoji(){
     let box = document.getElementById("emojiBox");
 
     if(box.innerHTML === ''){
-        box.innerHTML = `<emoji-picker></emoji-picker>`;
-        box.querySelector('emoji-picker').addEventListener('emoji-click', e => {
-            document.getElementById('messageInput').value += e.detail.unicode;
-        });
+        box.innerHTML = `<emoji-picker id="picker"></emoji-picker>`;
+
+        setTimeout(() => {
+            document.getElementById('picker').addEventListener('emoji-click', e => {
+                document.getElementById('messageInput').value += e.detail.unicode;
+            });
+        }, 100);
     }
 
     box.style.display = box.style.display === 'block' ? 'none' : 'block';
 }
 
-// 🎤 speech to text
+// ======================
+// 🎤 SPEECH TO TEXT
+// ======================
 function startVoice(){
+
     if (!('webkitSpeechRecognition' in window)) {
         alert("Utilise Chrome");
         return;
@@ -124,45 +149,60 @@ function startVoice(){
     const rec = new webkitSpeechRecognition();
     rec.lang = 'fr-FR';
 
-    rec.onresult = e => {
-        document.getElementById('messageInput').value += e.results[0][0].transcript;
-    };
-
     rec.start();
+
+    rec.onresult = e => {
+        document.getElementById('messageInput').value += " " + e.results[0][0].transcript;
+    };
 }
 
-// 🎙️ audio sécurisé
+// ======================
+// 🎙️ AUDIO RECORD
+// ======================
 async function startRecording(){
 
     {% if selectedUser %}
 
-    let stream = await navigator.mediaDevices.getUserMedia({audio:true});
+    try {
 
-    let recorder = new MediaRecorder(stream);
-    let chunks = [];
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-    recorder.ondataavailable = e => chunks.push(e.data);
+        const recorder = new MediaRecorder(stream);
+        let chunks = [];
 
-    recorder.onstop = async () => {
-        let blob = new Blob(chunks, {type:'audio/webm'});
-        let fd = new FormData();
-        fd.append('audio', blob);
+        recorder.ondataavailable = e => {
+            if (e.data.size > 0) chunks.push(e.data);
+        };
 
-        await fetch('/messages/send-audio/{{ selectedUser.id }}', {
-            method:'POST',
-            body:fd
-        });
+        recorder.onstop = async () => {
 
-        location.reload();
-    };
+            const blob = new Blob(chunks, { type: 'audio/webm' });
 
-    recorder.start();
-    setTimeout(()=> recorder.stop(), 4000);
+            const fd = new FormData();
+            fd.append('audio', blob, 'voice.webm');
+
+            await fetch('/messages/send-audio/{{ selectedUser.id }}', {
+                method: 'POST',
+                body: fd
+            });
+
+            location.reload();
+        };
+
+        recorder.start();
+
+        setTimeout(() => recorder.stop(), 4000);
+
+    } catch(e){
+        alert("❌ Micro refusé");
+        console.error(e);
+    }
 
     {% else %}
-    alert("Sélectionnez une conversation");
+        alert("Sélectionnez une conversation");
     {% endif %}
 }
+
 </script>
 
 <!-- CSS -->
@@ -174,9 +214,9 @@ async function startRecording(){
     background:#f5f7fb;
 }
 
-/* sidebar */
+/* SIDEBAR */
 .sidebar{
-    width:260px;
+    width:250px;
     background:white;
     padding:15px;
     border-right:1px solid #ddd;
@@ -191,16 +231,12 @@ async function startRecording(){
     margin-bottom:5px;
 }
 
-.user-item:hover{
-    background:#f0f4ff;
-}
-
 .user-item.active{
     background:#2563eb;
     color:white;
 }
 
-/* chat */
+/* CHAT */
 .chat-box{
     flex:1;
     display:flex;
@@ -215,7 +251,7 @@ async function startRecording(){
     font-weight:bold;
 }
 
-/* messages */
+/* MESSAGES */
 .messages{
     flex:1;
     overflow-y:auto;
@@ -236,7 +272,6 @@ async function startRecording(){
     padding:12px;
     border-radius:14px;
     max-width:60%;
-    box-shadow:0 2px 5px rgba(0,0,0,0.1);
 }
 
 .msg-row.me .msg-bubble{
@@ -247,7 +282,6 @@ async function startRecording(){
 .msg-time{
     font-size:10px;
     margin-top:5px;
-    opacity:0.7;
 }
 
 .scheduled{
@@ -255,7 +289,7 @@ async function startRecording(){
     color:orange;
 }
 
-/* input */
+/* INPUT */
 .input-area{
     padding:10px;
     background:white;
@@ -265,15 +299,13 @@ async function startRecording(){
 .input-row{
     display:flex;
     gap:10px;
-    align-items:center;
 }
 
 .input-row input{
     flex:1;
-    border:none;
-    outline:none;
     padding:8px;
     border-radius:8px;
+    border:none;
     background:#f3f4f6;
 }
 
@@ -281,13 +313,18 @@ button{
     border:none;
     background:#2563eb;
     color:white;
-    padding:8px 12px;
+    padding:8px;
     border-radius:8px;
     cursor:pointer;
 }
 
-button:hover{
-    opacity:0.9;
+/* EMOJI BOX */
+#emojiBox{
+    position:absolute;
+    bottom:80px;
+    right:20px;
+    display:none;
+    z-index:999;
 }
 
 </style>

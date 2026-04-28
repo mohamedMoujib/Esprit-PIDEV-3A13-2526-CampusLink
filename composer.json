@@ -57,7 +57,8 @@
         "symfony/yaml": "6.4.*",
         "twig/extra-bundle": "^2.12|^3.0",
         "twig/twig": "^2.12|^3.0",
-        "twilio/sdk": "^8.11"
+        "twilio/sdk": "^8.11",
+        "webmozart/assert": "1.11"
     },
     "config": {
         "allow-plugins": {
