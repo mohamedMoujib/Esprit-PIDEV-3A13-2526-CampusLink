@@ -19,7 +19,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Knp\Component\Pager\PaginatorInterface; 
 use Symfony\Component\Mailer\MailerInterface;
-
+use Doctrine\ORM\Tools\Pagination\Paginator;
 
 #[Route('/admin')]
 class AdminDashboardController extends AbstractController
@@ -74,12 +74,16 @@ class AdminDashboardController extends AbstractController
             ->leftJoin('s.category', 'c')->addSelect('c')
             ->orderBy('s.id', 'DESC')
             ->setMaxResults(6)
-            ->getQuery()->getResult();
+            ->getQuery();
+
+        $recentServices = iterator_to_array(new Paginator($recentServices, fetchJoinCollection: true));
 
         $recentPublications = $this->publicationRepository->createBaseQueryBuilder()
             ->orderBy('p.createdAt', 'DESC')
             ->setMaxResults(6)
-            ->getQuery()->getResult();
+            ->getQuery();
+
+        $recentPublications = iterator_to_array(new Paginator($recentPublications, fetchJoinCollection: true));
 
         $allCategories = $catRepo->findAll();
 

@@ -6,7 +6,7 @@ use App\Entity\Publication;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
-
+use Doctrine\ORM\Tools\Pagination\Paginator;
 /**
  * @extends ServiceEntityRepository<Publication>
  */
@@ -61,11 +61,13 @@ class PublicationRepository extends ServiceEntityRepository
     /** @return Publication[] */
     public function findRecentForTrend(int $limit = 150): array
     {
-        return $this->createQueryBuilder('p')
+        $query = $this->createQueryBuilder('p')
             ->leftJoin('p.category', 'c')->addSelect('c')
             ->orderBy('p.createdAt', 'DESC')
             ->setMaxResults($limit)
-            ->getQuery()
-            ->getResult();
-    }
+            ->getQuery();
+
+        return iterator_to_array(new Paginator($query, fetchJoinCollection: true));
+
+}
 }

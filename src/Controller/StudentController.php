@@ -34,17 +34,8 @@ class StudentController extends AbstractController
             ? $repo->searchAllServicesForListing($kw, $pMin, $pMax)
             : $repo->findAllServicesForListing();
 
-        $serviceRatings = [];
-        foreach ($services as $service) {
-            $id = $service->getId();
-            if ($id === null) {
-                continue;
-            }
-            $serviceRatings[$id] = [
-                'avg' => $reviewRepo->getAverageRatingByService($id),
-                'count' => $reviewRepo->countByService($id),
-            ];
-        }
+        // WITH THIS
+        $serviceRatings = $reviewRepo->getStatsForAllServices();
 
         return $this->render('student/index.html.twig', [
             'services' => $services,

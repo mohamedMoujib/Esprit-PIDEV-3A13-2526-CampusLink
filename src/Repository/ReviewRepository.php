@@ -99,6 +99,32 @@ class ReviewRepository extends ServiceEntityRepository
             ->getQuery()
             ->getSingleScalarResult();
     }
+    
+        public function getStatsForAllServices(): array
+    {
+        $rows = $this->getEntityManager()
+            ->createQuery('
+                SELECT srv.id AS serviceId,
+                    COUNT(r.id) AS reviewCount,
+                    AVG(r.rating) AS avgRating
+                FROM App\Entity\Review r
+                JOIN r.reservation res
+                JOIN res.service srv
+                WHERE r.rating IS NOT NULL
+                GROUP BY srv.id
+            ')
+            ->getArrayResult();
+
+        $result = [];
+        foreach ($rows as $row) {
+            $result[$row['serviceId']] = [
+                'count' => (int)   $row['reviewCount'],
+                'avg'   => (float) $row['avgRating'],
+            ];
+        }
+
+        return $result;
+    }
 
     // ===================== READ ALL (ADMIN) =====================
 

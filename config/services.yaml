@@ -6,6 +6,8 @@
 parameters:
      groq_api_key: '%env(GROQ_API_KEY)%'
      gemini_api_key: '%env(GEMINI_API_KEY)%'
+     env(TZ): 'Africa/Tunis'
+
 services:
     _defaults:
         autowire: true      # Automatically injects dependencies in your services.
@@ -14,6 +16,8 @@ services:
             $geminiKey: '%gemini_api_key%'
             $groqApiKey: '%groq_api_key%'
             $n8nBaseUrl: '%env(default::string:N8N_BASE_URL)%'
+            $timezone: '%env(TZ)%'
+
 
     App\:
         resource: '../src/'

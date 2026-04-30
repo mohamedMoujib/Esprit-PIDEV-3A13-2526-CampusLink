@@ -234,8 +234,11 @@ class ServiceController extends AbstractController
      * @param iterable<Service> $services
      * @return array<int, array{avg: ?float, count: int}>
      */
-    private function buildServiceRatings(iterable $services, ReviewRepository $reviewRepo): array
+        private function buildServiceRatings(iterable $services, ReviewRepository $reviewRepo): array
     {
+        
+        $allStats = $reviewRepo->getStatsForAllServices();
+
         $serviceRatings = [];
         foreach ($services as $service) {
             $id = $service->getId();
@@ -243,8 +246,8 @@ class ServiceController extends AbstractController
                 continue;
             }
             $serviceRatings[$id] = [
-                'avg' => $reviewRepo->getAverageRatingByService($id),
-                'count' => $reviewRepo->countByService($id),
+                'avg'   => isset($allStats[$id]) ? $allStats[$id]['avg']   : null,
+                'count' => isset($allStats[$id]) ? $allStats[$id]['count'] : 0,
             ];
         }
 
