@@ -25,23 +25,21 @@ class ReviewsLeaderboardController extends AbstractController
         // Récupérer tous les prestataires actifs avec au moins 1 avis
         $conn = $this->userRepo->getEntityManager()->getConnection();
         
-        $sql = "
-            SELECT 
-                u.id,
-                u.name,
-                u.trust_points,
+        $sql = "SELECT u.id, u.name, u.trust_points,
                 COUNT(DISTINCT r.id) as review_count,
                 AVG(r.rating) as avg_rating
             FROM users u
             INNER JOIN reviews r ON r.prestataire_id = u.id
-            WHERE u.user_type = 'PRESTATAIRE' 
-            AND u.status = 'ACTIVE'
+            WHERE u.user_type = :userType
+                AND u.status = :status
             GROUP BY u.id, u.name, u.trust_points
             HAVING COUNT(DISTINCT r.id) > 0
-            ORDER BY u.trust_points DESC, avg_rating DESC
-        ";
-        
-        $results = $conn->fetchAllAssociative($sql);
+            ORDER BY u.trust_points DESC, avg_rating DESC";
+
+        $results = $conn->executeQuery($sql, [
+            'userType' => 'PRESTATAIRE',
+            'status'   => 'ACTIVE',
+            ])->fetchAllAssociative();
         
         $leaderboard = [];
         foreach ($results as $index => $row) {

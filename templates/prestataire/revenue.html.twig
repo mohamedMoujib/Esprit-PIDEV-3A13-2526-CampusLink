@@ -1,0 +1,105 @@
+{% extends "base.html.twig" %}
+
+{% block body %}
+
+<div style="padding:30px;background:#f5f7fb;min-height:100vh;">
+
+    <h2>📊 Analyse intelligente des revenus</h2>
+
+    <!-- CHART -->
+    <canvas id="chart" height="100"></canvas>
+
+    <!-- BOUTON IA -->
+    <div style="margin-top:30px;">
+        <a href="{{ path('prestataire_revenue') }}" class="btn-ai">
+            🤖 Générer analyse IA
+        </a>
+    </div>
+
+    <!-- IA RESULT -->
+    <div class="ai-box">
+        <h3>🤖 Analyse IA</h3>
+
+        <p>
+            {% if aiResult is defined %}
+                {{ aiResult }}
+            {% else %}
+                Cliquez sur le bouton pour générer une analyse
+            {% endif %}
+        </p>
+    </div>
+
+    <!-- PRÉVISION -->
+    <div class="prediction">
+        🔮 Revenus estimés du mois :
+        <strong>{{ prediction|number_format(2) }} DT</strong>
+    </div>
+
+</div>
+
+<!-- CHART JS -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+const data = {{ stats|json_encode|raw }};
+
+const labels = Object.keys(data);
+const values = Object.values(data);
+
+new Chart(document.getElementById('chart'), {
+    type: 'bar',
+    data: {
+        labels: labels,
+        datasets: [{
+            label: 'Revenus (DT)',
+            data: values,
+            backgroundColor: '#5D5FEF'
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { display: false }
+        }
+    }
+});
+</script>
+
+<!-- STYLE -->
+<style>
+
+.btn-ai{
+    display:inline-block;
+    background:#10b981;
+    color:white;
+    padding:12px 18px;
+    border-radius:10px;
+    text-decoration:none;
+    font-weight:bold;
+    transition:0.3s;
+}
+
+.btn-ai:hover{
+    background:#059669;
+}
+
+.ai-box{
+    background:white;
+    padding:20px;
+    border-radius:12px;
+    margin-top:20px;
+    box-shadow:0 4px 10px rgba(0,0,0,0.08);
+    line-height:1.6;
+}
+
+.prediction{
+    margin-top:20px;
+    background:#fff;
+    padding:15px;
+    border-radius:10px;
+    box-shadow:0 4px 10px rgba(0,0,0,0.05);
+}
+
+</style>
+
+{% endblock %}

@@ -1,0 +1,332 @@
+{% extends "base.html.twig" %}
+
+{% block body %}
+
+<div class="chat-container">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+        <h3>Messages</h3>
+
+        {% for u in conversations %}
+            <a href="{{ path('messages', {user: u.id}) }}"
+               class="user-item {{ selectedUser and selectedUser.id == u.id ? 'active' }}">
+                {{ u.name ?? u.email }}
+            </a>
+        {% endfor %}
+    </div>
+
+    <!-- CHAT -->
+    <div class="chat-box">
+
+        {% if selectedUser %}
+
+        <div class="chat-header">
+            💬 {{ selectedUser.name ?? selectedUser.email }}
+        </div>
+
+        <!-- MESSAGES -->
+        <div class="messages" id="messagesBox">
+
+            {% for m in messages %}
+                {% set isMe = m.sender and m.sender.id == app.user.id %}
+
+                <div class="msg-row {{ isMe ? 'me' }}">
+
+                    <div class="msg-bubble">
+
+                        <!-- AUDIO -->
+                        {% if m.content starts with '[AUDIO]' %}
+                            <audio controls style="width:200px;">
+                                <source src="{{ asset('uploads/audio/' ~ m.content|replace({'[AUDIO]':''})) }}">
+                            </audio>
+
+                        <!-- TEXT -->
+                        {% else %}
+                            {{ m.content }}
+                        {% endif %}
+
+                        <!-- TIME -->
+                        <div class="msg-time">
+                            {{ m.createdAt|date('H:i') }}
+                        </div>
+
+                        <!-- PROGRAMMÉ -->
+                        {% if m.scheduledAt and not m.isSent %}
+                            <div class="scheduled">
+                                🕒 Programmé {{ m.scheduledAt|date('d/m H:i') }}
+                            </div>
+                        {% endif %}
+
+                    </div>
+
+                </div>
+            {% endfor %}
+
+        </div>
+
+        <!-- INPUT -->
+        <div class="input-area">
+
+            <form method="post"
+                  action="{{ path('message_send', {id: selectedUser.id}) }}"
+                  class="input-row">
+
+                <!-- EMOJI -->
+                <button type="button" onclick="toggleEmoji()">😊</button>
+
+                <!-- SPEECH -->
+                <button type="button" onclick="startVoice()">🎤</button>
+
+                <!-- AUDIO -->
+                <button type="button" onclick="startRecording()">🎙️</button>
+
+                <!-- INPUT -->
+                <input id="messageInput" name="content" placeholder="Écrire un message..." required>
+
+                <!-- DATE -->
+                <input type="datetime-local" name="scheduledAt">
+
+                <!-- SEND -->
+                <button type="submit">➤</button>
+
+            </form>
+
+            <div id="emojiBox"></div>
+
+        </div>
+
+        {% else %}
+            <p style="margin:auto;color:#777;font-size:18px;">
+                💬 Sélectionnez une conversation
+            </p>
+        {% endif %}
+
+    </div>
+
+</div>
+
+<!-- EMOJI MODULE -->
+<script type="module">
+import 'https://cdn.jsdelivr.net/npm/emoji-picker-element@1/index.js';
+</script>
+
+<script>
+
+// AUTO SCROLL
+let box = document.getElementById("messagesBox");
+if(box) box.scrollTop = box.scrollHeight;
+
+// ======================
+// 😊 EMOJI
+// ======================
+function toggleEmoji(){
+    let box = document.getElementById("emojiBox");
+
+    if(box.innerHTML === ''){
+        box.innerHTML = `<emoji-picker id="picker"></emoji-picker>`;
+
+        setTimeout(() => {
+            document.getElementById('picker').addEventListener('emoji-click', e => {
+                document.getElementById('messageInput').value += e.detail.unicode;
+            });
+        }, 100);
+    }
+
+    box.style.display = box.style.display === 'block' ? 'none' : 'block';
+}
+
+// ======================
+// 🎤 SPEECH TO TEXT
+// ======================
+function startVoice(){
+
+    if (!('webkitSpeechRecognition' in window)) {
+        alert("Utilise Chrome");
+        return;
+    }
+
+    const rec = new webkitSpeechRecognition();
+    rec.lang = 'fr-FR';
+
+    rec.start();
+
+    rec.onresult = e => {
+        document.getElementById('messageInput').value += " " + e.results[0][0].transcript;
+    };
+}
+
+// ======================
+// 🎙️ AUDIO RECORD
+// ======================
+async function startRecording(){
+
+    {% if selectedUser %}
+
+    try {
+
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+        const recorder = new MediaRecorder(stream);
+        let chunks = [];
+
+        recorder.ondataavailable = e => {
+            if (e.data.size > 0) chunks.push(e.data);
+        };
+
+        recorder.onstop = async () => {
+
+            const blob = new Blob(chunks, { type: 'audio/webm' });
+
+            const fd = new FormData();
+            fd.append('audio', blob, 'voice.webm');
+
+            await fetch('/messages/send-audio/{{ selectedUser.id }}', {
+                method: 'POST',
+                body: fd
+            });
+
+            location.reload();
+        };
+
+        recorder.start();
+
+        setTimeout(() => recorder.stop(), 4000);
+
+    } catch(e){
+        alert("❌ Micro refusé");
+        console.error(e);
+    }
+
+    {% else %}
+        alert("Sélectionnez une conversation");
+    {% endif %}
+}
+
+</script>
+
+<!-- CSS -->
+<style>
+
+.chat-container{
+    display:flex;
+    height:90vh;
+    background:#f5f7fb;
+}
+
+/* SIDEBAR */
+.sidebar{
+    width:250px;
+    background:white;
+    padding:15px;
+    border-right:1px solid #ddd;
+}
+
+.user-item{
+    display:block;
+    padding:10px;
+    border-radius:8px;
+    text-decoration:none;
+    color:#333;
+    margin-bottom:5px;
+}
+
+.user-item.active{
+    background:#2563eb;
+    color:white;
+}
+
+/* CHAT */
+.chat-box{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    background:#e5e7eb;
+}
+
+.chat-header{
+    padding:15px;
+    background:white;
+    border-bottom:1px solid #ddd;
+    font-weight:bold;
+}
+
+/* MESSAGES */
+.messages{
+    flex:1;
+    overflow-y:auto;
+    padding:20px;
+}
+
+.msg-row{
+    display:flex;
+    margin-bottom:10px;
+}
+
+.msg-row.me{
+    justify-content:flex-end;
+}
+
+.msg-bubble{
+    background:white;
+    padding:12px;
+    border-radius:14px;
+    max-width:60%;
+}
+
+.msg-row.me .msg-bubble{
+    background:#2563eb;
+    color:white;
+}
+
+.msg-time{
+    font-size:10px;
+    margin-top:5px;
+}
+
+.scheduled{
+    font-size:11px;
+    color:orange;
+}
+
+/* INPUT */
+.input-area{
+    padding:10px;
+    background:white;
+    border-top:1px solid #ddd;
+}
+
+.input-row{
+    display:flex;
+    gap:10px;
+}
+
+.input-row input{
+    flex:1;
+    padding:8px;
+    border-radius:8px;
+    border:none;
+    background:#f3f4f6;
+}
+
+button{
+    border:none;
+    background:#2563eb;
+    color:white;
+    padding:8px;
+    border-radius:8px;
+    cursor:pointer;
+}
+
+/* EMOJI BOX */
+#emojiBox{
+    position:absolute;
+    bottom:80px;
+    right:20px;
+    display:none;
+    z-index:999;
+}
+
+</style>
+
+{% endblock %}

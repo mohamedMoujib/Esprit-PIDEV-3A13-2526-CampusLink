@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\User;
+use App\Repository\ReviewRepository;
 use App\Repository\ServiceRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -14,7 +15,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 class StudentController extends AbstractController
 {
     #[Route('/rechercher', name: 'student_index')]
-    public function index(Request $req, ServiceRepository $repo): Response
+    public function index(Request $req, ServiceRepository $repo, ReviewRepository $reviewRepo): Response
     {
         /** @var User $user */
         $user = $this->getUser();
@@ -33,8 +34,13 @@ class StudentController extends AbstractController
             ? $repo->searchAllServicesForListing($kw, $pMin, $pMax)
             : $repo->findAllServicesForListing();
 
+        // WITH THIS
+        $serviceRatings = $reviewRepo->getStatsForAllServices();
+
         return $this->render('student/index.html.twig', [
             'services' => $services,
+            'serviceRatings' => $serviceRatings,
+            'reviews_index_route' => 'student_reviews_index',
         ]);
     }
 }

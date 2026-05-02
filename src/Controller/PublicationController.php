@@ -6,6 +6,9 @@ use App\Entity\Categorie;
 use App\Entity\Publication;
 use App\Entity\User;
 use App\Repository\PublicationRepository;
+use App\Repository\ServiceRepository;
+use App\Service\NotificationService;
+use App\Service\UploadedImageOptimizer;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -21,6 +24,10 @@ class PublicationController extends AbstractController
     private const MAX_SIZE_BYTES = 5 * 1024 * 1024;
     private const PUBLICATION_TYPES = ['VENTE_OBJET', 'DEMANDE_SERVICE', 'OFFRE_SERVICE'];
     private const PUBLICATION_STATUSES = ['ACTIVE', 'EN_COURS', 'TERMINEE', 'ANNULEE'];
+
+    public function __construct(
+        private readonly UploadedImageOptimizer $uploadedImageOptimizer,
+    ) {}
 
     #[Route('', name: 'publication_index')]
     public function index(Request $req, PublicationRepository $repo): Response
@@ -81,7 +88,7 @@ class PublicationController extends AbstractController
     }
 
     #[Route('/create', name: 'publication_create', methods: ['GET', 'POST'])]
-    public function create(Request $req, EntityManagerInterface $em): Response
+    public function create(Request $req, EntityManagerInterface $em, NotificationService $notif, ServiceRepository $serviceRepo): Response
     {
         /** @var User $user */
         $user = $this->getUser();
@@ -140,6 +147,27 @@ class PublicationController extends AbstractController
 
             $em->persist($pub);
             $em->flush();
+
+            if ($type === 'DEMANDE_SERVICE') {
+                $notif->notifyInApp($user, '✅ Publication créée',
+                    "Votre demande \"{$pub->getTitre()}\" est maintenant visible. Les prestataires compatibles seront notifiés.");
+
+                if ($pub->getCategory() !== null) {
+                    $prestataires = $serviceRepo->findPrestatairesWithConfirmedServiceInCategoryName(
+                        $pub->getCategory()->getName()
+                    );
+                    // Log temporaire pour déboguer
+                    dump([
+                        'categorie' => $pub->getCategory()->getName(),
+                        'prestataires_trouves' => count($prestataires),
+                    ]);
+
+                    foreach ($prestataires as $prestataire) {
+                        $notif->notifyInApp($prestataire, '🔔 Nouvelle demande de service!',
+                            sprintf('Une nouvelle demande de service "%s" a été publiée dans votre catégorie "%s".', $pub->getTitre(), $pub->getCategory()->getName()));
+                    }
+                }
+            }
 
             $this->addFlash('success', 'Publication créée avec succès.');
             return $this->redirectToRoute('publication_index');
@@ -361,7 +389,9 @@ class PublicationController extends AbstractController
 
         $name = bin2hex(random_bytes(16)) . '.' . $img->guessExtension();
         $img->move($uploadDir, $name);
-        $pub->setImageUrl('uploads/' . $name);
+        $relative = 'uploads/' . $name;
+        $pub->setImageUrl($relative);
+        $this->uploadedImageOptimizer->optimizeRelativePath($relative);
 
         return null;
     }

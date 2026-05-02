@@ -65,6 +65,12 @@ class Service
     public function getStatus(): string { return $this->status; }
     public function setStatus(string $status): self { $this->status = $status; return $this; }
 
+    #[ORM\Column(name: 'moderation_status', length: 20, options: ['default' => 'CLEAR'])]
+    private string $moderationStatus = 'CLEAR';
+
+    public function getModerationStatus(): string { return $this->moderationStatus; }
+    public function setModerationStatus(string $moderationStatus): self { $this->moderationStatus = $moderationStatus; return $this; }
+
     #[ORM\OneToMany(mappedBy: 'service', targetEntity: Demande::class)]
     private Collection $demandes;
 

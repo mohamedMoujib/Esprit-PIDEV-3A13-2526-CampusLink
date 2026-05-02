@@ -1,0 +1,201 @@
+{% extends "base.html.twig" %}
+
+{% block body %}
+
+<div class="admin-container">
+
+    <h1>⚠️ Liste des Réclamations</h1>
+
+    <!-- CARD -->
+    <div class="table-card">
+
+        <table>
+
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Utilisateur</th>
+                    <th>Cible</th>
+                    <th>Type</th>
+                    <th>Sujet</th>
+                    <th>Description</th>
+                    <th>Date</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+            {% for r in reclamations %}
+                <tr>
+
+                    <td>#{{ r.id }}</td>
+
+                    <td>{{ r.user.email }}</td>
+
+                    <td>{{ r.cible.email }}</td>
+
+                    <td>
+                        <span class="badge type">
+                            {{ r.type }}
+                        </span>
+                    </td>
+
+                    <td>{{ r.sujet }}</td>
+
+                    <td class="desc">
+                        {{ r.description }}
+                    </td>
+
+                    <td>{{ r.createdAt|date('d/m/Y H:i') }}</td>
+
+                    <td>
+                        {% if r.statut == 'EN_ATTENTE' %}
+                            <span class="badge pending">⏳ En attente</span>
+                        {% else %}
+                            <span class="badge done">✔ Traité</span>
+                        {% endif %}
+                    </td>
+
+                    <td class="actions">
+
+                        <a href="{{ path('admin_reclamation_traiter', {id: r.id}) }}"
+                           class="btn success">✔</a>
+
+                        <a href="{{ path('admin_reclamation_delete', {id: r.id}) }}"
+                           class="btn danger">🗑</a>
+
+                    </td>
+
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="9" class="empty">Aucune réclamation</td>
+                </tr>
+            {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+<!-- STYLE PRO -->
+<style>
+
+.admin-container{
+    padding:30px;
+    background:#f5f7fb;
+    min-height:100vh;
+}
+
+h1{
+    margin-bottom:20px;
+}
+
+/* CARD */
+.table-card{
+    background:white;
+    border-radius:15px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.05);
+    overflow:hidden;
+}
+
+/* TABLE */
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+thead{
+    background:linear-gradient(90deg,#5D5FEF,#7C3AED);
+    color:white;
+}
+
+th, td{
+    padding:14px;
+    text-align:center;
+    font-size:14px;
+}
+
+tbody tr{
+    border-bottom:1px solid #eee;
+    transition:0.3s;
+}
+
+tbody tr:hover{
+    background:#f9fafb;
+    transform:scale(1.01);
+}
+
+/* BADGES */
+.badge{
+    padding:5px 10px;
+    border-radius:20px;
+    font-size:12px;
+    font-weight:bold;
+}
+
+.badge.pending{
+    background:#FEF3C7;
+    color:#D97706;
+}
+
+.badge.done{
+    background:#D1FAE5;
+    color:#059669;
+}
+
+.badge.type{
+    background:#E0E7FF;
+    color:#3730A3;
+}
+
+/* DESCRIPTION */
+.desc{
+    max-width:200px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+
+/* ACTIONS */
+.actions{
+    display:flex;
+    justify-content:center;
+    gap:8px;
+}
+
+/* BUTTONS */
+.btn{
+    padding:6px 10px;
+    border-radius:8px;
+    color:white;
+    text-decoration:none;
+    font-size:14px;
+}
+
+.btn.success{
+    background:#10B981;
+}
+
+.btn.danger{
+    background:#EF4444;
+}
+
+.btn:hover{
+    opacity:0.8;
+}
+
+/* EMPTY */
+.empty{
+    padding:20px;
+    color:#999;
+}
+
+</style>
+
+{% endblock %}

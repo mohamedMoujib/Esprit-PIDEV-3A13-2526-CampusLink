@@ -36,6 +36,9 @@ class StudentReviewsController extends AbstractController
             throw $this->createAccessDeniedException('Vous devez être connecté pour accéder à cette page.');
         }
 
+        // PHPStan: assert that $user is actually our User entity, not just UserInterface
+        assert($user instanceof \App\Entity\User);
+
         if ($user->getUserType() !== 'ETUDIANT') {
             throw $this->createAccessDeniedException('Accès réservé aux étudiants.');
         }
@@ -43,11 +46,15 @@ class StudentReviewsController extends AbstractController
         return $user;
     }
 
+    /**
+     * @return array<string>
+     */
     private function validateReviewInput(Request $request): array
     {
         $errors  = [];
         $rating  = $request->request->get('rating');
-        $comment = trim($request->request->get('comment', ''));
+        $commentRaw = $request->request->get('comment', '');
+        $comment = trim(is_string($commentRaw) ? $commentRaw : '');
 
         // Validation rating
         if ($rating === null || $rating === '') {
@@ -88,11 +95,15 @@ class StudentReviewsController extends AbstractController
         return $errors;
     }
 
+    /**
+     * @return array<string>
+     */
     private function validateEditInput(Request $request): array
     {
         $errors  = [];
         $rating  = $request->request->get('rating');
-        $comment = trim($request->request->get('comment', ''));
+        $commentRaw = $request->request->get('comment', '');
+        $comment = trim(is_string($commentRaw) ? $commentRaw : '');
 
         // Validation rating
         if ($rating === null || $rating === '') {
@@ -174,7 +185,8 @@ class StudentReviewsController extends AbstractController
             return $this->json(['error' => 'Réservation introuvable'], 404);
         }
 
-        $prestataireId = $reservation->getService()?->getPrestataire()?->getId();
+        // Fix: Service uses getUser() not getPrestataire()
+        $prestataireId = $reservation->getService()?->getUser()?->getId();
         
         if (!$prestataireId) {
             return $this->json(['error' => 'Prestataire introuvable'], 404);
@@ -187,7 +199,13 @@ class StudentReviewsController extends AbstractController
     public function index(Request $request): Response
     {
         $user = $this->getCurrentStudent();
-        $reviews = $this->repo->findByStudentWithDetails($user->getId());
+        $userId = $user->getId();
+        
+        if ($userId === null) {
+            throw new \RuntimeException('User ID cannot be null');
+        }
+        
+        $reviews = $this->repo->findByStudentWithDetails($userId);
 
         $pagination = $this->paginator->paginate(
             $reviews,
@@ -195,17 +213,21 @@ class StudentReviewsController extends AbstractController
             5
         );
 
-        $confirmedReservations = $this->repo->getConfirmedReservationsForStudent($user->getId());
+        $confirmedReservations = $this->repo->getConfirmedReservationsForStudent($userId);
 
         // Créer le formulaire avec le bundle
         $review = new Review();
         $form = $this->createForm(ReviewFormType::class, $review);
 
+        // PHPStan: getPageCount() exists but not in the generic interface signature
+        /** @var int $totalPages */
+        $totalPages = method_exists($pagination, 'getPageCount') ? $pagination->getPageCount() : 1;
+
         return $this->render('etudiant/StudentReviews.html.twig', [
             'reviews'               => $pagination,
             'totalReviews'          => count($reviews),
             'currentPage'           => $request->query->getInt('page', 1),
-            'totalPages'            => $pagination->getPageCount(),
+            'totalPages'            => $totalPages,
             'confirmedReservations' => $confirmedReservations,
             'maxCommentLength'      => self::MAX_COMMENT_LENGTH,
             'minCommentLength'      => self::MIN_COMMENT_LENGTH,
@@ -217,6 +239,11 @@ class StudentReviewsController extends AbstractController
     public function add(Request $request): Response
     {
         $user = $this->getCurrentStudent();
+        $userId = $user->getId();
+        
+        if ($userId === null) {
+            throw new \RuntimeException('User ID cannot be null');
+        }
 
         $review = new Review();
         $form = $this->createForm(ReviewFormType::class, $review);
@@ -227,13 +254,18 @@ class StudentReviewsController extends AbstractController
             $prestataireId = (int) $request->request->get('prestataire_id');
 
             // Vérifier doublon
-            if ($this->repo->existsByStudentAndReservation($user->getId(), $reservationId)) {
+            if ($this->repo->existsByStudentAndReservation($userId, $reservationId)) {
                 $this->addFlash('error', 'Vous avez déjà laissé un avis pour cette réservation.');
                 return $this->redirectToRoute('student_reviews_index');
             }
 
             // ========== MODÉRATION IA GROQ ==========
             $comment = $review->getComment();
+            
+            if ($comment === null) {
+                $this->addFlash('error', 'Le commentaire est obligatoire.');
+                return $this->redirectToRoute('student_reviews_index');
+            }
             
             // Vérification rapide des gros mots évidents
             if ($this->moderationService->hasObviousBadWords($comment)) {
@@ -272,7 +304,12 @@ class StudentReviewsController extends AbstractController
             $this->em->persist($review);
             $this->em->flush();
 
-            $this->repo->applyTrustPoints($prestataire->getId(), $review->getRating());
+            $prestataireId = $prestataire->getId();
+            $rating = $review->getRating();
+            
+            if ($prestataireId !== null && $rating !== null) {
+                $this->repo->applyTrustPoints($prestataireId, $rating);
+            }
 
             $this->addFlash('success', '✅ Votre avis a été publié avec succès !');
             return $this->redirectToRoute('student_reviews_index');
@@ -280,7 +317,10 @@ class StudentReviewsController extends AbstractController
 
         // Si le formulaire n'est pas valide, afficher les erreurs
         foreach ($form->getErrors(true) as $error) {
-            $this->addFlash('error', $error->getMessage());
+            // PHPStan: FormErrorIterator contains FormError objects
+            if ($error instanceof \Symfony\Component\Form\FormError) {
+                $this->addFlash('error', $error->getMessage());
+            }
         }
 
         return $this->redirectToRoute('student_reviews_index');
@@ -292,7 +332,7 @@ class StudentReviewsController extends AbstractController
         $user = $this->getCurrentStudent();
         $review = $this->repo->find($id);
 
-        if (!$review) {
+        if (!$review instanceof Review) {
             throw $this->createNotFoundException('Avis introuvable.');
         }
 
@@ -313,7 +353,26 @@ class StudentReviewsController extends AbstractController
 
         $oldRating = $review->getRating() ?? 0;
         $newRating = (int) $request->request->get('rating');
-        $comment   = trim($request->request->get('comment'));
+        $commentRaw = $request->request->get('comment');
+        $comment = trim(is_string($commentRaw) ? $commentRaw : '');
+
+        // ========== MODÉRATION IA GROQ (MODIFICATION) ==========
+        // Vérification rapide des gros mots évidents
+        if ($this->moderationService->hasObviousBadWords($comment)) {
+            $this->addFlash('error', '❌ Votre commentaire contient un langage inapproprié. Veuillez reformuler de manière respectueuse.');
+            return $this->redirectToRoute('student_reviews_index');
+        }
+        
+        // Analyse IA complète
+        $moderationResult = $this->moderationService->analyzeComment($comment);
+        
+        if (!$moderationResult['is_appropriate']) {
+            $reason = $moderationResult['reason'] ?? 'Contenu inapproprié détecté';
+            $this->addFlash('error', "❌ Votre modification a été rejetée : $reason");
+            $this->addFlash('info', '💡 Conseil : Exprimez votre avis de manière constructive et respectueuse.');
+            return $this->redirectToRoute('student_reviews_index');
+        }
+        // ========================================
 
         // ========== MODÉRATION IA GROQ (MODIFICATION) ==========
         // Vérification rapide des gros mots évidents
@@ -337,7 +396,13 @@ class StudentReviewsController extends AbstractController
                ->setComment($comment);
         $this->em->flush();
 
-        $this->repo->applyTrustPointsForEdit($review->getPrestataire()->getId(), $oldRating, $newRating);
+        $prestataire = $review->getPrestataire();
+        if ($prestataire) {
+            $prestataireId = $prestataire->getId();
+            if ($prestataireId !== null) {
+                $this->repo->applyTrustPointsForEdit($prestataireId, $oldRating, $newRating);
+            }
+        }
 
         $this->addFlash('success', 'Votre avis a été modifié avec succès !');
         return $this->redirectToRoute('student_reviews_index');
@@ -349,7 +414,7 @@ class StudentReviewsController extends AbstractController
         $user = $this->getCurrentStudent();
         $review = $this->repo->find($id);
 
-        if (!$review) {
+        if (!$review instanceof Review) {
             throw $this->createNotFoundException('Avis introuvable.');
         }
 
@@ -359,13 +424,18 @@ class StudentReviewsController extends AbstractController
             return $this->redirectToRoute('student_reviews_index');
         }
 
-        $prestataireId = $review->getPrestataire()->getId();
-        $rating        = $review->getRating() ?? 0;
+        $prestataire = $review->getPrestataire();
+        $rating = $review->getRating() ?? 0;
 
         $this->em->remove($review);
         $this->em->flush();
 
-        $this->repo->applyTrustPoints($prestataireId, -$rating);
+        if ($prestataire) {
+            $prestataireId = $prestataire->getId();
+            if ($prestataireId !== null) {
+                $this->repo->applyTrustPoints($prestataireId, -$rating);
+            }
+        }
 
         $this->addFlash('success', 'Votre avis a été supprimé.');
         return $this->redirectToRoute('student_reviews_index');

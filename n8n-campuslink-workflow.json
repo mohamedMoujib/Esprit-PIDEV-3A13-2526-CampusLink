@@ -1,0 +1,387 @@
+{
+  "name": "CampusLink AI Workflows",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "aide-publication",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook-publication",
+      "name": "Webhook Publication",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "generer-service",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook-service",
+      "name": "Webhook Service",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chatbot",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook-chatbot",
+      "name": "Webhook Chatbot",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        240,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer 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"
+            },
+            {
+              "name": "HTTP-Referer",
+              "value": "https://campuslink.tn"
+            },
+            {
+              "name": "X-Title",
+              "value": "CampusLink"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"openai/gpt-4o\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"Tu es un assistant CampusLink. Tu aides les étudiants à rédiger des publications. Retourne UNIQUEMENT du JSON valide avec les clés 'titre' et 'message'. Le titre doit être accrocheur (max 100 caractères). Le message doit être clair et détaillé (max 500 caractères).\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Génère une publication de type '{{ $json.body.type }}' pour l'idée suivante: '{{ $json.body.idee }}'. Budget: {{ $json.body.budget }} DT.\"\n    }\n  ],\n  \"temperature\": 0.7,\n  \"max_tokens\": 500\n}",
+        "options": {
+          "timeout": 45000
+        }
+      },
+      "id": "openrouter-publication",
+      "name": "OpenRouter Publication",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        500,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer sk-or-v1-3d55e7a29e502945c6813ec961f2fde691828c4b9480b38f561b2481f0b9e91fS"
+            },
+            {
+              "name": "HTTP-Referer",
+              "value": "https://campuslink.tn"
+            },
+            {
+              "name": "X-Title",
+              "value": "CampusLink"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"openai/gpt-4o\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"Tu es un assistant CampusLink. Tu aides les prestataires à créer des services. Retourne UNIQUEMENT du JSON valide avec les clés 'title' et 'description'. Le titre doit être professionnel (max 100 caractères). La description doit être complète et engageante (max 500 caractères).\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Génère un service pour: '{{ $json.body.titre }}'. Catégorie: {{ $json.body.categorie }}. Prix: {{ $json.body.prix }} DT.\"\n    }\n  ],\n  \"temperature\": 0.7,\n  \"max_tokens\": 500\n}",
+        "options": {
+          "timeout": 45000
+        }
+      },
+      "id": "openrouter-service",
+      "name": "OpenRouter Service",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        500,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer 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"
+            },
+            {
+              "name": "HTTP-Referer",
+              "value": "https://campuslink.tn"
+            },
+            {
+              "name": "X-Title",
+              "value": "CampusLink"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"openai/gpt-4o\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"Tu es l'assistant IA de CampusLink, une plateforme universitaire. Tu aides les étudiants avec leurs questions sur les services, publications et la plateforme. Réponds de façon concise et utile en français.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"{{ $json.body.message }}\"\n    }\n  ],\n  \"temperature\": 0.7,\n  \"max_tokens\": 500\n}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "openrouter-chatbot",
+      "name": "OpenRouter Chatbot",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        500,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse AI response and prepare data for DB save\nconst choices = $input.all()[0].json.choices || [];\nconst content = choices[0]?.message?.content || '{}';\nconst cleaned = content.replace(/```json[\\s\\S]*?```/g, '').trim() || content.replace(/```json\\s*/g, '').replace(/```/g, '').trim();\n\n// Get original webhook data for DB insert\nconst wb = $('Webhook Publication').first().json.body;\n\nlet parsed = {};\ntry { parsed = JSON.parse(cleaned); } catch(e) {\n  // Try harder - extract JSON from response\n  const match = content.match(/\\{[\\s\\S]*\\}/);\n  if (match) try { parsed = JSON.parse(match[0]); } catch(e2) {}\n}\n\nconst titre = (parsed.titre || parsed.title || 'Publication generee').substring(0, 200);\nconst message = parsed.message || parsed.description || cleaned;\nconst type = wb.type || 'DEMANDE_SERVICE';\nconst userId = parseInt(wb.user_id) || 0;\nconst budget = parseFloat(wb.budget) || 0;\nconst categoryId = wb.category_id ? parseInt(wb.category_id) : null;\n\n// SQL-safe escaping\nfunction esc(s) { return String(s).replace(/'/g, \"''\"); }\n\nconst now = new Date().toISOString().slice(0, 19).replace('T', ' ');\n\nreturn [{ json: {\n  titre: titre,\n  message: message,\n  titre_esc: esc(titre),\n  message_esc: esc(message),\n  type_publication: type,\n  student_id: userId,\n  category_id_sql: categoryId ? String(categoryId) : 'NULL',\n  prix_vente_sql: (type === 'VENTE_OBJET' && budget > 0) ? budget.toFixed(2) : 'NULL',\n  proposed_price_sql: (type !== 'VENTE_OBJET' && budget > 0) ? budget.toFixed(2) : 'NULL',\n  created_at: now,\n  updated_at: now,\n  success: true\n}}];"
+      },
+      "id": "parse-publication",
+      "name": "Parse Publication",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        760,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse AI response and prepare data for DB save\nconst choices = $input.all()[0].json.choices || [];\nconst content = choices[0]?.message?.content || '{}';\nconst cleaned = content.replace(/```json[\\s\\S]*?```/g, '').trim() || content.replace(/```json\\s*/g, '').replace(/```/g, '').trim();\n\n// Get original webhook data for DB insert\nconst wb = $('Webhook Service').first().json.body;\n\nlet parsed = {};\ntry { parsed = JSON.parse(cleaned); } catch(e) {\n  const match = content.match(/\\{[\\s\\S]*\\}/);\n  if (match) try { parsed = JSON.parse(match[0]); } catch(e2) {}\n}\n\nconst title = (parsed.title || parsed.titre || 'Service genere').substring(0, 200);\nconst description = parsed.description || parsed.message || cleaned;\nconst price = parseFloat(wb.prix) || 0;\nconst userId = parseInt(wb.user_id) || 0;\nconst categoryId = wb.category_id ? parseInt(wb.category_id) : null;\n\n// SQL-safe escaping\nfunction esc(s) { return String(s).replace(/'/g, \"''\"); }\n\nreturn [{ json: {\n  title: title,\n  description: description,\n  title_esc: esc(title),\n  description_esc: esc(description),\n  price: price.toFixed(2),\n  user_id: userId,\n  category_id_sql: categoryId ? String(categoryId) : 'NULL',\n  success: true\n}}];"
+      },
+      "id": "parse-service",
+      "name": "Parse Service",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        760,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse the OpenRouter response and extract the chatbot reply\nconst choices = $input.all()[0].json.choices || [];\nconst content = choices[0]?.message?.content || 'Désolé, je n\\'ai pas pu répondre.';\n\nreturn [{ json: {\n  response: content\n}}];"
+      },
+      "id": "parse-chatbot",
+      "name": "Parse Chatbot",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        760,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=INSERT INTO publications (titre, message, type_publication, student_id, category_id, prix_vente, proposed_price, status, vues, created_at, updated_at) VALUES ('{{ $json.titre_esc }}', '{{ $json.message_esc }}', '{{ $json.type_publication }}', {{ $json.student_id }}, {{ $json.category_id_sql }}, {{ $json.prix_vente_sql }}, {{ $json.proposed_price_sql }}, 'ACTIVE', 0, '{{ $json.created_at }}', '{{ $json.updated_at }}')"
+      },
+      "id": "mysql-save-publication",
+      "name": "MySQL Save Publication",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2,
+      "position": [
+        1020,
+        0
+      ],
+      "credentials": {
+        "mySql": {
+          "id": "1",
+          "name": "CampusLink MySQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=INSERT INTO services (title, description, price, prestataire_id, category_id, status, moderation_status) VALUES ('{{ $json.title_esc }}', '{{ $json.description_esc }}', {{ $json.price }}, {{ $json.user_id }}, {{ $json.category_id_sql }}, 'EN_ATTENTE', 'CLEAR')"
+      },
+      "id": "mysql-save-service",
+      "name": "MySQL Save Service",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2,
+      "position": [
+        1020,
+        300
+      ],
+      "credentials": {
+        "mySql": {
+          "id": "1",
+          "name": "CampusLink MySQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Format final response with the saved publication ID\nconst result = $input.all()[0].json;\nconst data = $('Parse Publication').first().json;\nreturn [{ json: {\n  success: true,\n  saved: true,\n  id: result.insertId || null,\n  titre: data.titre,\n  message: data.message\n}}];"
+      },
+      "id": "response-publication",
+      "name": "Response Publication",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1280,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Format final response with the saved service ID\nconst result = $input.all()[0].json;\nconst data = $('Parse Service').first().json;\nreturn [{ json: {\n  success: true,\n  saved: true,\n  id: result.insertId || null,\n  title: data.title,\n  description: data.description\n}}];"
+      },
+      "id": "response-service",
+      "name": "Response Service",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1280,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook Publication": {
+      "main": [
+        [
+          {
+            "node": "OpenRouter Publication",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Publication": {
+      "main": [
+        [
+          {
+            "node": "Parse Publication",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Publication": {
+      "main": [
+        [
+          {
+            "node": "MySQL Save Publication",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MySQL Save Publication": {
+      "main": [
+        [
+          {
+            "node": "Response Publication",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Service": {
+      "main": [
+        [
+          {
+            "node": "OpenRouter Service",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Service": {
+      "main": [
+        [
+          {
+            "node": "Parse Service",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Service": {
+      "main": [
+        [
+          {
+            "node": "MySQL Save Service",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MySQL Save Service": {
+      "main": [
+        [
+          {
+            "node": "Response Service",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Chatbot": {
+      "main": [
+        [
+          {
+            "node": "OpenRouter Chatbot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chatbot": {
+      "main": [
+        [
+          {
+            "node": "Parse Chatbot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 3
+}

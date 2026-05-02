@@ -1,4 +1,5 @@
 {% extends 'base.html.twig' %}
+{% import '_macros/upload_image.html.twig' as upload_img %}
 {% block title %}Gestion des Services — Admin CampusLink{% endblock %}
 {% block stylesheets %}
 {{ include('admin/partials/bo_admin_styles.html.twig') }}
@@ -62,7 +63,7 @@
             <thead><tr><th></th><th>Service</th><th>Prestataire</th><th>Catégorie</th><th>Prix</th><th>Réservations</th><th>Trust score</th><th>Statut</th><th>Actions</th></tr></thead>
             <tbody>
             {% for svc in services %}
-                {% set imageSrc = svc.image ? (svc.image starts with 'http' ? svc.image : asset(svc.image)) : null %}
+                {% set imageSrc = svc.image ? upload_img.src(svc.image, 'thumbnail') : null %}
                 {% set trust = serviceTrustScores[svc.id] ?? null %}
                 <tr>
                     <td>{% if imageSrc %}<img src="{{ imageSrc }}" alt="" class="svc-img">{% else %}<div class="svc-img-placeholder">🛠</div>{% endif %}</td>

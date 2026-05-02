@@ -1,4 +1,5 @@
 {% extends 'base.html.twig' %}
+{% import '_macros/upload_image.html.twig' as upload_img %}
 {% block title %}Gestion des Publications — Admin CampusLink{% endblock %}
 {% block stylesheets %}
 {{ include('admin/partials/bo_admin_styles.html.twig') }}
@@ -61,7 +62,7 @@
             <thead><tr><th></th><th>Publication</th><th>Type</th><th>Auteur</th><th>Prix</th><th>Vues</th><th>Date</th><th>Trust score</th><th>Statut</th><th>Actions</th></tr></thead>
             <tbody>
             {% for pub in publications %}
-                {% set imageSrc = pub.imageUrl ? (pub.imageUrl starts with 'http' ? pub.imageUrl : asset(pub.imageUrl)) : null %}
+                {% set imageSrc = pub.imageUrl ? upload_img.src(pub.imageUrl, 'thumbnail') : null %}
                 {% set price = pub.typePublication == 'VENTE_OBJET' ? pub.prixVente : pub.proposedPrice %}
                 {% set trust = publicationTrustScores[pub.id] ?? null %}
                 <tr>

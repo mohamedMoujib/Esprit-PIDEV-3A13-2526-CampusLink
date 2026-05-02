@@ -17,7 +17,9 @@ security:
         main:
             lazy: true
             provider: app_user_provider
-            custom_authenticator: App\Security\AppAuthenticator   # ← standalone, NO form_login block
+            custom_authenticator: 
+                -   App\Security\AppAuthenticator  
+                -   App\Security\GoogleAuthenticator 
             logout:
                 path: app_logout
                 target: app_login
@@ -25,6 +27,11 @@ security:
     access_control:
         - { path: ^/login,       roles: PUBLIC_ACCESS }
         - { path: ^/register,    roles: PUBLIC_ACCESS }
+        - { path: ^/qr/,         roles: PUBLIC_ACCESS }
+        - { path: ^/qr-code,     roles: PUBLIC_ACCESS }
+        - { path: ^/media/cache, roles: PUBLIC_ACCESS }
+        - { path: ^/api/admin/service-reports, roles: ROLE_ADMIN }
+        - { path: ^/api/services/[0-9]+/report, roles: ROLE_USER }
         - { path: ^/api/notifications, roles: ROLE_USER }
         - { path: ^/api/ai,      roles: ROLE_USER }
         - { path: ^/api,         roles: PUBLIC_ACCESS }

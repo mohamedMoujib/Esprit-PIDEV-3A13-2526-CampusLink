@@ -11,76 +11,60 @@ class Message
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column(type: 'integer')]
+    #[ORM\Column]
     private ?int $id = null;
 
-    public function getId(): ?int
-    {
-        return $this->id;
-    }
-
-    // ❌ REMOVE setId()
-
-    #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'sentMessages')]
-    #[ORM\JoinColumn(name: 'sender_id', nullable: false, onDelete: "CASCADE")]
+    #[ORM\ManyToOne(targetEntity: User::class, inversedBy: "sentMessages")]
+    #[ORM\JoinColumn(nullable: false)]
     private ?User $sender = null;
 
-    public function getSender(): ?User
-    {
-        return $this->sender;
-    }
-
-    public function setSender(?User $sender): self
-    {
-        $this->sender = $sender;
-        return $this;
-    }
-
-    #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'receivedMessages')]
-    #[ORM\JoinColumn(name: 'receiver_id', nullable: false, onDelete: "CASCADE")]
+    #[ORM\ManyToOne(targetEntity: User::class, inversedBy: "receivedMessages")]
+    #[ORM\JoinColumn(nullable: false)]
     private ?User $receiver = null;
-
-    public function getReceiver(): ?User
-    {
-        return $this->receiver;
-    }
-
-    public function setReceiver(?User $receiver): self
-    {
-        $this->receiver = $receiver;
-        return $this;
-    }
 
     #[ORM\Column(type: 'text')]
     private string $content;
 
-    public function getContent(): string
-    {
-        return $this->content;
-    }
+    #[ORM\Column(type: 'datetime')]
+    private \DateTimeInterface $timestamp;
 
-    public function setContent(string $content): self
-    {
-        $this->content = $content;
-        return $this;
-    }
+    #[ORM\Column(type: 'boolean')]
+    private bool $isRead = false;
 
-    #[ORM\Column(name: 'timestamp', type: 'datetime', nullable: true, options: ["default" => "CURRENT_TIMESTAMP"])]
-    private ?\DateTimeInterface $timestamp = null;
+    // 🔥 NOUVEAU (programmation)
+    #[ORM\Column(type: 'datetime', nullable: true)]
+    private ?\DateTimeInterface $scheduledAt = null;
+
+    #[ORM\Column(type: 'boolean')]
+    private bool $isSent = true;
 
     public function __construct()
     {
-        $this->timestamp = new \DateTime(); // ✅ sync with DB
+        $this->timestamp = new \DateTime();
     }
 
-    public function getTimestamp(): ?\DateTimeInterface
-    {
-        return $this->timestamp;
-    }
+    public function getId(): ?int { return $this->id; }
 
-    public function setTimestamp(?\DateTimeInterface $timestamp): self
-    {
-        $this->timestamp = $timestamp;
-        return $this;
-    }
+    public function getSender(): ?User { return $this->sender; }
+    public function setSender(User $sender): self { $this->sender = $sender; return $this; }
+
+    public function getReceiver(): ?User { return $this->receiver; }
+    public function setReceiver(User $receiver): self { $this->receiver = $receiver; return $this; }
+
+    public function getContent(): string { return $this->content; }
+    public function setContent(string $content): self { $this->content = $content; return $this; }
+
+    public function getTimestamp(): \DateTimeInterface { return $this->timestamp; }
+
+    public function getCreatedAt(): \DateTimeInterface { return $this->timestamp; }
+
+    public function isRead(): bool { return $this->isRead; }
+    public function setIsRead(bool $isRead): self { $this->isRead = $isRead; return $this; }
+
+    // 🔥 PROGRAMMATION
+    public function getScheduledAt(): ?\DateTimeInterface { return $this->scheduledAt; }
+    public function setScheduledAt(?\DateTimeInterface $date): self { $this->scheduledAt = $date; return $this; }
+
+    public function isSent(): bool { return $this->isSent; }
+    public function setIsSent(bool $sent): self { $this->isSent = $sent; return $this; }
 }

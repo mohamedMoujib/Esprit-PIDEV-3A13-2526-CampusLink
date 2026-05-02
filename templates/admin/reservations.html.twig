@@ -1,0 +1,253 @@
+{% extends "base.html.twig" %}
+
+{% block body %}
+
+<div class="admin-container">
+
+<h1>📊 Admin - Réservations</h1>
+
+<!-- 🔥 BOUTON RECLAMATIONS -->
+<div style="margin-bottom:20px;">
+    <a href="{{ path('admin_reclamations') }}"
+       class="btn-reclamation">
+        ⚠️ Voir Réclamations
+    </a>
+</div>
+
+<!-- STATS -->
+<div class="stats">
+    <div class="card"><h2>{{ total }}</h2><p>Total</p></div>
+    <div class="card orange"><h2>{{ pending }}</h2><p>En attente</p></div>
+    <div class="card green"><h2>{{ confirmed }}</h2><p>Confirmées</p></div>
+    <div class="card purple"><h2>{{ revenue }} DT</h2><p>Revenus</p></div>
+</div>
+
+<!-- TABLE -->
+<div class="table-container">
+<table>
+
+    <thead>
+        <tr>
+            <th>Service</th>
+            <th>Étudiant</th>
+            <th>Prestataire</th>
+            <th>Date</th>
+            <th>Prix</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+
+    <tbody>
+    {% for r in reservations %}
+        <tr>
+
+            <td>{{ r.service.title }}</td>
+            <td>{{ r.user.name ?? r.user.email }}</td>
+            <td>{{ r.service.user.name ?? r.service.user.email }}</td>
+            <td>{{ r.date|date('d/m/Y H:i') }}</td>
+            <td><strong>{{ r.price }} DT</strong></td>
+
+            <td>
+                {% if r.status == 'CONFIRMED' %}
+                    <span class="badge green">✔ Confirmée</span>
+                {% elseif r.status == 'PENDING' %}
+                    <span class="badge orange">⏳ En attente</span>
+                {% else %}
+                    <span class="badge red">❌ Annulée</span>
+                {% endif %}
+            </td>
+
+            <td style="display:flex;gap:10px;justify-content:center;">
+
+                <!-- 🗑 DELETE -->
+                <button onclick="openDeleteModal({{ r.id }})" class="delete-btn">
+                    🗑
+                </button>
+
+                <!-- ⚠️ SIGNALER -->
+                <a href="{{ path('reclamation_new', {id: r.user.id}) }}"
+                   class="signal-btn">
+                   ⚠️
+                </a>
+
+            </td>
+
+        </tr>
+    {% else %}
+        <tr><td colspan="7">Aucune réservation</td></tr>
+    {% endfor %}
+    </tbody>
+
+</table>
+</div>
+
+</div>
+
+<!-- MODAL DELETE -->
+<div id="deleteModal" class="modal">
+    <div class="modal-box">
+        <h3>⚠️ Confirmation</h3>
+        <p>Voulez-vous supprimer cette réservation ?</p>
+
+        <form id="deleteForm" method="post">
+            <button class="btn-delete">Oui supprimer</button>
+            <button type="button" onclick="closeModal()" class="btn-cancel">Annuler</button>
+        </form>
+    </div>
+</div>
+
+<!-- STYLE -->
+<style>
+
+.admin-container{
+    padding:30px;
+    background:#f5f7fb;
+    min-height:100vh;
+}
+
+h1{
+    margin-bottom:20px;
+}
+
+/* bouton reclamation */
+.btn-reclamation{
+    background:#EF4444;
+    color:white;
+    padding:10px 15px;
+    border-radius:10px;
+    text-decoration:none;
+}
+
+/* STATS */
+.stats{
+    display:flex;
+    gap:15px;
+    margin-bottom:25px;
+}
+
+.card{
+    flex:1;
+    background:white;
+    padding:20px;
+    border-radius:12px;
+    text-align:center;
+    box-shadow:0 5px 20px rgba(0,0,0,0.05);
+}
+
+.orange{color:orange}
+.green{color:green}
+.purple{color:#5D5FEF}
+
+/* TABLE */
+.table-container{
+    background:white;
+    border-radius:12px;
+    overflow:hidden;
+    box-shadow:0 5px 20px rgba(0,0,0,0.05);
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+thead{
+    background:linear-gradient(90deg,#5D5FEF,#7C3AED);
+    color:white;
+}
+
+th,td{
+    padding:15px;
+    text-align:center;
+}
+
+tbody tr{
+    border-bottom:1px solid #eee;
+    transition:0.2s;
+}
+
+tbody tr:hover{
+    background:#f9fafb;
+}
+
+/* BADGES */
+.badge{
+    padding:5px 10px;
+    border-radius:20px;
+    font-size:12px;
+}
+
+.badge.green{background:#D1FAE5;color:#059669}
+.badge.orange{background:#FEF3C7;color:#D97706}
+.badge.red{background:#FEE2E2;color:#DC2626}
+
+/* BUTTONS */
+.delete-btn{
+    background:#5D5FEF;
+    border:none;
+    padding:8px;
+    border-radius:8px;
+    cursor:pointer;
+    color:white;
+}
+
+.signal-btn{
+    background:#F59E0B;
+    color:white;
+    padding:8px;
+    border-radius:8px;
+    text-decoration:none;
+}
+
+/* MODAL */
+.modal{
+    display:none;
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,0.5);
+    justify-content:center;
+    align-items:center;
+}
+
+.modal-box{
+    background:white;
+    padding:25px;
+    border-radius:12px;
+    text-align:center;
+}
+
+.btn-delete{
+    background:#EF4444;
+    color:white;
+    padding:10px;
+    border:none;
+    border-radius:8px;
+    margin-right:10px;
+}
+
+.btn-cancel{
+    background:#eee;
+    padding:10px;
+    border:none;
+    border-radius:8px;
+}
+
+</style>
+
+<!-- JS -->
+<script>
+function openDeleteModal(id){
+    document.getElementById('deleteModal').style.display='flex';
+    document.getElementById('deleteForm').action='/admin/reservations/'+id+'/delete';
+}
+
+function closeModal(){
+    document.getElementById('deleteModal').style.display='none';
+}
+</script>
+
+{% endblock %}

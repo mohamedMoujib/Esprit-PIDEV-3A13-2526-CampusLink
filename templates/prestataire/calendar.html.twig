@@ -1,0 +1,66 @@
+{% extends "base.html.twig" %}
+
+{% block body %}
+
+<div style="padding:20px;">
+
+    <h2 style="margin-bottom:20px;">📅 Calendrier des réservations</h2>
+
+    <div id="calendar" style="background:white;padding:15px;border-radius:12px;"></div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+    let calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
+
+        initialView: 'dayGridMonth',
+        locale: 'fr', // ✅ Français
+
+        height: 650,
+
+        events: [
+            {% for r in reservations %}
+            {
+                title: "{{ r.user.name|e('js') }}",
+                start: "{{ r.date|date('Y-m-d H:i:s') }}",
+                color: "{{ r.date < "now"|date ? '#EF4444' : '#22C55E' }}"
+            },
+            {% endfor %}
+        ],
+
+        // ✅ Personnalisation affichage
+        eventContent: function(arg) {
+
+            let time = arg.event.start.toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            let name = arg.event.title;
+
+            return {
+                html: `
+                    <div style="
+                        font-size:12px;
+                        background:rgba(255,255,255,0.8);
+                        padding:3px;
+                        border-radius:6px;
+                    ">
+                        <div style="font-weight:bold;">⏰ ${time}</div>
+                        <div>👤 ${name}</div>
+                    </div>
+                `
+            };
+        }
+
+    });
+
+    calendar.render();
+});
+</script>
+
+{% endblock %}

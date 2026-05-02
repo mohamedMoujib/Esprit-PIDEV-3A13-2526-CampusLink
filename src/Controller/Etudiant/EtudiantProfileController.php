@@ -3,6 +3,9 @@
 namespace App\Controller\Etudiant;
 
 use App\Controller\UserController;
+use App\Repository\UserRepository;
+use App\Service\CloudinaryService;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -13,18 +16,17 @@ class EtudiantProfileController extends AbstractController
 {
     public function __construct(
         private UserController $userController,
+        private CloudinaryService $cloudinary,
+        private EntityManagerInterface $em,
+        private UserRepository $userRepository,
     ) {}
 
     #[Route('/profile', name: 'etudiant_profile', methods: ['GET', 'POST'])]
     public function index(Request $request): Response
     {
-        /** @var \App\Entity\User $user */
-        $user      = $this->getUser();
-        $uploadDir = $this->getParameter('kernel.project_dir') . '/public/uploads/profiles/';
-
-        if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0777, true);
-        }
+        /** @var \App\Entity\User $sessionUser */
+            $sessionUser = $this->getUser();
+            $user = $this->userRepository->find($sessionUser->getId());
 
         if ($request->isMethod('POST')) {
             $action = $request->request->get('action');
@@ -34,8 +36,9 @@ class EtudiantProfileController extends AbstractController
                 $prenom = trim($request->request->get('prenom', ''));
                 $nom    = trim($request->request->get('nom', ''));
 
+
+
                 // ── Handle profile picture upload ──
-                $newPictureName = null;
                 $profilePicture = $request->files->get('profilePicture');
 
                 if ($profilePicture) {
@@ -51,17 +54,12 @@ class EtudiantProfileController extends AbstractController
                         return $this->redirectToRoute('etudiant_profile');
                     }
 
-                    // Delete old picture
-                    if ($user->getProfilePicture()) {
-                        $oldPath = $uploadDir . $user->getProfilePicture();
-                        if (file_exists($oldPath)) {
-                            unlink($oldPath);
-                        }
+                    $oldPicture = $user->getProfilePicture();
+                    if ($oldPicture && str_contains($oldPicture, 'res.cloudinary.com')) {
+                        $this->cloudinary->deleteByUrl($oldPicture);
                     }
 
-                    // Save new picture
-                    $newPictureName = 'avatar_' . $user->getId() . '_' . time() . '.' . $profilePicture->guessExtension();
-                    $profilePicture->move($uploadDir, $newPictureName);
+                    $user->setProfilePicture($this->cloudinary->upload($profilePicture, 'profiles'));
                 }
 
                 // ── Build payload ──
@@ -76,33 +74,30 @@ class EtudiantProfileController extends AbstractController
                     'specialization' => $request->request->get('specialization') ?: null,
                 ];
 
-                // ✅ Include picture in payload only if a new one was uploaded
-                if ($newPictureName) {
-                    $payload['profilePicture'] = $newPictureName;
-                }
+                // ── Validate ──
+                $errors = $this->userController->validateUserData($payload, isUpdate: true);
 
-                $jsonRequest = Request::create(
-                    '/api/users/' . $user->getId(),
-                    'PUT',
-                    content: json_encode($payload)
-                );
-                $jsonRequest->headers->set('Content-Type', 'application/json');
-
-                $response   = $this->userController->update($user->getId(), $jsonRequest);
-                $statusCode = $response->getStatusCode();
-                $body       = json_decode($response->getContent(), true);
-
-                if ($statusCode === 200) {
-                    $this->addFlash('success', 'Profil mis à jour avec succès !');
-                } elseif ($statusCode === 409) {
-                    $this->addFlash('error', 'Cet email est déjà utilisé.');
-                } elseif ($statusCode === 422 && isset($body['errors'])) {
-                    foreach ($body['errors'] as $field => $message) {
+                if (!empty($errors)) {
+                    foreach ($errors as $field => $message) {
                         $this->addFlash('error', "$field : $message");
                     }
-                } else {
-                    $this->addFlash('error', 'Une erreur est survenue.');
+                    return $this->redirectToRoute('etudiant_profile');
                 }
+
+                // ── Email uniqueness ──
+                if (!empty($payload['email']) && $payload['email'] !== $user->getEmail()) {
+                    if ($this->userRepository->findByEmail($payload['email'])) {
+                        $this->addFlash('error', 'Cet email est déjà utilisé.');
+                        return $this->redirectToRoute('etudiant_profile');
+                    }
+                }
+
+                // ── Hydrate & save ──
+                $this->userController->hydrate($user, $payload);
+
+                $this->em->flush();
+
+                $this->addFlash('success', 'Profil mis à jour avec succès !');
             }
 
             // ── Change password ──
@@ -116,25 +111,15 @@ class EtudiantProfileController extends AbstractController
                 } elseif ($new !== $confirm) {
                     $this->addFlash('error', 'Les mots de passe ne correspondent pas.');
                 } else {
-                    $jsonRequest = Request::create(
-                        '/api/users/' . $user->getId(),
-                        'PUT',
-                        content: json_encode(['password' => $new])
-                    );
-                    $jsonRequest->headers->set('Content-Type', 'application/json');
-
-                    $response   = $this->userController->update($user->getId(), $jsonRequest);
-                    $statusCode = $response->getStatusCode();
-                    $body       = json_decode($response->getContent(), true);
-
-                    if ($statusCode === 200) {
-                        $this->addFlash('success', 'Mot de passe changé avec succès !');
-                    } elseif ($statusCode === 422 && isset($body['errors'])) {
-                        foreach ($body['errors'] as $field => $message) {
-                            $this->addFlash('error', "$field : $message");
+                    $errors = $this->userController->validateUserData(['password' => $new], isUpdate: true);
+                    if (!empty($errors)) {
+                        foreach ($errors as $message) {
+                            $this->addFlash('error', $message);
                         }
                     } else {
-                        $this->addFlash('error', 'Une erreur est survenue.');
+                        $this->userController->hydrate($user, ['password' => $new]);
+                        $this->em->flush();
+                        $this->addFlash('success', 'Mot de passe changé avec succès !');
                     }
                 }
             }
