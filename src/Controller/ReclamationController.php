@@ -28,9 +28,11 @@ class ReclamationController extends AbstractController
 
             $rec->setUser($user);
             $rec->setCible($cible);
-            $rec->setType($request->request->get('type'));
-            $rec->setSujet($request->request->get('sujet'));
-            $rec->setDescription($request->request->get('description'));
+
+            // ✅ Cast (string) pour éviter les erreurs de type (PHPStan Level 7)
+            $rec->setType((string) $request->request->get('type'));
+            $rec->setSujet((string) $request->request->get('sujet'));
+            $rec->setDescription((string) $request->request->get('description'));
 
             $em->persist($rec);
             $em->flush();
