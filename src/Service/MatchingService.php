@@ -2,6 +2,8 @@
 
 namespace App\Service;
 
+use App\Entity\Publication;
+use App\Entity\Service;
 use App\Repository\NotificationRepository;
 use App\Repository\PublicationRepository;
 use App\Repository\ServiceRepository;
@@ -14,7 +16,7 @@ class MatchingService
         private readonly PublicationRepository $pubRepo,
         private readonly ServiceRepository $svcRepo,
         private readonly NotificationService $notif,
-        private readonly NotificationRepository $notifRepo,  // ← ajout anti-spam
+        private readonly NotificationRepository $notifRepo,
     ) {}
 
     public function analyseRecentPublications(): int
@@ -60,7 +62,9 @@ class MatchingService
         return $total;
     }
 
-    private function score(object $pub, object $svc): float
+    // Fix #1 & #2: replace `object` with concrete entity types so PHPStan
+    // can resolve all method calls (getLocalisation, getTitre, getTitle, etc.)
+    private function score(Publication $pub, Service $svc): float
     {
         return min(
             $this->scoreKeywords($pub, $svc)
@@ -71,7 +75,7 @@ class MatchingService
         );
     }
 
-    private function scoreKeywords(object $pub, object $svc): float
+    private function scoreKeywords(Publication $pub, Service $svc): float
     {
         $pt = strtolower($pub->getTitre() . ' ' . $pub->getMessage());
         $st = strtolower($svc->getTitle() . ' ' . ($svc->getDescription() ?? ''));
@@ -94,7 +98,7 @@ class MatchingService
         return min((count($common) / max(count($pw), count($sw))) * 50, 50);
     }
 
-    private function scoreCategory(object $pub, object $svc): float
+    private function scoreCategory(Publication $pub, Service $svc): float
     {
         $pt = strtolower($pub->getTitre() . ' ' . $pub->getMessage());
         $cat = $svc->getCategory()?->getName();
@@ -115,7 +119,7 @@ class MatchingService
         return 0;
     }
 
-    private function scorePrice(object $pub, object $svc): float
+    private function scorePrice(Publication $pub, Service $svc): float
     {
         $p = (float) ($pub->getProposedPrice() ?? $pub->getPrixVente() ?? 0);
         $s = (float) $svc->getPrice();
@@ -134,16 +138,22 @@ class MatchingService
         };
     }
 
+    /**
+     * @return list<string>
+     */
     private function keywords(string $text): array
     {
         $stop = ['le', 'la', 'les', 'un', 'une', 'des', 'de', 'du', 'et', 'ou', 'pour', 'avec', 'dans'];
 
         return array_values(array_filter(
             preg_split('/[\s,;:.!?()\[\]\'\"]+/', $text) ?: [],
-            fn($word) => strlen($word) > 2 && !in_array($word, $stop, true)
+            fn(string $word) => strlen($word) > 2 && !in_array($word, $stop, true)
         ));
     }
 
+    /**
+     * @return array<string, list<string>>
+     */
     private function categoryDict(): array
     {
         return [

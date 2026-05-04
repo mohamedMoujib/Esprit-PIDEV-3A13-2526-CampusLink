@@ -100,7 +100,8 @@ class PublicationController extends AbstractController
         }
 
         if ($req->isMethod('POST')) {
-            if (!$this->isCsrfTokenValid('publication_create', $req->request->get('_token'))) {
+            // Fix #1: cast _token to string
+            if (!$this->isCsrfTokenValid('publication_create', (string) $req->request->get('_token'))) {
                 $this->addFlash('error', 'Token CSRF invalide.');
                 return $this->redirectToRoute('publication_create');
             }
@@ -152,19 +153,22 @@ class PublicationController extends AbstractController
                 $notif->notifyInApp($user, '✅ Publication créée',
                     "Votre demande \"{$pub->getTitre()}\" est maintenant visible. Les prestataires compatibles seront notifiés.");
 
-                if ($pub->getCategory() !== null) {
-                    $prestataires = $serviceRepo->findPrestatairesWithConfirmedServiceInCategoryName(
-                        $pub->getCategory()->getName()
-                    );
-                    // Log temporaire pour déboguer
-                    dump([
-                        'categorie' => $pub->getCategory()->getName(),
-                        'prestataires_trouves' => count($prestataires),
-                    ]);
+                $category = $pub->getCategory();
+                // Fix #2: guard against null before passing category name to repository
+                if ($category !== null) {
+                    $categoryName = $category->getName();
+                    if ($categoryName !== null) {
+                        $prestataires = $serviceRepo->findPrestatairesWithConfirmedServiceInCategoryName($categoryName);
+                        // Log temporaire pour déboguer
+                        dump([
+                            'categorie' => $categoryName,
+                            'prestataires_trouves' => count($prestataires),
+                        ]);
 
-                    foreach ($prestataires as $prestataire) {
-                        $notif->notifyInApp($prestataire, '🔔 Nouvelle demande de service!',
-                            sprintf('Une nouvelle demande de service "%s" a été publiée dans votre catégorie "%s".', $pub->getTitre(), $pub->getCategory()->getName()));
+                        foreach ($prestataires as $prestataire) {
+                            $notif->notifyInApp($prestataire, '🔔 Nouvelle demande de service!',
+                                sprintf('Une nouvelle demande de service "%s" a été publiée dans votre catégorie "%s".', $pub->getTitre(), $categoryName));
+                        }
                     }
                 }
             }
@@ -191,7 +195,8 @@ class PublicationController extends AbstractController
         }
 
         if ($req->isMethod('POST')) {
-            if (!$this->isCsrfTokenValid('publication_edit_' . $pub->getId(), $req->request->get('_token'))) {
+            // Fix #3: cast _token to string
+            if (!$this->isCsrfTokenValid('publication_edit_' . $pub->getId(), (string) $req->request->get('_token'))) {
                 $this->addFlash('error', 'Token CSRF invalide.');
                 return $this->redirectToRoute('publication_edit', ['id' => $pub->getId()]);
             }
@@ -258,7 +263,8 @@ class PublicationController extends AbstractController
             throw $this->createAccessDeniedException('Vous ne pouvez pas supprimer de publications.');
         }
 
-        if (!$this->isCsrfTokenValid('publication_delete_' . $pub->getId(), $req->request->get('_token'))) {
+        // Fix #4: cast _token to string
+        if (!$this->isCsrfTokenValid('publication_delete_' . $pub->getId(), (string) $req->request->get('_token'))) {
             $this->addFlash('error', 'Token CSRF invalide.');
             return $this->redirectToRoute('publication_index');
         }
@@ -281,7 +287,8 @@ class PublicationController extends AbstractController
             throw $this->createAccessDeniedException('Seul un prestataire ou l\'admin peut modifier le statut.');
         }
 
-        if (!$this->isCsrfTokenValid('publication_status_' . $pub->getId(), $req->request->get('_token'))) {
+        // Fix #5: cast _token to string
+        if (!$this->isCsrfTokenValid('publication_status_' . $pub->getId(), (string) $req->request->get('_token'))) {
             $this->addFlash('error', 'Token CSRF invalide.');
             return $this->redirectToRoute('publication_index');
         }
@@ -382,7 +389,11 @@ class PublicationController extends AbstractController
             return 'L\'image ne doit pas dépasser 5 Mo.';
         }
 
-        $uploadDir = $this->getParameter('kernel.project_dir') . '/public/uploads';
+        $projectDir = $this->getParameter('kernel.project_dir');
+        if (!\is_string($projectDir)) {
+            return 'Le paramètre kernel.project_dir est invalide.';
+        }
+        $uploadDir = $projectDir . '/public/uploads';
         if (!is_dir($uploadDir) && !@mkdir($uploadDir, 0775, true) && !is_dir($uploadDir)) {
             return 'Impossible de créer le dossier d\'envoi des fichiers.';
         }
