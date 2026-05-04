@@ -20,7 +20,7 @@ class GroqReviewsModerationService
      * Analyse un commentaire pour détecter du contenu inapproprié
      * 
      * @param string $comment Le commentaire à analyser
-     * @return array ['is_appropriate' => bool, 'reason' => string|null, 'confidence' => float]
+     * @return array{is_appropriate: bool, reason: string|null, confidence: float, detected_issues?: array<string>, error?: string}
      */
     public function analyzeComment(string $comment): array
     {
@@ -108,16 +108,21 @@ PROMPT;
 
     /**
      * Parse la réponse de l'IA
+     * 
+     * @return array{is_appropriate: bool, reason: string|null, confidence: float, detected_issues: array<string>}
      */
     private function parseAiResponse(string $aiResponse): array
     {
         // Nettoyer la réponse (enlever les backticks markdown si présents)
         $aiResponse = trim($aiResponse);
-        $aiResponse = preg_replace('/^```json\s*/', '', $aiResponse);
-        $aiResponse = preg_replace('/\s*```$/', '', $aiResponse);
+        $cleaned = preg_replace('/^```json\s*/', '', $aiResponse);
+        $cleaned = $cleaned !== null ? preg_replace('/\s*```$/', '', $cleaned) : $aiResponse;
+        
+        // S'assurer qu'on a une string valide
+        $cleaned = $cleaned ?? $aiResponse;
 
         try {
-            $parsed = json_decode($aiResponse, true, 512, JSON_THROW_ON_ERROR);
+            $parsed = json_decode($cleaned, true, 512, JSON_THROW_ON_ERROR);
 
             return [
                 'is_appropriate' => $parsed['is_appropriate'] ?? true,
@@ -170,7 +175,7 @@ PROMPT;
      * @param string $partialText Le texte déjà saisi par l'utilisateur
      * @param int $rating La note donnée (-5 à +5)
      * @param string $serviceName Le nom du service/cours
-     * @return array ['suggestion' => string, 'confidence' => float]
+     * @return array{suggestion: string, confidence: float, error?: string}
      */
     public function generateCommentSuggestion(string $partialText, int $rating, string $serviceName = ''): array
     {
@@ -245,16 +250,21 @@ PROMPT;
 
     /**
      * Parse la réponse de suggestion de l'IA
+     * 
+     * @return array{suggestion: string, confidence: float}
      */
     private function parseSuggestionResponse(string $aiResponse): array
     {
         // Nettoyer la réponse
         $aiResponse = trim($aiResponse);
-        $aiResponse = preg_replace('/^```json\s*/', '', $aiResponse);
-        $aiResponse = preg_replace('/\s*```$/', '', $aiResponse);
+        $cleaned = preg_replace('/^```json\s*/', '', $aiResponse);
+        $cleaned = $cleaned !== null ? preg_replace('/\s*```$/', '', $cleaned) : $aiResponse;
+        
+        // S'assurer qu'on a une string valide
+        $cleaned = $cleaned ?? $aiResponse;
 
         try {
-            $parsed = json_decode($aiResponse, true, 512, JSON_THROW_ON_ERROR);
+            $parsed = json_decode($cleaned, true, 512, JSON_THROW_ON_ERROR);
 
             return [
                 'suggestion' => $parsed['suggestion'] ?? '',

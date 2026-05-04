@@ -3,13 +3,13 @@ doctrine:
         driver: pdo_mysql
         host: 127.0.0.1
         port: 3306
-        dbname: campuslink8
+        dbname: campuslink1
         user: root
         password: ~
         charset: utf8mb4
         server_version: 'mariadb-10.4.32'
         options:
-            1002: "SET time_zone = '+01:00'"
+            1002: "SET time_zone = '+00:00'"
         schema_filter: '~^(?!messenger_messages)~'
         profiling_collect_backtrace: '%kernel.debug%'
         use_savepoints: true

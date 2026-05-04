@@ -49,12 +49,17 @@ class PaymentController extends AbstractController
             $payment->setMethod($method);
             $payment->setMeetingLat((float) $lat);
             $payment->setMeetingLng((float) $lng);
-            $payment->setMeetingAddress($address);
+            $payment->setMeetingAddress((string) $address);
 
             $em->persist($payment);
 
             $studentName = $user->getName();
-            $serviceName = $reservation->getService()->getTitle();
+            $service = $reservation->getService();
+            if ($service === null) {
+                throw new \LogicException('Reservation has no associated service.');
+            }
+
+            $serviceName = $service->getTitle();
             $reservationDate = $reservation->getDate()->format('d/m/Y à H\hi');
 
             $detailsStudent = "Vous avez réservé le service \"" . $serviceName . "\""
@@ -69,7 +74,7 @@ class PaymentController extends AbstractController
 
             $em->persist($invoiceStudent);
 
-            $provider = $reservation->getService()->getUser();
+            $provider = $service->getUser();
 
             $detailsProvider = "Votre service \"" . $serviceName . "\" a été réservé par "
                 . $studentName

@@ -13,7 +13,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
-use App\Entity\User;  
+use App\Entity\User;
 
 #[Route('/etudiant/reservations')]
 class ReservationController extends AbstractController
@@ -74,7 +74,7 @@ class ReservationController extends AbstractController
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // NEW — crée la réservation + SMS/notification au prestataire
+    // NEW
     // ─────────────────────────────────────────────────────────────────────────
     #[Route('/new', name: 'etudiant_reservation_new', methods: ['POST'])]
     public function new(
@@ -88,20 +88,20 @@ class ReservationController extends AbstractController
 
         $serviceId = $request->request->get('service_id');
         $date      = $request->request->get('date');
-        $service   = $serviceRepo->find($serviceId);
+        $service   = $serviceRepo->find((int) $serviceId); // ✅ cast int
 
         if (!$service || !$date) {
             $this->addFlash('error', 'Service ou date invalide.');
             return $this->redirectToRoute('etudiant_reservations');
         }
 
-        /** @var \App\Entity\User $etudiant */
+        /** @var User $etudiant */
         $etudiant = $this->getUser();
 
         $reservation = new Reservation();
         $reservation->setUser($etudiant);
         $reservation->setService($service);
-        $reservation->setDate(new \DateTime($date));
+        $reservation->setDate(new \DateTime((string) $date)); // ✅ cast string
         $reservation->setPrice($service->getPrice());
         $reservation->setStatus('PENDING');
 
@@ -127,11 +127,18 @@ class ReservationController extends AbstractController
 
         // ── Notifications in-app ──
         if ($prestataire) {
-            $notif->notifyInApp($prestataire, '📅 Nouvelle réservation',
-                "{$etudiant->getName()} a réservé votre service \"{$service->getTitle()}\" pour le {$reservation->getDate()->format('d/m/Y à H:i')}");
+            $notif->notifyInApp(
+                $prestataire,
+                '📅 Nouvelle réservation',
+                "{$etudiant->getName()} a réservé votre service \"{$service->getTitle()}\" pour le {$reservation->getDate()->format('d/m/Y à H:i')}"
+            );
         }
-        $notif->notifyInApp($etudiant, '✅ Réservation confirmée',
-            "Votre réservation pour \"{$service->getTitle()}\" a bien été enregistrée.");
+
+        $notif->notifyInApp(
+            $etudiant,
+            '✅ Réservation confirmée',
+            "Votre réservation pour \"{$service->getTitle()}\" a bien été enregistrée."
+        );
 
         $this->addFlash('success', 'Réservation créée avec succès.');
         return $this->redirectToRoute('etudiant_reservations');
@@ -164,7 +171,7 @@ class ReservationController extends AbstractController
             return $this->redirectToRoute('etudiant_reservations', ['edit' => $reservation->getId()]);
         }
 
-        $reservation->setDate(new \DateTime($date));
+        $reservation->setDate(new \DateTime((string) $date)); // ✅ cast string
         $em->flush();
 
         $this->addFlash('success', 'Réservation modifiée.');
@@ -172,64 +179,65 @@ class ReservationController extends AbstractController
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // CANCEL — annule + SMS au prestataire
+    // CANCEL
     // ─────────────────────────────────────────────────────────────────────────
     #[Route('/{id}/cancel', name: 'etudiant_reservation_cancel', methods: ['POST'])]
     public function cancel(
-        Reservation $reservation,
-        EntityManagerInterface $em,
-        SmsService $sms
-    ): Response {
+    Reservation            $reservation,
+    EntityManagerInterface $em,
+    SmsService             $sms
+): Response {
+    $this->denyAccessUnlessGranted('ROLE_ETUDIANT');
 
-        $this->denyAccessUnlessGranted('ROLE_ETUDIANT');
+    if ($reservation->getUser() !== $this->getUser()) {
+        throw $this->createAccessDeniedException();
+    }
 
-        if ($reservation->getUser() !== $this->getUser()) {
-            throw $this->createAccessDeniedException();
-        }
-
-        if ($reservation->getStatus() === 'CONFIRMED') {
-            $this->addFlash('error', "Impossible d'annuler une réservation déjà confirmée.");
-            return $this->redirectToRoute('etudiant_reservations');
-        }
-
-        $etudiant = $this->getUser();
-        $prestataire = $reservation->getService()->getUser();
-
-        $nomEtudiant = $etudiant->getName();
-
-        // SMS seulement si PENDING
-        if ($reservation->getStatus() === 'PENDING') {
-
-            if ($prestataire && $prestataire->getPhone()) {
-
-                $message = "❌ Annulation\n" .
-                    $nomEtudiant .
-                    " a annulé la réservation \"" .
-                    $reservation->getService()->getTitle() .
-                    "\" avant votre confirmation.";
-
-                try {
-                    $sms->sendSms($prestataire->getPhone(), $message);
-                } catch (\Exception $e) {
-                    // ignore erreur SMS
-                }
-            }
-        }
-
-        $reservation->setStatus('CANCELLED');
-        $em->flush();
-
-        $this->addFlash('success', 'Réservation annulée.');
-
+    if ($reservation->getStatus() === 'CONFIRMED') {
+        $this->addFlash('error', "Impossible d'annuler une réservation déjà confirmée.");
         return $this->redirectToRoute('etudiant_reservations');
     }
+
+    /** @var User $etudiant */
+    $etudiant    = $this->getUser();
+    $nomEtudiant = $etudiant->getName();
+
+    // ✅ نتحققو من service قبل ما نستعملوه
+    $service = $reservation->getService();
+
+    if ($reservation->getStatus() === 'PENDING' && $service !== null) {
+        $prestataire = $service->getUser(); // ✅ آمن الآن
+
+        if ($prestataire && $prestataire->getPhone()) {
+            $message = "❌ Annulation\n"
+                . $nomEtudiant
+                . " a annulé la réservation \""
+                . $service->getTitle() // ✅ آمن الآن
+                . "\" avant votre confirmation.";
+
+            try {
+                $sms->sendSms($prestataire->getPhone(), $message);
+            } catch (\Exception $e) {
+                // ignore erreur SMS
+            }
+        }
+    }
+
+    $reservation->setStatus('CANCELLED');
+    $em->flush();
+
+    $this->addFlash('success', 'Réservation annulée.');
+    return $this->redirectToRoute('etudiant_reservations');
+}
 
     // ─────────────────────────────────────────────────────────────────────────
     // DELETE
     // ─────────────────────────────────────────────────────────────────────────
     #[Route('/{id}/delete', name: 'etudiant_reservation_delete', methods: ['POST'])]
-    public function delete(Reservation $reservation, EntityManagerInterface $em): Response
-    {
+    public function delete(
+        Reservation            $reservation,
+        EntityManagerInterface $em
+    ): Response {
         $this->denyAccessUnlessGranted('ROLE_ETUDIANT');
 
         if ($reservation->getUser() !== $this->getUser()) {
