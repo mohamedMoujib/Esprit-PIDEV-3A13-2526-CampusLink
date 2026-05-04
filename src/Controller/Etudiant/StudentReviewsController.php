@@ -287,11 +287,11 @@ class StudentReviewsController extends AbstractController
             $prestataire = $this->em->getRepository(\App\Entity\User::class)->find($prestataireId);
             $reservation = $this->em->getRepository(\App\Entity\Reservation::class)->find($reservationId);
 
-            if (!$prestataire) {
+            if (!$prestataire instanceof \App\Entity\User) {
                 $this->addFlash('error', 'Prestataire introuvable.');
                 return $this->redirectToRoute('student_reviews_index');
             }
-            if (!$reservation) {
+            if (!$reservation instanceof \App\Entity\Reservation) {
                 $this->addFlash('error', 'Réservation introuvable.');
                 return $this->redirectToRoute('student_reviews_index');
             }
@@ -317,10 +317,7 @@ class StudentReviewsController extends AbstractController
 
         // Si le formulaire n'est pas valide, afficher les erreurs
         foreach ($form->getErrors(true) as $error) {
-            // PHPStan: FormErrorIterator contains FormError objects
-            if ($error instanceof \Symfony\Component\Form\FormError) {
-                $this->addFlash('error', $error->getMessage());
-            }
+            $this->addFlash('error', $error->getMessage());
         }
 
         return $this->redirectToRoute('student_reviews_index');

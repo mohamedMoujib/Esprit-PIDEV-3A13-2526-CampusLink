@@ -13,12 +13,6 @@ class ChatControllerTest extends TestCase
 {
     public function testChatReturnsResponse()
     {
-        // 🔹 Mock parameters (API key)
-        $params = $this->createMock(ParameterBagInterface::class);
-        $params->method('get')
-            ->with('groq_api_key')
-            ->willReturn('fake-api-key');
-
         // 🔹 Mock HTTP response
         $responseMock = $this->createMock(ResponseInterface::class);
         $responseMock->method('toArray')
@@ -37,8 +31,8 @@ class ChatControllerTest extends TestCase
         $httpClient->method('request')
             ->willReturn($responseMock);
 
-        // 🔹 Create controller
-        $controller = new ChatController($params);
+        // 🔹 Create controller with string API key
+        $controller = new ChatController('fake-api-key');
 
         // 🔹 Fake request body
         $request = new Request([], [], [], [], [], [], json_encode([

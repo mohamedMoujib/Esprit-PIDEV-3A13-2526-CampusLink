@@ -48,7 +48,14 @@ private function makeController(?User $loggedUser): ReservationController
     // ── Helper: يبني SmsService مع mock Twilio ──
     private function makeSms(): SmsService
     {
+        $mockMessageInstance = $this->createMock(\Twilio\Rest\Api\V2010\Account\MessageInstance::class);
+        
+        $mockMessages = $this->createMock(\Twilio\Rest\Api\V2010\Account\MessageList::class);
+        $mockMessages->method('create')->willReturn($mockMessageInstance);
+        
         $mockClient = $this->createMock(Client::class);
+        $mockClient->messages = $mockMessages;
+        
         return new SmsService('fake', 'fake', '+123', $mockClient);
     }
 
