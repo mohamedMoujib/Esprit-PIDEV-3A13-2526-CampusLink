@@ -1,5 +1,5 @@
 <?php
-date_default_timezone_set($_SERVER['TZ'] ?? $_ENV['TZ'] ?? 'Africa/Tunis');
+date_default_timezone_set($_SERVER['TZ'] ?? $_ENV['TZ'] ?? 'UTC');
 use App\Kernel;
 
 require_once dirname(__DIR__).'/vendor/autoload_runtime.php';

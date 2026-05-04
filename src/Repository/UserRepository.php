@@ -13,6 +13,7 @@ class UserRepository extends ServiceEntityRepository
         parent::__construct($registry, User::class);
     }
 
+    
     // Find by email (used for login + uniqueness check)
     public function findByEmail(string $email): ?User
     {

@@ -30,20 +30,20 @@ class UserController extends AbstractController
     public function index(): JsonResponse
     {
         $users = $this->userRepository->findAll();
-        return $this->json(array_map(fn(User $u) => $this->serialize($u), $users));
+        return $this->json(array_map(fn(object $u) => $this->serialize($u instanceof User ? $u : throw new \LogicException()), $users));
     }
 
     // GET ONE
     // GET /api/users/{id}
     #[Route('/{id}', methods: ['GET'])]
-    public function show(int $id): JsonResponse
-    {
-        $user = $this->userRepository->find($id);
-        if (!$user) {
-            return $this->json(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
-        }
-        return $this->json($this->serialize($user));
+   public function show(int $id): JsonResponse
+{
+    $user = $this->userRepository->find($id);
+    if (!$user instanceof User) {
+        return $this->json(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
     }
+    return $this->json($this->serialize($user));
+}
 
     // CREATE
     // POST /api/users
@@ -83,11 +83,11 @@ class UserController extends AbstractController
     // PUT /api/users/{id}
     #[Route('/{id}', methods: ['PUT'])]
     public function update(int $id, Request $request): JsonResponse
-    {
-        $user = $this->userRepository->find($id);
-        if (!$user) {
-            return $this->json(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
-        }
+{
+    $user = $this->userRepository->find($id);
+    if (!$user instanceof User) {
+        return $this->json(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
+    }
 
         $data = json_decode($request->getContent(), true);
 
@@ -118,11 +118,11 @@ class UserController extends AbstractController
     // DELETE /api/users/{id}
     #[Route('/{id}', methods: ['DELETE'])]
     public function delete(int $id): JsonResponse
-    {
-        $user = $this->userRepository->find($id);
-        if (!$user) {
-            return $this->json(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
-        }
+{
+    $user = $this->userRepository->find($id);
+    if (!$user instanceof User) {
+        return $this->json(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
+    }
 
         $this->em->remove($user);
         $this->em->flush();
@@ -152,8 +152,7 @@ class UserController extends AbstractController
     #[Route('/search', methods: ['GET'])]
     public function search(Request $request): JsonResponse
     {
-        $q = trim($request->query->get('q', ''));
-
+        $q = trim((string) $request->query->get('q', ''));
         if (strlen($q) < 2) {
             return $this->json(['error' => 'Search query must be at least 2 characters'], Response::HTTP_BAD_REQUEST);
         }
@@ -164,11 +163,10 @@ class UserController extends AbstractController
 
     // PRIVATE HELPERS
 
-    /**
-     * Validates incoming data.
-     * $isUpdate = true  → all fields optional, only validate what's present
-     * $isUpdate = false → required fields enforced
-     */
+   /**
+ * @param array<string, mixed> $data
+ * @return array<string, string>
+ */
     public function validateUserData(array $data, bool $isUpdate): array
     {
         $errors = [];
@@ -268,9 +266,8 @@ class UserController extends AbstractController
     }
 
     /**
-     * Maps request data onto the User entity.
-     * Safe to call on both create and update.
-     */
+ * @param array<string, mixed> $data
+ */
     public function hydrate(User $user, array $data): void
     {
         isset($data['name'])           && $user->setName(trim($data['name']));
@@ -291,12 +288,15 @@ class UserController extends AbstractController
         }
 
         if (!empty($data['dateNaissance'])) {
-            $user->setDateNaissance(\DateTime::createFromFormat('Y-m-d', $data['dateNaissance']));
-        }
+    $date = \DateTime::createFromFormat('Y-m-d', $data['dateNaissance']);
+    if ($date !== false) {
+        $user->setDateNaissance($date);
+    }
+}
     }
 
     /**
-     * Safe response shape — password is never exposed.
+     * @return array<string, mixed>
      */
     private function serialize(User $u): array
     {

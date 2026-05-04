@@ -24,26 +24,27 @@ class SecurityController extends AbstractController
     ) {}
 
         // ✅ Inject AuthenticationUtils here
-    #[Route('/login', name: 'app_login')]
-    public function login(AuthenticationUtils $authenticationUtils): Response
-    {
-        if ($this->getUser()) {
-        return match($this->getUser()->getUserType()) {
+   #[Route('/login', name: 'app_login')]
+public function login(AuthenticationUtils $authenticationUtils): Response
+{
+    $currentUser = $this->getUser();
+    if ($currentUser instanceof User) {
+        return match($currentUser->getUserType()) {
             'ADMIN'       => $this->redirectToRoute('admin_dashboard'),
             'PRESTATAIRE' => $this->redirectToRoute('prestataire_reservations'),
             'ETUDIANT'    => $this->redirectToRoute('etudiant_reservations'),
             default       => $this->redirectToRoute('app_home'),
         };
     }
-    
-        $error        = $authenticationUtils->getLastAuthenticationError();
-        $lastUsername = $authenticationUtils->getLastUsername();
 
-        return $this->render('User/login.html.twig', [
-            'error'         => $error,
-            'last_username' => $lastUsername,
-        ]);
-    }
+    $error        = $authenticationUtils->getLastAuthenticationError();
+    $lastUsername = $authenticationUtils->getLastUsername();
+
+    return $this->render('User/login.html.twig', [
+        'error'         => $error,
+        'last_username' => $lastUsername,
+    ]);
+}
 
     #[Route('/logout', name: 'app_logout')]
     public function logout(): void {}
@@ -53,7 +54,7 @@ class SecurityController extends AbstractController
     {
         if ($request->isMethod('POST')) {
 
-            if (!$this->isCsrfTokenValid('register', $request->request->get('_token'))) {
+            if (!$this->isCsrfTokenValid('register', (string) $request->request->get('_token'))) {
                 $this->addFlash('error', 'Token CSRF invalide.');
                 return $this->redirectToRoute('app_register');
             }
@@ -66,8 +67,8 @@ class SecurityController extends AbstractController
                 return $this->redirectToRoute('app_register');
             }
 
-            $prenom = trim($request->request->get('prenom', ''));
-            $nom    = trim($request->request->get('nom', ''));
+            $prenom = trim((string) $request->request->get('prenom', ''));
+            $nom    = trim((string) $request->request->get('nom', ''));
 
             $jsonData = json_encode([
                 'name'           => $prenom . ' ' . $nom,
@@ -83,12 +84,12 @@ class SecurityController extends AbstractController
                 'status'         => 'INACTIVE',
             ]);
 
-            $jsonRequest = Request::create('/api/users', 'POST', content: $jsonData);
+            $jsonRequest = Request::create('/api/users', 'POST', content: $jsonData ?: '{}');
             $jsonRequest->headers->set('Content-Type', 'application/json');
 
             $response   = $this->userController->create($jsonRequest);
             $statusCode = $response->getStatusCode();
-            $body       = json_decode($response->getContent(), true);
+            $body = json_decode($response->getContent() ?: '{}', true);
 
                     if ($statusCode === 201) {
             // Generate activation code and store in session 
@@ -101,7 +102,7 @@ class SecurityController extends AbstractController
             // Send activation email
             $emailMessage = (new \Symfony\Component\Mime\Email())
                 ->from('no-reply@campuslink.tn')
-                ->to($request->request->get('email'))
+                ->to((string) $request->request->get('email'))
                 ->subject('Activez votre compte — CampusLink')
                 ->html("
                     <div style='font-family:sans-serif; max-width:400px; margin:auto;'>
@@ -151,7 +152,7 @@ class SecurityController extends AbstractController
         }
 
         if ($request->isMethod('POST')) {
-            $code          = trim($request->request->get('code', ''));
+           $code = trim((string) $request->request->get('code', ''));
             $storedCode    = $session->get('activation_code');
             $storedExpires = $session->get('activation_code_expires');
 
